@@ -1,0 +1,6 @@
+# Public tool, nothing private here — indexing is allowed.
+# To keep it out of search results, replace the two lines below with:
+#   User-agent: *
+#   Disallow: /
+User-agent: *
+Allow: /
