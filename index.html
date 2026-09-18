@@ -106,7 +106,9 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
 .grid>*{min-width:0}
 .grid.split{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+.grid.split2{display:grid;gap:10px;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);align-items:center}
 @media (max-width:860px){ .grid.split{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:560px){ .grid.split2{grid-template-columns:minmax(0,1fr);gap:6px} }
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
 .row>*{min-width:0}
 .muted{color:var(--text-muted)}
@@ -245,6 +247,53 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .cell .pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cell .mt{color:var(--text-muted);font-size:10px;display:flex;gap:4px;align-items:center}
 
+/* ============ simple mode ============
+   A calmer skin for the same data: more air, larger type, rounder edges, and
+   the secondary columns and deep-dive cards left out. Everything here hangs off
+   one attribute on the root, so the dense view is completely untouched. */
+:root[data-ui="simple"]{
+  --r:14px; --r-sm:10px;
+  --shadow: 0 1px 2px rgba(11,11,11,.04), 0 6px 20px rgba(11,11,11,.05);
+}
+:root[data-ui="simple"] body{font-size:15px}
+:root[data-ui="simple"] .content{padding:26px}
+:root[data-ui="simple"] .grid{gap:18px}
+:root[data-ui="simple"] .card .hd{padding:17px 20px 0;gap:12px}
+:root[data-ui="simple"] .card .hd h3{font-size:16.5px;letter-spacing:-.015em}
+:root[data-ui="simple"] .card .hd .note{font-size:12.5px}
+:root[data-ui="simple"] .card .bd{padding:16px 20px 20px}
+:root[data-ui="simple"] .kpi{padding:15px 17px;gap:3px}
+:root[data-ui="simple"] .kpi .val{font-size:26px}
+:root[data-ui="simple"] .kpi .lbl{font-size:11px;letter-spacing:.06em}
+:root[data-ui="simple"] .kpi .sub{font-size:12.5px}
+:root[data-ui="simple"] table.tbl{font-size:13.5px}
+:root[data-ui="simple"] table.tbl th{font-size:11.5px;padding:9px 10px}
+:root[data-ui="simple"] table.tbl td{padding:11px 10px}
+:root[data-ui="simple"] .tiny{font-size:12.5px}
+:root[data-ui="simple"] .navbtn{padding:9px 11px;font-size:13.5px}
+:root[data-ui="simple"] .btn{padding:8px 14px;font-size:13.5px}
+:root[data-ui="simple"] .seg button{padding:7px 14px;font-size:13.5px}
+:root[data-ui="simple"] .side{width:auto}
+/* imagery — only ever used in simple mode */
+.face{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--surface-3);flex:none}
+.face.lg{width:44px;height:44px;border-radius:12px}
+.tlogo{width:18px;height:18px;object-fit:contain;flex:none;vertical-align:-4px}
+:root[data-ui="simple"] .avatar{width:30px;height:30px;border-radius:9px}
+:root[data-ui="simple"] .tm{gap:10px}
+:root[data-ui="simple"] .tm .nm{font-weight:600}
+.pcard{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);min-width:0}
+.pcard .meta{min-width:0;flex:1}
+.pcard .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .sub{font-size:11.5px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pcard .val{text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.rankrow{display:grid;grid-template-columns:34px 1fr minmax(120px,1.1fr) auto;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--grid)}
+.rankrow:last-child{border-bottom:0}
+.rankrow .pos{font-size:19px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
+@media (max-width:620px){
+  .rankrow{grid-template-columns:28px 1fr auto;gap:10px}
+  .rankrow .hidenarrow{display:none}
+}
+
 /* ============ narrow screens ============
    Everything below is scoped to a width or pointer query, so the desktop
    layout above is untouched. */
@@ -377,6 +426,17 @@ function h(tag, props, ...kids) {
    halves the width of every axis label and tick. Drawing narrow in the first
    place keeps the type honest. */
 const NARROW_AT = 760;
+/* Simple mode: the same data with the secondary half left out. It rides the same
+   `prio` marks the phone layout uses, so nothing needed a parallel set of views. */
+function isSimple() { return S.ui === 'simple'; }
+function setUiMode(m) {
+  S.ui = m === 'simple' ? 'simple' : 'full';
+  if (S.ui === 'simple') document.documentElement.setAttribute('data-ui', 'simple');
+  else document.documentElement.removeAttribute('data-ui');
+  LS.set('ui', S.ui);
+}
+/** Cards that only earn their space in the dense view. */
+function proOnly(node) { return isSimple() ? null : node; }
 function isNarrow() {
   return typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < NARROW_AT;
 }
@@ -467,7 +527,9 @@ const S = {
   view: 'roster', leagueId: null, league: null, users: [], rosters: [], teams: [],
   players: {}, values: null, valuesRedraft: null, picksVal: {}, state: null,
   matchups: {}, drafts: [], draftPicks: {}, tradedPicks: [], transactions: [],
-  cfg: {}, week: 1, lastWeek: 0, regEnd: 14, me: null, sim: null, simN: 2000,
+  ui: 'full',
+  cfg: {}, week: 1, lastWeek: 0, liveWeek: null, nflSched: null, regEnd: 14,
+  me: null, sim: null, simN: 2000,
   history: {}, snapshots: [], busy: false, err: null
 };
 window.__S = S;
@@ -952,11 +1014,24 @@ async function loadLeague(leagueId, onStep) {
   for (let w = 1; w <= S.regEnd + 4; w++) weeks.push(w);
   const results = await Promise.all(weeks.map(w => sl(`/league/${leagueId}/matchups/${w}`).catch(() => null)));
   S.matchups = {}; weeks.forEach((w, i) => { if (results[i] && results[i].length) S.matchups[w] = results[i]; });
+  // the NFL's own game statuses, so a week that is underway is not mistaken for
+  // a finished one the moment the Thursday game ends
+  S.nflSched = await loadNflSchedule(S.season);
   S.lastWeek = 0;
   for (let w = 1; w <= S.regEnd; w++) {
     const m = S.matchups[w];
-    if (m && m.some(x => (x.points || 0) > 0)) S.lastWeek = w;
+    if (m && m.some(x => (x.points || 0) > 0) && weekFinished(w)) S.lastWeek = w;
   }
+  // the week in progress: started, not finished, and the first such week left
+  S.liveWeek = null;
+  for (let w = S.lastWeek + 1; w <= S.regEnd; w++) {
+    if (weekStarted(w) && !weekFinished(w)) { S.liveWeek = w; break; }
+    if (weekStarted(w)) continue;
+    break;
+  }
+  // kickoff times and live quarters for the week being played
+  S.weekScores = {};
+  if (S.liveWeek) await ensureWeekScores(S.liveWeek);
 
   step('Loading drafts…', 0.82);
   S.draftPicks = {}; S.draftMeta = {};
@@ -1023,7 +1098,20 @@ function buildTeams() {
     const ir = new Set((r.reserve || []).map(String));
     return {
       rosterId: r.roster_id, ownerId: r.owner_id, name,
-      short: name.replace(/[^A-Za-z0-9 ]/g, '').split(/\s+/).map(w => w[0]).join('').slice(0, 3).toUpperCase() || ('T' + r.roster_id),
+      // initials for a multi-word name, the first few characters for a single word —
+      // "manager10" and "manager4" both reducing to "M" makes every comparison unreadable
+      short: (function () {
+        const clean = name.replace(/[^A-Za-z0-9 ]/g, '').trim();
+        const words = clean.split(/\s+/).filter(Boolean);
+        let s;
+        if (words.length > 1) s = words.map(w => w[0]).join('').slice(0, 3);
+        else {
+          // keep any trailing number: "manager10" and "manager4" must not both be "MANA"
+          const m = clean.match(/^([A-Za-z]*)(\d*)$/);
+          s = m ? (m[1].slice(0, 3) + m[2]).slice(0, 5) : clean.slice(0, 4);
+        }
+        return s.toUpperCase() || ('T' + r.roster_id);
+      })(),
       owner: u.display_name || '—',
       avatar: meta.avatar || (u.avatar ? 'https://sleepercdn.com/avatars/thumbs/' + u.avatar : null),
       players, taxi, ir, division: st.division || null,
@@ -1312,18 +1400,37 @@ function schedule() {
    Lineups are rebuilt for every week, because a player on bye projects nothing and
    the optimiser has to start somebody else. Scores are gamma-distributed, matching
    the right-skewed, never-negative shape of real weekly fantasy scoring. */
-function buildWeeklyStarters(teams, weeks, rosterFor) {
+function buildWeeklyStarters(teams, weeks, rosterFor, live) {
   const out = {};
   weeks.forEach(wk => {
-    out[wk] = teams.map(t => optimalLineup(rosterFor(t), (p) => pw(p, wk))
-      .map(s => {
-        // No manager leaves a slot empty or starts a bye player — they stream it.
-        const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
-        let m = s.player ? pw(s.player, wk) : 0;
-        if (m <= 0.05) m = STREAM[pos] !== undefined ? STREAM[pos] : 0;
-        return { m, sd: volFromMean(pos, m), pos };
-      })
-      .filter(x => x.m > 0.05));
+    out[wk] = teams.map(t => {
+      /* A week already under way is part simulated, part settled: the games that
+         have finished are facts, not draws. Only the open slots get sampled, and
+         what is banked rides along as a fixed offset. */
+      /* A week under way is treated as locked: the lineups are what the managers
+         already set, and the finished games are facts. That holds whoever is
+         asking — a hypothetical trade cannot un-play Sunday — which also keeps
+         every paired before/after comparison honest. */
+      if (live && wk === S.liveWeek) {
+        const lr = liveRoster(t, wk);
+        return {
+          banked: lr.banked,
+          arr: lr.open.map(r => ({ m: r.used, sd: volFromMean(r.p.pos, r.used), pos: r.p.pos }))
+        };
+      }
+      return {
+        banked: 0,
+        arr: optimalLineup(rosterFor(t), (p) => pw(p, wk))
+          .map(s => {
+            // No manager leaves a slot empty or starts a bye player — they stream it.
+            const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
+            let m = s.player ? pw(s.player, wk) : 0;
+            if (m <= 0.05) m = STREAM[pos] !== undefined ? STREAM[pos] : 0;
+            return { m, sd: volFromMean(pos, m), pos };
+          })
+          .filter(x => x.m > 0.05)
+      };
+    });
   });
   return out;
 }
@@ -1345,8 +1452,25 @@ function simulate(nSims, opts) {
   const weekList = [];
   if (onlyWeek) weekList.push(onlyWeek);
   else { for (let w = fromWeek; w <= S.regEnd + 4; w++) weekList.push(w); }
-  const starters = buildWeeklyStarters(teams, weekList, rosterFor);
+  const starters = buildWeeklyStarters(teams, weekList, rosterFor, true);
   const fallbackWk = weekList[0];
+
+  /* Leverage covers every game left in the season, not just this week's. Each run
+     records who won each remaining game alongside that run's final outcome, so the
+     finished simulations can be split by any single result. Weekly scores are drawn
+     independently, so conditioning on one game carries no hidden selection effect —
+     the difference it makes is the difference the game makes. */
+  const levGames = [];
+  if (!onlyWeek) {
+    for (let w = fromWeek; w <= S.regEnd; w++) {
+      (sched[w - 1] || []).forEach(g => {
+        if (idOf[g[0]] === undefined || idOf[g[1]] === undefined) return;
+        levGames.push({ week: w, a: g[0], b: g[1] });
+      });
+    }
+  }
+  const levWeek = levGames.length ? levGames[0].week : null;
+  const nG = levGames.length;
 
   const acc = {
     wins: new Float64Array(n), pts: new Float64Array(n), playoff: new Float64Array(n),
@@ -1354,23 +1478,55 @@ function simulate(nSims, opts) {
     title: new Float64Array(n), seed: new Float64Array(n), best: new Float64Array(n).fill(99), worst: new Float64Array(n),
     winDist: Array.from({ length: n }, () => new Float64Array(S.regEnd + 1)),
     weekWin: new Float64Array(n), weekPts: new Float64Array(n), weekTop: new Float64Array(n),
-    weekScores: Array.from({ length: n }, () => [])
+    weekScores: Array.from({ length: n }, () => []),
+    // --- expanded instrumentation ---
+    seedDist: Array.from({ length: n }, () => new Float64Array(n + 1)),
+    allPlay: new Float64Array(n),          // all-play wins over the simulated weeks
+    allPlayGames: 0,                       // (n-1) x weeks simulated, same for everyone
+    simWins: new Float64Array(n),          // wins earned in the simulated weeks only
+    oppPts: new Float64Array(n), oppGames: new Float64Array(n),   // rest-of-season SOS
+    ptsRuns: Array.from({ length: n }, () => []),                 // season PF per run
+    fieldAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // in the field after week w
+    aliveAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // can still reach the cut
+    knockedBy: new Float64Array(n * n),    // [loser*n + winner] in the bracket
+    finalVs: new Float64Array(n * n),      // met in the title game
+    poWins: new Float64Array(n),           // playoff games won
+    // leverage: for each game in the next week, each side's odds when they win vs lose
+    lev: levGames.map(() => ({ nA: 0, nB: 0, poAw: 0, poAl: 0, poBw: 0, poBl: 0, tiAw: 0, tiAl: 0, tiBw: 0, tiBl: 0 }))
   };
   seedRng(opts.seed !== undefined ? opts.seed : ((Math.random() * 4294967296) >>> 0));
 
   const score = (i, wk) => {
     const byWeek = starters[wk] || starters[fallbackWk];
     if (!byWeek) return 0;
-    const st = byWeek[i]; let s = 0;
+    const cell = byWeek[i]; const st = cell.arr; let s = 0;
     for (let k = 0; k < st.length; k++) {
       if (rnd() < BUST_RATE) continue;         // starter inactive or knocked out early
       s += drawScore(st[k].m, st[k].sd);
     }
-    return Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
+    return cell.banked + Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
   };
+
+  /* Seeding order for a given win/points state. Division winners take the top
+     seeds where the league uses divisions, which is Sleeper's default. */
+  const standingsOrder = (w, p) => {
+    let order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (w[b] - w[a]) || (p[b] - p[a]));
+    if (nDiv > 1) {
+      const seen = new Set(), winners = [];
+      for (const i of order) { const d = divOf[i]; if (d && !seen.has(d)) { seen.add(d); winners.push(i); } }
+      const wset = new Set(winners);
+      order = winners.concat(order.filter(i => !wset.has(i)));
+    }
+    return order;
+  };
+  const simWeeks = Math.max(0, S.regEnd - fromWeek + 1);
+  acc.allPlayGames = simWeeks * Math.max(1, n - 1);
+  const levIdx = {};   // week|a|b -> index into acc.lev
+  levGames.forEach((g, gi) => { levIdx[g.week + '|' + g.a + '|' + g.b] = gi; });
 
   for (let sim = 0; sim < nSims; sim++) {
     const w = baseW.slice(), p = baseP.slice();
+    const levWon = new Int8Array(nG).fill(-1);
     if (onlyWeek) {
       const games = sched[onlyWeek - 1] || [];
       const sc = new Float64Array(n);
@@ -1388,24 +1544,38 @@ function simulate(nSims, opts) {
       const sc = new Float64Array(n);
       for (let i = 0; i < n; i++) sc[i] = score(i, wk);
       for (let i = 0; i < n; i++) p[i] += sc[i];
+      // all-play: how many teams you would have beaten this week. Comparing this
+      // with the games you actually won is what separates a good team from a
+      // lucky one, and it costs one sort a week.
+      const byScore = Array.from({ length: n }, (_, i) => i).sort((a, b) => sc[b] - sc[a]);
+      for (let r = 0; r < n; r++) acc.allPlay[byScore[r]] += (n - 1 - r);
       games.forEach(([a, b]) => {
         const ia = idOf[a], ib = idOf[b]; if (ia === undefined || ib === undefined) return;
-        if (sc[ia] > sc[ib]) w[ia]++; else if (sc[ib] > sc[ia]) w[ib]++; else { w[ia] += .5; w[ib] += .5; }
+        acc.oppPts[ia] += sc[ib]; acc.oppPts[ib] += sc[ia]; acc.oppGames[ia]++; acc.oppGames[ib]++;
+        let res;
+        if (sc[ia] > sc[ib]) { w[ia]++; res = 0; }
+        else if (sc[ib] > sc[ia]) { w[ib]++; res = 1; }
+        else { w[ia] += .5; w[ib] += .5; res = -1; }
+        if (nG) { const gi = levIdx[wk + '|' + a + '|' + b]; if (gi !== undefined) levWon[gi] = res; }
       });
+      // where everyone stands with the season paused here
+      const ord = standingsOrder(w, p);
+      for (let s = 0; s < playoffTeams && s < n; s++) acc.fieldAt[ord[s]][wk]++;
+      // still able to reach the cut line on wins alone — an approximation, since
+      // it ignores who plays whom from here, but it is the shape of a magic number
+      const cut = w[ord[Math.min(playoffTeams, n) - 1]];
+      const left = S.regEnd - wk;
+      for (let i = 0; i < n; i++) if (w[i] + left >= cut) acc.aliveAt[i][wk]++;
     }
-    let order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (w[b] - w[a]) || (p[b] - p[a]));
-    if (nDiv > 1) {
-      const seen = new Set(), winners = [];
-      for (const i of order) { const d = divOf[i]; if (d && !seen.has(d)) { seen.add(d); winners.push(i); } }
-      const wset = new Set(winners);
-      order = winners.concat(order.filter(i => !wset.has(i)));
-    }
+    for (let i = 0; i < n; i++) { acc.simWins[i] += w[i] - baseW[i]; acc.ptsRuns[i].push(p[i]); }
+    const order = standingsOrder(w, p);
     for (let s = 0; s < n; s++) {
       const i = order[s];
       acc.wins[i] += w[i]; acc.pts[i] += p[i]; acc.seed[i] += s + 1;
       if (s + 1 < acc.best[i]) acc.best[i] = s + 1;
       if (s + 1 > acc.worst[i]) acc.worst[i] = s + 1;
       const wi = clamp(Math.round(w[i]), 0, S.regEnd); acc.winDist[i][wi] += 1;
+      acc.seedDist[i][s + 1]++;
     }
     const field = order.slice(0, playoffTeams);
     field.forEach(i => acc.playoff[i]++);
@@ -1419,7 +1589,10 @@ function simulate(nSims, opts) {
       if (arr.length % 2 === 1) nx.push(arr.shift());
       for (let i = 0; i < arr.length / 2; i++) {
         const a = arr[i], b = arr[arr.length - 1 - i];
-        nx.push(score(a, wk) >= score(b, wk) ? a : b);
+        const aWins = score(a, wk) >= score(b, wk);
+        const win = aWins ? a : b, lose = aWins ? b : a;
+        acc.knockedBy[lose * n + win]++; acc.poWins[win]++;
+        nx.push(win);
       }
       return nx.sort((x, y) => field.indexOf(x) - field.indexOf(y));
     };
@@ -1432,22 +1605,72 @@ function simulate(nSims, opts) {
     round.forEach(i => acc.semi[i]++);
     while (round.length > 2) { round = play(round, pwk); pwk++; }
     round.forEach(i => acc.final[i]++);
+    if (round.length === 2) { acc.finalVs[round[0] * n + round[1]]++; acc.finalVs[round[1] * n + round[0]]++; }
     while (round.length > 1) { round = play(round, pwk); pwk++; }
-    if (round[0] !== undefined) acc.title[round[0]]++;
+    const champ = round[0];
+    if (champ !== undefined) acc.title[champ]++;
+
+    /* Leverage. One pass of the same simulation answers "what does this week's
+       game actually do to my season": condition the final outcome on who won
+       each of this week's games. No extra runs — the sims are already there. */
+    if (nG) {
+      const made = new Uint8Array(n); field.forEach(i => made[i] = 1);
+      for (let gi = 0; gi < nG; gi++) {
+        const r = levWon[gi]; if (r < 0) continue;      // a tie tells us nothing either way
+        const ia = idOf[levGames[gi].a], ib = idOf[levGames[gi].b];
+        const L = acc.lev[gi];
+        if (r === 0) { L.nA++; L.poAw += made[ia]; L.poBl += made[ib]; L.tiAw += (champ === ia ? 1 : 0); L.tiBl += (champ === ib ? 1 : 0); }
+        else { L.nB++; L.poBw += made[ib]; L.poAl += made[ia]; L.tiBw += (champ === ib ? 1 : 0); L.tiAl += (champ === ia ? 1 : 0); }
+      }
+    }
   }
 
-  const res = teams.map((t, i) => ({
-    rosterId: t.rosterId,
-    wins: acc.wins[i] / nSims, pts: acc.pts[i] / nSims,
-    playoff: acc.playoff[i] / nSims, bye: acc.bye[i] / nSims, semi: acc.semi[i] / nSims,
-    final: acc.final[i] / nSims, title: acc.title[i] / nSims,
-    seed: acc.seed[i] / nSims, best: acc.best[i], worst: acc.worst[i],
-    winDist: Array.from(acc.winDist[i]).map(v => v / nSims),
-    weekWin: acc.weekWin[i] / nSims, weekPts: acc.weekPts[i] / nSims, weekTop: acc.weekTop[i] / nSims,
-    weekScores: acc.weekScores[i]
-  }));
+  const qOf = (arr, q) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[clamp(Math.floor(q * (a.length - 1)), 0, a.length - 1)] : 0; };
+  const res = teams.map((t, i) => {
+    const allPlayPct = acc.allPlayGames ? acc.allPlay[i] / nSims / acc.allPlayGames : null;
+    const simW = acc.simWins[i] / nSims;
+    return {
+      rosterId: t.rosterId,
+      wins: acc.wins[i] / nSims, pts: acc.pts[i] / nSims,
+      playoff: acc.playoff[i] / nSims, bye: acc.bye[i] / nSims, semi: acc.semi[i] / nSims,
+      final: acc.final[i] / nSims, title: acc.title[i] / nSims,
+      seed: acc.seed[i] / nSims, best: acc.best[i], worst: acc.worst[i],
+      winDist: Array.from(acc.winDist[i]).map(v => v / nSims),
+      weekWin: acc.weekWin[i] / nSims, weekPts: acc.weekPts[i] / nSims, weekTop: acc.weekTop[i] / nSims,
+      weekScores: acc.weekScores[i],
+      // --- expanded ---
+      seedDist: Array.from(acc.seedDist[i]).map(v => v / nSims),
+      allPlayPct: allPlayPct,
+      simWins: simW,
+      // wins the schedule hands you (or takes) beyond what your scoring earns
+      luck: allPlayPct === null ? null : simW - allPlayPct * simWeeks,
+      sos: acc.oppGames[i] ? acc.oppPts[i] / acc.oppGames[i] : null,
+      ptsP10: qOf(acc.ptsRuns[i], 0.10), ptsP50: qOf(acc.ptsRuns[i], 0.50), ptsP90: qOf(acc.ptsRuns[i], 0.90),
+      fieldAt: Array.from(acc.fieldAt[i]).map(v => v / nSims),
+      aliveAt: Array.from(acc.aliveAt[i]).map(v => v / nSims),
+      poWins: acc.poWins[i] / nSims,
+      knockedBy: teams.map((o, j) => ({ rosterId: o.rosterId, p: acc.knockedBy[i * n + j] / nSims })).filter(x => x.p > 0).sort((a, b) => b.p - a.p),
+      finalVs: teams.map((o, j) => ({ rosterId: o.rosterId, p: acc.finalVs[i * n + j] / nSims })).filter(x => x.p > 0).sort((a, b) => b.p - a.p)
+    };
+  });
   const byRoster = {}; res.forEach(r => byRoster[r.rosterId] = r);
-  return { n: nSims, list: res, by: byRoster, onlyWeek, playoffTeams };
+  const leverage = levGames.map((g, gi) => {
+    const L = acc.lev[gi], A = S.teamById[g.a], B = S.teamById[g.b];
+    const rate = (num, den) => den > 0 ? num / den : null;
+    const mk = (T, poW, poL, tiW, tiL, nw, nl) => ({
+      team: T,
+      poWin: rate(poW, nw), poLose: rate(poL, nl), tiWin: rate(tiW, nw), tiLose: rate(tiL, nl),
+      swing: rate(poW, nw) === null || rate(poL, nl) === null ? 0 : rate(poW, nw) - rate(poL, nl),
+      titleSwing: rate(tiW, nw) === null || rate(tiL, nl) === null ? 0 : rate(tiW, nw) - rate(tiL, nl)
+    });
+    const a = mk(A, L.poAw, L.poAl, L.tiAw, L.tiAl, L.nA, L.nB);
+    const b = mk(B, L.poBw, L.poBl, L.tiBw, L.tiBl, L.nB, L.nA);
+    return { week: g.week, a, b, runs: L.nA + L.nB, swing: Math.max(Math.abs(a.swing), Math.abs(b.swing)) };
+  }).sort((x, y) => y.swing - x.swing || x.week - y.week);
+  return {
+    n: nSims, list: res, by: byRoster, onlyWeek, playoffTeams,
+    fromWeek, simWeeks, leverage, levWeek
+  };
 }
 
 /* ================= value history (stock mode) ================= */
@@ -1550,6 +1773,17 @@ function simulateOneSeason(opts) {
   });
 
   const scoreDetail = (i, wk) => {
+    /* A week already under way is half fact: the finished games are scored as
+       they happened and only the open slots are played out. */
+    if (wk === S.liveWeek) {
+      const lr = liveRoster(teams[i], wk);
+      const lines = lr.rows.filter(r => r.settled).map(r => ({ id: r.p.id, name: r.p.name, pos: r.p.pos, pts: Math.round(r.used * 10) / 10, settled: true }));
+      const open = lr.open.map(r => ({ id: r.p.id, name: r.p.name, pos: r.p.pos, m: r.used, sd: volFromMean(r.p.pos, r.used) }));
+      const mult = Math.max(0.55, 1 + 0.05 * gauss());
+      open.forEach(o => lines.push({ id: o.id, name: o.name, pos: o.pos, pts: Math.round((rnd() < BUST_RATE ? 0 : drawScore(o.m, o.sd)) * mult * 10) / 10 }));
+      lines.sort((a, b) => b.pts - a.pts);
+      return { total: Math.round(sum(lines.map(l => l.pts)) * 10) / 10, top: lines[0] || null, lines, live: true };
+    }
     const byWeek = startersOf[wk] || startersOf[S.regEnd];
     const st = byWeek[i] || [], lines = [];
     for (const p of st) lines.push({ id: p.id, name: p.name, pos: p.pos, pts: rnd() < BUST_RATE ? 0 : drawScore(p.m, p.sd) });
@@ -1723,6 +1957,48 @@ function bindTT(el, htmlFn) {
 
 /* ================= shared bits ================= */
 function posPill(pos) { return h('span.pill.pos-' + (pos || 'NA'), pos || '—'); }
+/* Sleeper hosts a headshot for every rostered player and a logo for every NFL
+   team. Both are decoration: if one fails to load it hides itself and the layout
+   carries on with the initials or the abbreviation it already had. */
+function playerFace(p, opts) {
+  opts = opts || {};
+  const cls = '.face' + (opts.lg ? '.lg' : '');
+  const initials = (() => {
+    if (!p) return '—';
+    if (p.pos === 'DEF' || p.pos === 'K') return p.pos;
+    const w = String(p.name || '').replace(/[^A-Za-z ]/g, '').trim().split(/\s+/).filter(Boolean);
+    return w.length > 1 ? (w[0][0] + w[w.length - 1][0]).toUpperCase() : (w[0] || '?').slice(0, 2).toUpperCase();
+  })();
+  const stub = () => h('div' + cls, {
+    style: { display: 'grid', placeItems: 'center', fontSize: opts.lg ? '14px' : '10.5px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.02em' }
+  }, initials);
+  if (!/^\d+$/.test(String(p && p.id))) return stub();
+  // a headshot that fails to load is swapped for the initials, so the row keeps
+  // its shape whether or not the image arrives
+  return h('img' + cls, {
+    src: 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg',
+    alt: '', loading: 'lazy',
+    onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
+  });
+}
+function teamLogo(abbr) {
+  if (!abbr || typeof abbr !== 'string') return null;
+  return h('img.tlogo', {
+    src: 'https://sleepercdn.com/images/team_logos/nfl/' + abbr.toLowerCase() + '.png',
+    alt: abbr, title: abbr, loading: 'lazy', onerror: e => { e.target.style.display = 'none'; }
+  });
+}
+/** A player line with a face, for simple mode. */
+function playerCard(p, opts) {
+  opts = opts || {};
+  return h('div.pcard', { style: opts.style || null },
+    playerFace(p),
+    h('div.meta',
+      h('div.nm', pname(p)),
+      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
+        opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury))),
+    opts.value !== undefined ? h('div.val', opts.value) : null);
+}
 /* Injury designations, abbreviated on a phone — "Questionable" is 85px of a
    348px card, and the full word is still on the tag's title. */
 const INJ_SHORT = { Questionable: 'Q', Doubtful: 'D', Out: 'OUT', IR: 'IR', PUP: 'PUP', Sus: 'SUSP', COV: 'COV', DNR: 'DNR', NA: 'NA' };
@@ -1737,6 +2013,13 @@ function teamCell(t, opts) {
   // say nothing the team name doesn't; the name itself ellipsises
   const narrow = isNarrow();
   const sub = opts.sub === false ? null : (opts.sub || (narrow ? null : t.owner));
+  if (isSimple() && !narrow && t.avatar) {
+    // in simple mode the badge carries the identity, so it gets a little more room
+    return h('div.tm',
+      h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }),
+      h('div', { style: { minWidth: 0 } }, h('div.nm', { title: t.name + ' — ' + t.owner }, t.name),
+        sub ? h('div.tiny.muted', { style: { lineHeight: '1.2' } }, sub) : null));
+  }
   return h('div.tm',
     narrow ? null : (t.avatar ? h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.avatar')),
     h('div', { style: { minWidth: 0 } },
@@ -1745,8 +2028,12 @@ function teamCell(t, opts) {
   );
 }
 function deltaTag(v, d, unit) {
-  const cls = v > 0.0001 ? 'up' : v < -0.0001 ? 'down' : 'flat';
-  const ic = v > 0.0001 ? '▲' : v < -0.0001 ? '▼' : '–';
+  // a difference that rounds away at the precision being shown is not a
+  // difference: "▼ 0.00" reads as a fall and is really a tie
+  const dec = d === undefined ? 1 : d;
+  const eps = Math.max(0.0001, 0.5 * Math.pow(10, -dec));
+  const cls = v >= eps ? 'up' : v <= -eps ? 'down' : 'flat';
+  const ic = v >= eps ? '▲' : v <= -eps ? '▼' : '–';
   return h('span.' + cls + '.mono', { style: { fontSize: '11.5px' } }, ic + ' ' + fmt(Math.abs(v), d === undefined ? 1 : d) + (unit || ''));
 }
 function kpi(label, value, sub, tip) {
@@ -1789,7 +2076,7 @@ function table(allCols, rows, opts) {
   opts = opts || {};
   // a column marked prio 2 or higher is secondary: worth having on a desktop,
   // not worth pushing the first three columns off a phone screen for
-  const cols = isNarrow() ? allCols.filter(c => !(c.prio >= 2)) : allCols;
+  const cols = (isNarrow() || isSimple()) ? allCols.filter(c => !(c.prio >= 2)) : allCols;
   const st = { key: opts.sortKey || null, dir: opts.sortDir || -1 };
   if (st.key && !cols.some(c => c.k === st.key)) {
     const kept = cols.find(c => c.num) || cols[cols.length - 1];
@@ -1873,17 +2160,18 @@ function lineChart(series, opts) {
   const xs = all.map(p => p.x), ys = all.map(p => p.y);
   let y0 = opts.y0 !== undefined ? opts.y0 : Math.min(...ys), y1 = opts.y1 !== undefined ? opts.y1 : Math.max(...ys);
   if (y1 === y0) { y1 = y0 + 1; }
-  const padY = (y1 - y0) * 0.10; y0 -= padY; y1 += padY;
+  if (opts.y0 === undefined || opts.y1 === undefined) { const padY = (y1 - y0) * 0.10; y0 -= padY; y1 += padY; }
   if (opts.zero) y0 = Math.min(0, y0);
   // padding a series that bottoms out near zero pushes the axis negative, which
   // is nonsense for a quantity that cannot go below zero
   if (opts.floorAtZero && y0 < 0 && Math.min(...ys) >= 0) y0 = 0;
-  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const x0 = opts.x0 !== undefined ? opts.x0 : Math.min(...xs);
+  const x1 = opts.x1 !== undefined ? opts.x1 : Math.max(...xs);
   const X = v => m.l + (x1 === x0 ? iw / 2 : (v - x0) / (x1 - x0) * iw);
   const Y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
   const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', role: 'img', 'aria-label': opts.aria || 'line chart' });
   g.style.height = H + 'px';
-  const ticks = narrow ? 3 : 4;
+  const ticks = opts.yTicks || (narrow ? 3 : 4);
   for (let i = 0; i <= ticks; i++) {
     const v = y0 + (y1 - y0) * i / ticks, y = Y(v);
     g.appendChild(svg('line', { class: 'gl', x1: m.l, x2: W - m.r, y1: y, y2: y }));
@@ -1891,11 +2179,33 @@ function lineChart(series, opts) {
     tx.textContent = opts.yFmt ? opts.yFmt(v) : fmt(v, 0); g.appendChild(tx);
   }
   g.appendChild(svg('line', { class: 'axline', x1: m.l, x2: W - m.r, y1: m.t + ih, y2: m.t + ih }));
-  const xt = opts.xTicks || (narrow ? 3 : 6);
-  for (let i = 0; i <= xt; i++) {
-    const v = x0 + (x1 - x0) * i / xt;
-    const tx = svg('text', { class: 'ax', x: X(v), y: H - 8, 'text-anchor': i === 0 ? 'start' : i === xt ? 'end' : 'middle' });
-    tx.textContent = opts.xFmt ? opts.xFmt(v) : fmt(v, 0); g.appendChild(tx);
+  // a reference line at a meaningful y — the coin-flip mark on a win-probability chart
+  if (opts.yRule !== undefined && opts.yRule >= y0 && opts.yRule <= y1) {
+    g.appendChild(svg('line', { class: 'axline', x1: m.l, x2: W - m.r, y1: Y(opts.yRule), y2: Y(opts.yRule), opacity: .75 }));
+  }
+  if (opts.xTickValues && opts.xTickValues.length) {
+    // ticks at meaningful moments rather than evenly spaced ones
+    let lastPx = -1e9;
+    opts.xTickValues.forEach((t, i) => {
+      if (t.x < x0 - 1e-9 || t.x > x1 + 1e-9) return;
+      const px = X(t.x);
+      // two labels on top of each other are worse than one label
+      if (px - lastPx < (narrow ? 52 : 46)) return;
+      lastPx = px;
+      if (t.rule !== false) g.appendChild(svg('line', { class: 'gl', x1: px, x2: px, y1: m.t, y2: m.t + ih, 'stroke-dasharray': '2 4' }));
+      const tx = svg('text', {
+        class: 'ax', x: px, y: H - 8,
+        'text-anchor': i === 0 ? 'start' : (i === opts.xTickValues.length - 1 && px > W - m.r - 30) ? 'end' : 'middle'
+      });
+      tx.textContent = t.label; g.appendChild(tx);
+    });
+  } else {
+    const xt = opts.xTicks || (narrow ? 3 : 6);
+    for (let i = 0; i <= xt; i++) {
+      const v = x0 + (x1 - x0) * i / xt;
+      const tx = svg('text', { class: 'ax', x: X(v), y: H - 8, 'text-anchor': i === 0 ? 'start' : i === xt ? 'end' : 'middle' });
+      tx.textContent = opts.xFmt ? opts.xFmt(v) : fmt(v, 0); g.appendChild(tx);
+    }
   }
   series.forEach(s => {
     const pts = s.points.slice().sort((a, b) => a.x - b.x);
@@ -1955,8 +2265,17 @@ function histogram(bins, opts) {
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
   const max = Math.max(...bins.map(b => b.v), 0.0001);
   const bw = iw / bins.length;
-  const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || 'distribution' });
+  const g = svg('svg', Object.assign({ class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || 'distribution' },
+    opts.stretch ? { preserveAspectRatio: 'none' } : {}));
   g.style.height = H + 'px';
+  // a vertical rule at a meaningful x — zero on a margin chart, say
+  if (opts.rule !== undefined) {
+    const ri = bins.findIndex(b => b.x >= opts.rule);
+    if (ri >= 0) {
+      const rx = m.l + ri * bw;
+      g.appendChild(svg('line', { class: 'axline', x1: rx, x2: rx, y1: m.t, y2: m.t + ih, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }));
+    }
+  }
   bins.forEach((b, i) => {
     const hgt = b.v / max * ih;
     const x = m.l + i * bw, y = m.t + ih - hgt;
@@ -1966,7 +2285,7 @@ function histogram(bins, opts) {
     rr.addEventListener('mousemove', e => ttShow(e, `<div class="k">${b.label}</div><b>${pct(b.v, 1)}</b>`));
     rr.addEventListener('mouseleave', ttHide);
     g.appendChild(r); g.appendChild(rr);
-    if (bins.length <= 20 && (i % Math.ceil(bins.length / 10) === 0 || bins.length <= 12)) {
+    if (bins.length <= 30 && (i % Math.ceil(bins.length / 9) === 0 || bins.length <= 12)) {
       const t = svg('text', { class: 'ax', x: x + bw / 2, y: H - 8, 'text-anchor': 'middle' }); t.textContent = b.x; g.appendChild(t);
     }
   });
@@ -2021,11 +2340,14 @@ function divBar(items, opts) {
           style: {
             position: 'absolute', top: 0, bottom: 0, borderRadius: '3px',
             left: it.v >= 0 ? '50%' : (50 - w) + '%', width: w + '%',
-            background: it.v >= 0 ? 'var(--s1)' : 'var(--s8)'
+            background: it.v >= 0 ? (opts.posColor || 'var(--s1)') : (opts.negColor || 'var(--s8)')
           }
         }),
         h('div', { style: { position: 'absolute', left: '50%', top: '-2px', bottom: '-2px', width: '1px', background: 'var(--axis)' } })),
-      h('div.tiny.mono', { class: it.v > 0 ? 'up' : it.v < 0 ? 'down' : 'flat', style: { minWidth: '54px', textAlign: 'right' } }, it.vl !== undefined ? it.vl : sgn(it.v, opts.dec === undefined ? 0 : opts.dec)));
+      h('div.tiny.mono', {
+        class: opts.posColor ? 'sec' : (it.v > 0 ? 'up' : it.v < 0 ? 'down' : 'flat'),
+        style: { minWidth: '54px', textAlign: 'right', fontWeight: 620, color: opts.posColor ? (it.v >= 0 ? opts.posColor : opts.negColor) : null }
+      }, it.vl !== undefined ? it.vl : sgn(it.v, opts.dec === undefined ? 0 : opts.dec)));
     row.tabIndex = 0; if (it.tip) bindTT(row, it.tip);
     return row;
   }));
@@ -2154,11 +2476,13 @@ function bracketView(sim) {
 }
 /* ================= app shell ================= */
 const VIEWS = [
+  { k: 'week', ic: '◉', label: 'This Week' },
   { k: 'roster', ic: '▤', label: 'Rosters' },
   { k: 'lineup', ic: '⚖', label: 'Start / Sit' },
   { k: 'trade', ic: '⇄', label: 'Trade Calculator' },
   { k: 'finder', ic: '⌕', label: 'Trade Finder' },
   { k: 'trades', ic: '⇌', label: 'Trade History' },
+  { k: 'h2h', ic: '⚔', label: 'Head to Head' },
   { k: 'power', ic: '◆', label: 'Power Rankings' },
   { k: 'standings', ic: '☰', label: 'Active Rankings' },
   { k: 'scout', ic: '⌖', label: 'GM Scout' },
@@ -2166,6 +2490,10 @@ const VIEWS = [
   { k: 'draft', ic: '▦', label: 'Draft Board' },
   { k: 'stock', ic: '↗', label: 'Stock Mode' }
 ];
+/* The tabs simple mode leads with. The rest are still there, one tap behind
+   "More" — hiding them outright would be a different app, not a calmer one. */
+const CORE_VIEWS = ['week', 'roster', 'lineup', 'trade', 'finder', 'power', 'sim'];
+let navExpanded = false;
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
@@ -2177,10 +2505,17 @@ function render() {
   const app = $('#app');
   clear(app);
   if (!S.league) return app.appendChild(splash());
+  const simple = isSimple();
+  const shown = !simple || navExpanded ? VIEWS : VIEWS.filter(v => CORE_VIEWS.includes(v.k) || v.k === S.view);
+  const hiddenCount = VIEWS.length - shown.length;
   const side = h('div.side',
     h('div.brand', h('div.mark'), h('div', h('b', 'Dynasty'), h('small', 'Command Center'))),
-    VIEWS.map(v => h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => { S.view = v.k; render(); window.scrollTo(0, 0); } },
+    shown.map(v => h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => { S.view = v.k; render(); window.scrollTo(0, 0); } },
       h('span.ic', v.ic), v.label)),
+    simple && (hiddenCount > 0 || navExpanded)
+      ? h('button.navbtn', { onclick: () => { navExpanded = !navExpanded; render(); } },
+        h('span.ic', navExpanded ? '▴' : '▾'), navExpanded ? 'Less' : 'More (' + hiddenCount + ')')
+      : null,
     h('div.spacer'),
     h('div.foot',
       h('div', 'Values: FantasyCalc'), h('div', 'League: Sleeper'),
@@ -2189,10 +2524,21 @@ function render() {
   const cfg = S.cfg;
   const fmtStr = `${cfg.superflex ? 'Superflex' : '1QB'} · ${cfg.actualTeams}-team · ${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'}`;
   const top = h('div.topbar',
-    h('div', h('div.lg', S.league.name), h('div.sub', fmtStr + ' · ' + S.season + ' · ' + (S.lastWeek ? 'through week ' + S.lastWeek : 'preseason'))),
+    h('div', h('div.lg', S.league.name), h('div.sub', fmtStr + ' · ' + S.season + ' · '
+      + (S.liveWeek ? 'week ' + S.liveWeek + ' in progress' : S.lastWeek ? 'through week ' + S.lastWeek : 'preseason'))),
     h('div.grow', { style: { flex: '1' } }),
-    h('span.tag', S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
-    segmented([{ k: 'system', label: 'Auto' }, { k: 'light', label: 'Light' }, { k: 'dark', label: 'Dark' }], currentTheme(), t => { setTheme(t); render(); }),
+    h('span.tag', { style: S.liveWeek ? { borderColor: 'var(--s1)', color: 'var(--s1)' } : null },
+      S.liveWeek ? '● Week ' + S.liveWeek : S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
+    segmented([{ k: 'simple', label: 'Simple' }, { k: 'full', label: 'Full' }], S.ui,
+      m => { setUiMode(m); navExpanded = false; render(); }),
+    // simple mode keeps the top bar to one line: the theme becomes one button
+    // that cycles, rather than three chips that are almost always untouched
+    isSimple()
+      ? h('button.btn', {
+        title: 'Theme: ' + currentTheme(),
+        onclick: () => { const order = ['system', 'light', 'dark']; setTheme(order[(order.indexOf(currentTheme()) + 1) % 3]); render(); }
+      }, currentTheme() === 'dark' ? '☾' : currentTheme() === 'light' ? '☀' : '◐')
+      : segmented([{ k: 'system', label: 'Auto' }, { k: 'light', label: 'Light' }, { k: 'dark', label: 'Dark' }], currentTheme(), t => { setTheme(t); render(); }),
     h('button.btn' + (HYP.on ? '.hypon' : ''), {
       title: 'Try roster changes and see every page recompute',
       onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
@@ -2202,8 +2548,8 @@ function render() {
   );
   const content = h('div.content');
   const V = {
-    roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
-    power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
+    week: viewWeek, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
+    h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
     draft: viewDraft, stock: viewStock, player: viewPlayer
   }[S.view];
   try {
@@ -2341,7 +2687,7 @@ function viewRoster() {
 
   // full roster
   wrap.appendChild(card('Full roster', `${t.players.length} players · ${t.pickAssets.length} picks`, rosterTable(t),
-    segmented([{ k: true, label: 'By position' }, { k: false, label: 'Flat' }], RosterUI.group, v => { RosterUI.group = v; render(); })));
+    isSimple() ? null : segmented([{ k: true, label: 'By position' }, { k: false, label: 'Flat' }], RosterUI.group, v => { RosterUI.group = v; render(); })));
   return wrap;
 }
 function lineupTable(t) {
@@ -2349,10 +2695,11 @@ function lineupTable(t) {
     const p = s.player;
     return h('div', { style: { display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: '9px', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid var(--grid)' } },
       h('span.tag', { style: { textAlign: 'center' } }, SLOT_LABEL[s.slot] || s.slot),
-      p ? h('div.row', { style: { gap: '6px', minWidth: 0 } }, posPill(p.pos),
+      p ? h('div.row', { style: { gap: '7px', minWidth: 0 } },
+        isSimple() ? playerFace(p) : posPill(p.pos),
         pname(p, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '540' } }),
         injuryTag(p.injury),
-        p.team ? h('span.tiny.muted', p.team) : null) : h('span.muted.tiny', 'empty'),
+        p.team ? (isSimple() ? teamLogo(p.team) : h('span.tiny.muted', p.team)) : null) : h('span.muted.tiny', 'empty'),
       h('span.mono.tiny.sec', p ? fmt(p.ppg, 1) : '—'));
   }));
 }
@@ -2393,9 +2740,39 @@ function rosterTable(t) {
     { k: 'trend30', prio: 2, h: '30d', num: true, tip: 'Value change over the last 30 days', f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') },
     { k: 'share', prio: 2, h: '% of team', num: true, sort: r => (r.dv || 0) / (t.totalValue || 1), f: r => h('div.meter', { style: { justifyContent: 'flex-end' } }, h('div.bar-track', { style: { width: '44px', height: '7px' } }, h('div.bar-fill', { style: { width: clamp((r.dv || 0) / (t.totalValue || 1) * 100 * 3.2, 0, 100) + '%' } })), h('span.tiny.mono.muted', pct((r.dv || 0) / (t.totalValue || 1), 1))) }
   ];
-  if (!RosterUI.group) return table(cols, assets, { sortKey: 'dv', sortDir: -1 });
   const order = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'PICK', 'NA'];
   const groups = {}; assets.forEach(a => (groups[a.pos] = groups[a.pos] || []).push(a));
+
+  /* Simple mode swaps the ten-column table for a face and three numbers. Same
+     roster, read at a glance instead of scanned. */
+  if (isSimple()) {
+    const badge = (r) => r._hyp === 'in' ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'IN')
+      : r._hyp === 'out' ? h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--bad-text)' } }, 'OUT')
+        : r._slot === 'START' ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'Starting')
+          : r._slot === 'TAXI' ? h('span.tag', 'Taxi') : r._slot === 'IR' ? h('span.tag', 'IR') : null;
+    const tile = (r) => r.pos === 'PICK'
+      ? h('div.pcard', h('div.face', { style: { display: 'grid', placeItems: 'center' } }, posPill('PICK')),
+        h('div.meta', h('div.nm', r.name || r.label), h('div.sub', badge(r) || h('span', 'draft pick'))),
+        h('div.val', h('b.mono', kfmt(Math.round(r.dv || 0)))))
+      : h('div.pcard', playerFace(r),
+        h('div.meta', h('div.nm', pname(r, { style: { fontWeight: r._slot === 'START' ? 650 : 560 } })),
+          h('div.sub', posPill(r.pos), r.team ? teamLogo(r.team) : null,
+            r.age ? h('span', fmt(r.age, 0) + 'y') : null, badge(r), injuryTag(r.injury))),
+        h('div.val',
+          h('b.mono', kfmt(Math.round(r.dv || 0))),
+          h('div.tiny.muted', r.ppg === null || r.ppg === undefined ? '—' : fmt(r.ppg, 1) + ' pts/wk')));
+    return h('div.grid', { style: { gap: '18px' } }, order.filter(p => groups[p]).map(pos => {
+      const list = groups[pos].sort((a, b) => (b.dv || 0) - (a.dv || 0));
+      return h('div', { style: { minWidth: 0 } },
+        h('div.row', { style: { marginBottom: '8px', gap: '8px' } }, posPill(pos),
+          h('b.tiny', list.length + (pos === 'PICK' ? ' picks' : ' players')),
+          h('span.tiny.muted', kfmt(Math.round(sum(list.map(x => x.dv || 0)))) + ' value'
+            + (t.posValue[pos + 'Rank'] ? ' · ' + ord(t.posValue[pos + 'Rank']) + ' in league' : ''))),
+        h('div.grid', { style: { gap: '7px', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))' } }, list.map(tile)));
+    }));
+  }
+
+  if (!RosterUI.group) return table(cols, assets, { sortKey: 'dv', sortDir: -1 });
   return h('div.grid', { style: { gap: '14px' } }, order.filter(p => groups[p]).map(pos => {
     const list = groups[pos].sort((a, b) => (b.dv || 0) - (a.dv || 0));
     return h('div', { style: { minWidth: 0 } },
@@ -2479,9 +2856,28 @@ function viewPower() {
       }
     });
   }
+  /* Simple mode reads the table back as a leaderboard: badge, name, one bar and
+     the two numbers anyone actually quotes. */
+  const rankList = () => h('div', rows.map(r => {
+    const t = r.t;
+    return h('div.rankrow', { style: { cursor: 'pointer' }, onclick: () => { RosterUI.team = t.rosterId; S.view = 'roster'; render(); window.scrollTo(0, 0); } },
+      h('div.pos', r.i),
+      h('div.row', { style: { gap: '11px', minWidth: 0 } },
+        t.avatar ? h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.avatar'),
+        h('div', { style: { minWidth: 0 } },
+          h('div', { style: { fontWeight: 620, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, t.name),
+          h('div.tiny.muted', t.window + ' · ' + t.wins + '-' + t.losses))),
+      h('div.hidenarrow',
+        h('div.bar-track', { style: { height: '9px' } },
+          h('div.bar-fill', { style: { width: clamp((r.rating - 20) / 60 * 100, 4, 100) + '%', background: r.i <= 3 ? 'var(--s1)' : 'var(--seq-300)' } })),
+        h('div.tiny.muted', { style: { marginTop: '3px' } }, fmt(r.rating, 1) + ' rating')),
+      h('div', { style: { textAlign: 'right' } },
+        h('b.mono', { style: { fontSize: '16px' } }, r.s ? pct(r.s.playoff, 0) : fmt(r.rating, 1)),
+        h('div.tiny.muted', r.s ? 'playoffs · ' + pct(r.s.title, 1) + ' title' : 'rating')));
+  }));
   wrap.appendChild(card(future ? 'Future power rankings' : 'Power rankings',
     future ? '2–3 years out: age-adjusted lineup value plus draft capital' : 'blended rating, then simulated playoff and championship odds',
-    table(cols, rows, { sortKey: 'rating', sortDir: -1 })));
+    isSimple() ? rankList() : table(cols, rows, { sortKey: 'rating', sortDir: -1 })));
 
   if (!future) {
     // odds composition + weekly trajectory
@@ -2505,7 +2901,7 @@ function viewPower() {
     if (S.lastWeek >= 2) wrap.appendChild(weeklyTrajectory());
   } else {
     wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))' } },
-      card('Contend vs. build', 'each team’s two-axis position', contendMatrix()),
+      proOnly(card('Contend vs. build', 'each team’s two-axis position', contendMatrix())),
       card('Draft capital', 'total value of picks held', barList(
         S.teams.slice().sort((a, b) => b.pickCapital - a.pickCapital).map(t => ({
           label: t.name, v: t.pickCapital, vl: kfmt(Math.round(t.pickCapital)),
@@ -2581,7 +2977,8 @@ function powerByPosition() {
     // value half is what the heat map directly above already shows
     cols.push({ k: p + 'v', prio: 2, h: p + ' val', num: true, sort: r => r.posValue[p], f: r => h('span', kfmt(Math.round(r.posValue[p])), h('span.tiny.muted', ' ' + ord(r.posValue[p + 'Rank']))) });
   });
-  wrap.appendChild(card('Position table', 'every number above, sortable', table(cols, teams, { sortKey: 'QBv', sortDir: -1 })));
+  const posTbl = proOnly(card('Position table', 'every number above, sortable', table(cols, teams, { sortKey: 'QBv', sortDir: -1 })));
+  if (posTbl) wrap.appendChild(posTbl);
   return wrap;
 }
 
@@ -2622,7 +3019,36 @@ function viewStandings() {
     { k: 'maxPts', prio: 2, h: 'Efficiency', num: true, tip: 'Points scored as a share of the best possible lineup each week', sort: r => r.maxPts ? r.fpts / r.maxPts : 0, f: r => r.maxPts ? pct(r.fpts / r.maxPts, 1) : '—' },
     { k: 'spark', prio: 2, h: 'Form', sortable: false, f: r => sparkline(r.weekly.filter(v => v !== null && v > 0).map(v => ({ v })), { w: 74, h: 22 }) }
   ];
-  wrap.appendChild(card('Active rankings', 'pure results — no projections in this table', table(cols, teams, { sortKey: 'wins', sortDir: -1 })));
+  wrap.appendChild(card('Active rankings',
+    'pure results — every number here comes from weeks that are over'
+    + (S.liveWeek ? '. Week ' + S.liveWeek + ' is still being played and is not in these totals; the live column below tracks it separately.' : ''),
+    table(cols, teams, { sortKey: 'wins', sortDir: -1 })));
+
+  /* The week in progress does not belong in a results table, but it is the thing
+     everyone actually wants to look at, so it gets its own. */
+  if (S.liveWeek) {
+    const live = S.teams.map(t => {
+      const l = liveRoster(t, S.liveWeek);
+      const g = (schedule()[S.liveWeek - 1] || []).find(x => x.includes(t.rosterId));
+      const oppId = g ? (g[0] === t.rosterId ? g[1] : g[0]) : null;
+      return { t, l, opp: oppId ? S.teamById[oppId] : null, oppL: oppId ? liveRoster(S.teamById[oppId], S.liveWeek) : null };
+    });
+    wrap.appendChild(card('Week ' + S.liveWeek + ' as it stands',
+      'points already scored, with everyone who has not finished counted at their projection',
+      table([
+        { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
+        { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.opp ? h('span.tiny', r.opp.short) : h('span.muted.tiny', 'bye') },
+        { k: 'scored', h: 'Scored', num: true, sort: r => r.l.banked, f: r => h('b.mono', fmt(r.l.banked, 1)) },
+        { k: 'proj', h: 'Still to come', num: true, sort: r => r.l.projected, f: r => h('span.mono.muted', '+' + fmt(r.l.projected, 1)) },
+        { k: 'total', h: 'Live total', num: true, sort: r => r.l.total, f: r => h('b.mono', fmt(r.l.total, 1)) },
+        { k: 'left', prio: 2, h: 'Yet to play', num: true, sort: r => r.l.leftN + r.l.liveN, f: r => h('span.mono', (r.l.leftN + r.l.liveN) + ' of ' + r.l.rows.length) },
+        {
+          k: 'lead', h: 'Margin', num: true, sort: r => r.oppL ? r.l.total - r.oppL.total : -999,
+          f: r => r.oppL ? deltaTag(r.l.total - r.oppL.total, 1) : h('span.muted', '—')
+        }
+      ], live, { sortKey: 'total', sortDir: -1 }),
+      h('button.btn.sm', { onclick: () => { S.view = 'week'; render(); window.scrollTo(0, 0); } }, 'Open This Week →')));
+  }
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))' } },
     card('Schedule luck', 'actual wins minus all-play expected wins',
@@ -2897,7 +3323,7 @@ function tradeResult(R) {
     posRows.push({ pos, team: A.name, before: aBefore.posNow[pos], after: aAfter.posNow[pos], rank: R.posRankAfter[pos][A.rosterId], was: A.posNow[pos + 'Rank'] });
     posRows.push({ pos, team: B.name, before: bBefore.posNow[pos], after: bAfter.posNow[pos], rank: R.posRankAfter[pos][B.rosterId], was: B.posNow[pos + 'Rank'] });
   });
-  wrap.appendChild(card('Positional rankings after the trade', 'starting-lineup output per position, and where that ranks in the league',
+  const posCard = proOnly(card('Positional rankings after the trade', 'starting-lineup output per position, and where that ranks in the league',
     table([
       { k: 'pos', h: 'Pos', f: r => posPill(r.pos) },
       { k: 'team', h: 'Team' },
@@ -2906,11 +3332,12 @@ function tradeResult(R) {
       { k: 'chg', h: 'Change', num: true, sort: r => r.after - r.before, f: r => deltaTag(r.after - r.before, 1) },
       { k: 'rank', prio: 2, h: 'League rank', num: true, f: r => r.was !== r.rank ? h('span', h('span.muted', ord(r.was) + ' → '), h('b', ord(r.rank))) : ord(r.rank) }
     ], posRows, { sortKey: 'chg', sortDir: -1 })));
+  if (posCard) wrap.appendChild(posCard);
 
   const moved = (R.shifts || []).filter(x => Math.abs(x.delta) >= 25 || x.moved);
   if (moved.length) {
     const who = (t) => t ? t.short : '—';
-    wrap.appendChild(card('How this trade moves the draft order',
+    const repriceCard = proOnly(card('How this trade moves the draft order',
       'a pick is worth what its slot is worth, and this trade changes where these teams finish',
       h('div',
         table([
@@ -2924,6 +3351,7 @@ function tradeResult(R) {
         h('div.tiny.muted', { style: { marginTop: '9px' } },
           'Slots assume the usual inverse-standings order, projected from each team\u2019s roster after the trade — weighted toward where a roster is heading the further out the pick is. '
           + 'The headline balance above still uses today\u2019s market prices, which is what you would actually negotiate at; this table is what the picks are likely to become.'))));
+    if (repriceCard) wrap.appendChild(repriceCard);
   }
 
   if (R.simAfter) {
@@ -2939,7 +3367,7 @@ function tradeResult(R) {
 }
 
 /* ================= 5. TRADE FINDER ================= */
-const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [] };
+const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
   { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
@@ -2962,14 +3390,39 @@ function viewFinder() {
     h('button.chip' + (FinderUI.positions.includes(p) ? '.on' : ''), {
       onclick: () => { FinderUI.positions = toggle(FinderUI.positions, p); dirty(); render(); }
     }, p)));
-  const partnerChips = h('div.chipwrap',
+  const partnerChips = () => h('div.chipwrap',
     [h('button.chip' + (FinderUI.partners.length === 0 ? '.on' : ''), {
+      disabled: !!(focus && focus.side === 'get'),
       onclick: () => { FinderUI.partners = []; dirty(); render(); }
     }, 'Everyone')].concat(others.map(t =>
-      h('button.chip' + (FinderUI.partners.includes(t.rosterId) ? '.on' : ''), {
+      h('button.chip' + ((focus && focus.side === 'get' ? focus.owner.rosterId === t.rosterId : FinderUI.partners.includes(t.rosterId)) ? '.on' : ''), {
         title: t.name + ' — ' + t.window,
+        disabled: !!(focus && focus.side === 'get'),
         onclick: () => { FinderUI.partners = toggle(FinderUI.partners, t.rosterId); dirty(); render(); }
       }, t.name))));
+
+  /* ---- build around one player ---- */
+  const ownerOf = {}; S.teams.forEach(t => t.players.forEach(p => ownerOf[p.id] = t));
+  const focusP = FinderUI.focus ? S.index[FinderUI.focus] : null;
+  const focusOwner = focusP ? ownerOf[focusP.id] : null;
+  const focus = focusP && focusOwner ? {
+    id: focusP.id, player: focusP, owner: focusOwner,
+    side: focusOwner.rosterId === T.rosterId ? 'give' : 'get'
+  } : null;
+  const focusSel = h('select', {
+    style: { width: '100%', maxWidth: '420px' },
+    onchange: e => { FinderUI.focus = e.target.value || null; dirty(); render(); }
+  }, [h('option', { value: '' }, '— nobody in particular —')].concat(
+    S.teams.slice().sort((a, b) => (a.rosterId === T.rosterId ? -1 : b.rosterId === T.rosterId ? 1 : a.name.localeCompare(b.name)))
+      .map(t => h('optgroup', { label: t.rosterId === T.rosterId ? t.name + ' (yours — sell)' : t.name + ' (buy from)' },
+        t.players.slice().sort((a, b) => (b.dv || 0) - (a.dv || 0)).filter(p => (p.dv || 0) > 0)
+          .map(p => h('option', { value: p.id, selected: FinderUI.focus === p.id },
+            `${p.name} · ${p.pos}${p.posRank || ''} · ${kfmt(Math.round(p.dv || 0))}`))))));
+  const focusBlurb = !focus
+    ? 'Pick anyone in the league and every suggestion will be built around them — one of yours to shop, or someone else’s to go and get.'
+    : focus.side === 'give'
+      ? `Shopping ${focusP.name}. Every package below sends them out, and the return has to move you forward on your own objective.`
+      : `Going after ${focusP.name} from ${focusOwner.name}. Every package below brings them back, and ${focusOwner.short} has to want it too.`;
 
   wrap.appendChild(card('What are you trying to do?', 'the filters below are all optional', h('div', { style: { display: 'grid', gap: '14px' } },
     h('div.row', { style: { gap: '14px' } },
@@ -2995,12 +3448,20 @@ function viewFinder() {
       h('div',
         h('div.row', { style: { justifyContent: 'space-between', marginBottom: '5px' } },
           h('label.fld', { style: { gap: 0 } }, 'Trade partners'),
-          h('span.tiny.muted', FinderUI.partners.length ? FinderUI.partners.length + ' selected' : 'off — every team')),
-        partnerChips)),
+          h('span.tiny.muted', focus && focus.side === 'get' ? 'fixed — ' + focus.owner.name + ' owns him'
+            : FinderUI.partners.length ? FinderUI.partners.length + ' selected' : 'off — every team')),
+        partnerChips()),
+      h('div',
+        h('div.row', { style: { justifyContent: 'space-between', marginBottom: '5px' } },
+          h('label.fld', { style: { gap: 0 } }, 'Build around one player'),
+          focus ? h('button.btn.sm', { onclick: () => { FinderUI.focus = null; dirty(); render(); } }, 'Clear')
+            : h('span.tiny.muted', 'off — any player')),
+        focusSel,
+        h('div.tiny.muted', { style: { marginTop: '5px' } }, focusBlurb))),
     h('button.btn.pri', {
       onclick: () => {
         FinderUI.results = findTrades(T, mode, FinderUI.tol, {
-          positions: FinderUI.positions, shape: FinderUI.shape, partners: FinderUI.partners
+          positions: FinderUI.positions, shape: FinderUI.shape, partners: FinderUI.partners, focus: focus
         });
         render();
       }
@@ -3013,14 +3474,24 @@ function viewFinder() {
       h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'Nothing cleared the bar'),
       h('div.tiny', { style: { marginTop: '6px', maxWidth: '460px', margin: '6px auto 0' } },
         'Every suggestion has to help both sides on their own objective and stay inside your value tolerance. '
-        + (res.filtered ? `${kfmt(res.filtered)} combinations were thrown out by your filters alone — try loosening those first, then the tolerance.` : 'Try a looser tolerance, or a different strategy.')))));
+        + (res.focus
+          ? (res.focus.side === 'give'
+            ? `Nothing on the board makes ${res.focus.player.name} worth moving at your current strategy — that is itself an answer. Try a looser tolerance, or a different objective.`
+            : `${res.focus.owner.name} has no reason to part with ${res.focus.player.name} for anything you can put together right now. A looser tolerance or a different objective may open something up.`)
+          : res.filtered ? `${kfmt(res.filtered)} combinations were thrown out by your filters alone — try loosening those first, then the tolerance.` : 'Try a looser tolerance, or a different strategy.')))));
     else {
       const activeFilters = [
-        FinderUI.positions.length ? 'targeting ' + FinderUI.positions.join('/') : null,
+        res.focus ? (res.focus.side === 'give' ? 'shopping ' + res.focus.player.name : 'buying ' + res.focus.player.name) : null,
+        FinderUI.positions.length && !(res.focus && res.focus.side === 'get') ? 'targeting ' + FinderUI.positions.join('/') : null,
         FinderUI.shape !== 'any' ? (SHAPES.find(s => s.k === FinderUI.shape) || {}).label.toLowerCase() : null,
-        FinderUI.partners.length ? FinderUI.partners.length + ' partner' + (FinderUI.partners.length > 1 ? 's' : '') : null
+        !res.focus && FinderUI.partners.length ? FinderUI.partners.length + ' partner' + (FinderUI.partners.length > 1 ? 's' : '') : null
       ].filter(Boolean);
-      wrap.appendChild(card(`${res.list.length} trades worth proposing`,
+      const title = res.focus
+        ? (res.focus.side === 'give'
+          ? `${res.list.length} ways to move ${res.focus.player.name}`
+          : `${res.list.length} ways to get ${res.focus.player.name}`)
+        : `${res.list.length} trades worth proposing`;
+      wrap.appendChild(card(title,
         `scanned ${kfmt(res.scanned)} combinations${activeFilters.length ? ' · ' + activeFilters.join(' · ') : ''} · both sides must gain on their own objective`,
         h('div', { style: { display: 'grid', gap: '9px' } }, res.list.map((r, i) => tradeCardRow(r, T, i)))));
     }
@@ -3068,7 +3539,9 @@ function findTrades(T, mode, tol, filters) {
   filters = filters || {};
   const wantPos = filters.positions || [];
   const shape = filters.shape || 'any';
-  const partners = filters.partners || [];
+  const focus = filters.focus || null;
+  // a named player on someone else's roster fixes who you are dealing with
+  const partners = focus && focus.side === 'get' ? [focus.owner.rosterId] : (filters.partners || []);
   const myObj = objectiveFor(mode);
   // roster side of a hypothetical swap, with picks left unpriced for now
   const shellQ = (t, out, inc) => {
@@ -3113,10 +3586,18 @@ function findTrades(T, mode, tol, filters) {
       Math.max.apply(null, give.map(a => a.dv)) > Math.max.apply(null, get.map(a => a.dv));
     return true;
   };
-  const posOk = (get) => !wantPos.length || get.some(a => wantPos.includes(a.pos));
+  // when the user has named the player they want, they have already said which
+  // position they are shopping for
+  const posOk = (get) => !wantPos.length || (focus && focus.side === 'get') || get.some(a => wantPos.includes(a.pos));
 
   const myBase = quick(T, [], []);
-  const mine = assetsOf(T).filter(a => a.dv > 180).sort((a, b) => b.dv - a.dv).slice(0, 20);
+  let mine = assetsOf(T).filter(a => a.dv > 180).sort((a, b) => b.dv - a.dv).slice(0, 20);
+  // a focus player has to be in the pool even if the value cut would have dropped them
+  let focusAsset = null;
+  if (focus && focus.side === 'give') {
+    focusAsset = assetsOf(T).find(a => a.id === focus.id) || null;
+    if (focusAsset && !mine.some(a => a.id === focusAsset.id)) mine = mine.concat([focusAsset]);
+  }
   const out = []; let scanned = 0, filtered = 0;
   const pool = S.teams.filter(P => P.rosterId !== T.rosterId && (!partners.length || partners.includes(P.rosterId)));
 
@@ -3131,16 +3612,51 @@ function findTrades(T, mode, tol, filters) {
       const seen = new Set(theirs.map(a => a.id));
       theirs = theirs.concat(wanted.filter(a => !seen.has(a.id)));
     }
+    if (focus && focus.side === 'get' && P.rosterId === focus.owner.rosterId) {
+      const fa = assetsOf(P).find(a => a.id === focus.id);
+      if (fa && !theirs.some(a => a.id === fa.id)) theirs = theirs.concat([fa]);
+    }
     const combos = [];
     const M = Math.min(mine.length, 14), N = Math.min(theirs.length, 16);
-    if (shape === 'any' || shape === 'even') mine.forEach(m => theirs.forEach(t2 => combos.push([[m], [t2]])));
-    if (shape === 'roster') {
+
+    /* ---- built around one named player ---- */
+    if (focus) {
+      const F = focus.side === 'give' ? focusAsset : (assetsOf(P).find(a => a.id === focus.id) || null);
+      if (!F) return;
+      const pair = (giveArr, getArr) => combos.push([giveArr, getArr]);
+      if (focus.side === 'give') {
+        const mp = mine.filter(a => a.id !== F.id).slice(0, 12);
+        const tp = theirs.slice(0, 16), tpS = theirs.slice(0, 10);
+        tp.forEach(t2 => pair([F], [t2]));
+        for (let i = 0; i < tp.length; i++) for (let j = i + 1; j < tp.length; j++) pair([F], [tp[i], tp[j]]);
+        for (let i = 0; i < tpS.length; i++) for (let j = i + 1; j < tpS.length; j++) for (let k = j + 1; k < tpS.length; k++) pair([F], [tpS[i], tpS[j], tpS[k]]);
+        mp.forEach(m => {
+          tp.forEach(t2 => pair([F, m], [t2]));
+          for (let i = 0; i < tpS.length; i++) for (let j = i + 1; j < tpS.length; j++) pair([F, m], [tpS[i], tpS[j]]);
+        });
+      } else {
+        // only one partner to search, so it can afford to be thorough
+        const tp = theirs.filter(a => a.id !== F.id).slice(0, 12);
+        const mp = mine.slice(0, 18), mpS = mine.slice(0, 12);
+        mp.forEach(m => pair([m], [F]));
+        for (let i = 0; i < mpS.length; i++) for (let j = i + 1; j < mpS.length; j++) pair([mpS[i], mpS[j]], [F]);
+        for (let i = 0; i < Math.min(mpS.length, 10); i++) for (let j = i + 1; j < Math.min(mpS.length, 10); j++) for (let k = j + 1; k < Math.min(mpS.length, 10); k++) pair([mpS[i], mpS[j], mpS[k]], [F]);
+        // they may want to send a second piece back to balance a big overpay
+        tp.forEach(t2 => {
+          mp.forEach(m => pair([m], [F, t2]));
+          for (let i = 0; i < Math.min(mpS.length, 10); i++) for (let j = i + 1; j < Math.min(mpS.length, 10); j++) pair([mpS[i], mpS[j]], [F, t2]);
+        });
+      }
+    }
+
+    if (!focus && (shape === 'any' || shape === 'even')) mine.forEach(m => theirs.forEach(t2 => combos.push([[m], [t2]])));
+    if (!focus && shape === 'roster') {
       const mp = mine.filter(a => a.kind === 'player').slice(0, 14);
       const tp = theirs.filter(a => a.kind === 'player').slice(0, 16);
       for (let i = 0; i < mp.length; i++) for (let j = i + 1; j < mp.length; j++)
         tp.forEach(t2 => combos.push([[mp[i], mp[j]], [t2]]));
     }
-    if (shape === 'any' || shape === 'consolidate') {
+    if (!focus && (shape === 'any' || shape === 'consolidate')) {
       for (let i = 0; i < M; i++) for (let j = i + 1; j < M; j++)
         theirs.slice(0, N).forEach(t2 => combos.push([[mine[i], mine[j]], [t2]]));
       if (shape === 'consolidate') {
@@ -3148,7 +3664,7 @@ function findTrades(T, mode, tol, filters) {
           theirs.slice(0, 10).forEach(t2 => combos.push([[mine[i], mine[j], mine[k]], [t2]]));
       }
     }
-    if (shape === 'any' || shape === 'spread') {
+    if (!focus && (shape === 'any' || shape === 'spread')) {
       for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++)
         mine.slice(0, M).forEach(m => combos.push([[m], [theirs[i], theirs[j]]]));
       if (shape === 'spread') {
@@ -3175,14 +3691,17 @@ function findTrades(T, mode, tol, filters) {
   });
   out.sort((a, b) => b.score - a.score);
   // keep the list varied — unless the user narrowed to a few partners, in which case show them more
-  const perPartner = partners.length ? Math.max(4, Math.ceil(20 / partners.length)) : 3;
+  const perPartner = partners.length ? Math.max(4, Math.ceil(20 / partners.length)) : (focus ? 4 : 3);
+  // with one player in the frame the user wants several ways to move them, not
+  // one idea per partner
+  const perPackage = focus ? 4 : 2;
   const seenP = {}, seenA = {}, seenG = {}, list = [];
   for (const r of out) {
     const kp = r.partner.rosterId;
     const ka = r.give.map(a => a.id).sort().join('+');
     const kg = kp + '|' + r.get.map(a => a.id).sort().join('+');
     if ((seenP[kp] || 0) >= perPartner) continue;
-    if ((seenA[ka] || 0) >= 2) continue;
+    if ((seenA[ka] || 0) >= perPackage) continue;
     // don't show the same target package from the same partner more than once —
     // three ways to buy the same player reads as noise, not as three ideas
     if (seenG[kg]) continue;
@@ -3197,10 +3716,11 @@ function findTrades(T, mode, tol, filters) {
     r.freed = freed;
     r.fa = bestFreeAgentFor(afterRoster(T, r.give, r.get), T.taxi, T.ir, 2);
   });
-  return { list, scanned, filtered };
+  return { list, scanned, filtered, focus };
 }
 function tradeCardRow(r, T, i) {
-  const chip = (a) => h('div.asset', { style: { cursor: 'default' } }, posPill(a.pos),
+  const chip = (a) => h('div.asset', { style: { cursor: 'default' } },
+    isSimple() && a.kind === 'player' ? playerFace(a.ref) : null, posPill(a.pos),
     a.kind === 'pick' ? h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name)
       : pname(a.ref, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
     h('span.v', kfmt(Math.round(a.dv))));
@@ -3305,15 +3825,17 @@ function simWeekView(res) {
       const A = S.teamById[a], B = S.teamById[b];
       const ra = res.by[a], rb = res.by[b];
       if (!A || !B || !ra || !rb) return null;
-      const actual = played ? (S.matchups[res.onlyWeek] || []) : [];
-      const ga = actual.find(m => m.roster_id === a), gb = actual.find(m => m.roster_id === b);
+      const isLive = res.onlyWeek === S.liveWeek;
+      const actual = (played || isLive) ? (S.matchups[res.onlyWeek] || []) : [];
+      const ga = isLive ? { points: liveRoster(A, res.onlyWeek).total } : actual.find(m => m.roster_id === a);
+      const gb = isLive ? { points: liveRoster(B, res.onlyWeek).total } : actual.find(m => m.roster_id === b);
       const side = (T, r, act, other) => h('div', { style: { display: 'grid', gap: '5px' } },
         h('div.row', { style: { justifyContent: 'space-between' } }, teamCell(T, { sub: false }),
           h('b.mono', { style: { fontSize: '17px' } }, pct(r.weekWin, 0))),
         h('div.bar-track', { style: { height: '7px' } }, h('div.bar-fill', { style: { width: (r.weekWin * 100) + '%', background: r.weekWin > other.weekWin ? 'var(--s1)' : 'var(--seq-200)' } })),
         h('div.row', { style: { justifyContent: 'space-between' } },
           h('span.tiny.muted', 'proj ' + fmt(r.weekPts, 1)),
-          act ? h('span.tiny', { style: { fontWeight: 640 } }, 'actual ' + fmt(act.points || 0, 1)) : h('span.tiny.muted', 'top scorer ' + pct(r.weekTop, 1))));
+          act ? h('span.tiny', { style: { fontWeight: 640 } }, (isLive ? 'live ' : 'actual ') + fmt(act.points || 0, 1)) : h('span.tiny.muted', 'top scorer ' + pct(r.weekTop, 1))));
       const dist = (r) => {
         const s = r.weekScores.slice().sort((x, y) => x - y);
         const q = p => s[clamp(Math.floor(p * s.length), 0, s.length - 1)];
@@ -3336,30 +3858,45 @@ function simWeekView(res) {
   scores.forEach(s => { const i = clamp(Math.floor((s - lo) / bw), 0, NB - 1); bins[i].v++; });
   bins.forEach(b => b.v /= scores.length);
   wrap.appendChild(card('Score distribution — week ' + res.onlyWeek, 'what this team could plausibly put up',
-    h('div', histogram(bins, { h: 170, aria: 'score distribution' }),
+    h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'score distribution' }),
       h('div.tiny.muted', { style: { marginTop: '8px' } }, `Median ${fmt(scores[Math.floor(scores.length / 2)], 1)} · 10th–90th percentile ${fmt(scores[Math.floor(scores.length * .1)], 1)}–${fmt(scores[Math.floor(scores.length * .9)], 1)} · top-scorer odds ${pct(r.weekTop, 1)}`)),
     h('select', { onchange: e => { SimUI.team = +e.target.value; render(); } }, teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === SimUI.team }, t.name)))));
+
+  const rank = simWeekRankCard(res);
+  if (rank) wrap.appendChild(rank);
 
   wrap.appendChild(card('Every team this week', null, table([
     { k: 'name', h: 'Team', sort: r2 => r2.T.name, f: r2 => teamCell(r2.T) },
     { k: 'pts', h: 'Proj pts', num: true, sort: r2 => r2.r.weekPts, f: r2 => h('b.mono', fmt(r2.r.weekPts, 1)) },
     { k: 'win', h: 'Win prob', num: true, sort: r2 => r2.r.weekWin, f: r2 => pct(r2.r.weekWin, 0) },
     { k: 'top', prio: 2, h: 'Top scorer', num: true, sort: r2 => r2.r.weekTop, f: r2 => pct(r2.r.weekTop, 1) },
-    { k: 'act', h: 'Actual', num: true, sort: r2 => r2.act, f: r2 => r2.act ? fmt(r2.act, 1) : '—' }
-  ], S.teams.map(t => ({ T: t, r: res.by[t.rosterId], act: played ? ((S.matchups[res.onlyWeek] || []).find(m => m.roster_id === t.rosterId) || {}).points : null })), { sortKey: 'pts', sortDir: -1 })));
+    { k: 'act', h: res.onlyWeek === S.liveWeek ? 'Live total' : 'Actual', num: true, sort: r2 => r2.act, f: r2 => r2.act ? fmt(r2.act, 1) : '—' }
+  ], S.teams.map(t => ({
+    T: t, r: res.by[t.rosterId],
+    act: res.onlyWeek === S.liveWeek ? liveRoster(t, res.onlyWeek).total
+      : played ? ((S.matchups[res.onlyWeek] || []).find(m => m.roster_id === t.rosterId) || {}).points : null
+  })), { sortKey: 'pts', sortDir: -1 })));
   return wrap;
 }
 function simSeasonView(res) {
   const wrap = h('div.grid');
   const rows = S.teams.map(t => ({ t, s: res.by[t.rosterId] })).sort((a, b) => b.s.title - a.s.title);
   const champ = rows[0];
+  const lucky = rows.filter(r => r.s.luck !== null).slice().sort((a, b) => b.s.luck - a.s.luck)[0];
+  const biggest = (res.leverage || [])[0];
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
     kpi('Most likely champion', champ.t.name, pct(champ.s.title, 1) + ' of simulations'),
     kpi('Weeks simulated', `${Math.min(S.lastWeek + 1, S.regEnd)}–${S.regEnd}`, S.lastWeek ? `weeks 1–${S.lastWeek} are actual results` : 'full season'),
     kpi('Playoff field', String(res.playoffTeams), 'teams make the bracket'),
     kpi('Tightest race', rows.slice().sort((a, b) => Math.abs(a.s.playoff - .5) - Math.abs(b.s.playoff - .5))[0].t.name, 'closest to a coin flip'),
-    kpi('Runs', kfmt(res.n), res.ms + ' ms')
+    biggest ? kpi('Biggest game left', biggest.a.team.short + ' v ' + biggest.b.team.short,
+      pct(biggest.swing, 0) + ' playoff swing · week ' + biggest.week) : null,
+    lucky && Math.abs(lucky.s.luck) > 0.05 ? kpi('Kindest schedule', lucky.t.name, sgn(lucky.s.luck, 2) + ' wins vs. all-play')
+      : kpi('Runs', kfmt(res.n), res.ms + ' ms')
   ));
+
+  const lever = simLeverageCard(res);
+  if (lever) wrap.appendChild(lever);
   wrap.appendChild(card('Simulated season outcomes', 'each row is ' + kfmt(res.n) + ' full seasons', table([
     { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
     { k: 'rec', h: 'Now', sort: r => r.t.wins, f: r => `${r.t.wins}-${r.t.losses}` },
@@ -3378,10 +3915,20 @@ function simSeasonView(res) {
   const sel = res.by[SimUI.team];
   const bins = sel.winDist.map((v, i) => ({ x: i, v, label: i + ' win' + (i === 1 ? '' : 's') })).filter((b, i) => i <= S.regEnd);
   wrap.appendChild(card('Final win total', S.teamById[SimUI.team].name,
-    h('div', histogram(bins, { h: 165, aria: 'win distribution' }),
+    h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'win distribution' }),
       h('div.tiny.muted', { style: { marginTop: '8px' } },
         `Most likely: ${bins.reduce((a, b) => b.v > a.v ? b : a).x} wins · average ${fmt(sel.wins, 1)} · playoffs ${pct(sel.playoff, 0)} · title ${pct(sel.title, 1)}`)),
     h('select', { onchange: e => { SimUI.team = +e.target.value; render(); } }, teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === SimUI.team }, t.name)))));
+
+  // the deep-dive half of the simulator; simple mode stops after the outcomes
+  const traj = proOnly(simTrajectoryCard(res));
+  if (traj) wrap.appendChild(traj);
+  const seed = proOnly(simSeedCard(res));
+  if (seed) wrap.appendChild(seed);
+  const luck = proOnly(simLuckCard(res));
+  if (luck) wrap.appendChild(luck);
+  const alive = proOnly(simAliveCard(res));
+  if (alive) wrap.appendChild(alive);
   return wrap;
 }
 
@@ -3618,7 +4165,7 @@ function viewStock() {
   const fallers = pool.slice().sort((a, b) => a.trend30 - b.trend30).slice(0, 12);
   const ownerOf = {}; S.teams.forEach(t => t.players.forEach(p => ownerOf[p.id] = t));
   const moverCols = [
-    { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '6px' } }, posPill(r.pos), pname(r, { style: { fontWeight: 540 } })) },
+    { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r) : posPill(r.pos), pname(r, { style: { fontWeight: 540 } })) },
     { k: 'owner', prio: 2, h: 'Roster', sort: r => (ownerOf[r.id] || {}).name || 'zz', f: r => ownerOf[r.id] ? h('span.tiny', ownerOf[r.id].short) : h('span.tiny.muted', 'FA') },
     { k: 'dv', h: 'Value', num: true, f: r => kfmt(Math.round(r.dv)) },
     { k: 'trend30', h: '30 days', num: true, f: r => deltaTag(r.trend30, 0) },
@@ -4115,22 +4662,38 @@ function projectedStrategy(t, stat) {
 /** Floor / median / ceiling for one player in one week. Seeded per player so the
  *  numbers hold still between renders instead of jittering on every click. */
 function weekOutlook(p, wk) {
-  const m = pw(p, wk);
-  if (!(m > 0.05)) return { mean: 0, floor: 0, median: 0, ceil: 0, bye: true, opp: null };
+  /* In the week being played, a finished game is a fact rather than a
+     distribution, and a game in progress only has the part that is left to
+     play still in doubt. */
+  const lv = wk === S.liveWeek ? liveValue(p, wk) : null;
+  if (lv && lv.state === 'done') {
+    return {
+      mean: lv.used, floor: lv.used, median: lv.used, ceil: lv.used, sd: 0,
+      bye: false, opp: lv.opp, bust: 0, boom: 0, state: 'done', actual: lv.actual, final: true
+    };
+  }
+  const banked = lv ? lv.banked : 0;
+  const m = lv ? lv.open : pw(p, wk);
+  if (!(m > 0.05)) return {
+    mean: banked, floor: banked, median: banked, ceil: banked, bye: !lv || lv.state === 'bye',
+    opp: lv ? lv.opp : null, state: lv ? lv.state : 'bye', final: !!lv && lv.state !== 'upcoming'
+  };
   const sd = volFromMean(p.pos, m), n = 3000;
   seedRng(hashStr(p.id + '|' + wk));
   const s = new Array(n);
-  for (let i = 0; i < n; i++) s[i] = rnd() < BUST_RATE ? 0 : drawScore(m, sd);
+  for (let i = 0; i < n; i++) s[i] = banked + (rnd() < BUST_RATE ? 0 : drawScore(m, sd));
   s.sort((a, b) => a - b);
+  const mean = banked + m;
   return {
-    mean: m, sd, bye: false, opp: pwOpp(p, wk),
+    mean: mean, sd, bye: false, opp: lv ? lv.opp : pwOpp(p, wk),
     floor: s[Math.floor(n * 0.1)], median: s[n >> 1], ceil: s[Math.floor(n * 0.9)],
-    bust: s.filter(x => x < m * 0.5).length / n, boom: s.filter(x => x > m * 1.5).length / n
+    bust: s.filter(x => x < mean * 0.5).length / n, boom: s.filter(x => x > mean * 1.5).length / n,
+    state: lv ? lv.state : null, actual: lv ? lv.actual : null, quarter: lv ? lv.quarter : null
   };
 }
 /** Probability a outscores b in a given week, from independent paired draws. */
 function pBeats(a, b, wk) {
-  const ma = pw(a, wk), mb = pw(b, wk);
+  const ma = pwShown(a, wk), mb = pwShown(b, wk);
   if (!(ma > 0.05) && !(mb > 0.05)) return 0.5;
   const sa = volFromMean(a.pos, ma), sb = volFromMean(b.pos, mb);
   const n = 12000; let w = 0;
@@ -4153,11 +4716,17 @@ function viewLineup() {
   const T = S.teamById[LineupUI.team];
   const wk = LineupUI.week;
   const act = activePlayers(T);
-  const lineup = optimalLineup(act, p => pw(p, wk));
+  const isLive = wk === S.liveWeek;
+  const val = (p) => pwShown(p, wk);
+  /* In the week being played the lineup is not a suggestion — it is whatever the
+     manager actually set, with some of it already locked in. Re-optimising it
+     would be advice about a decision that is no longer available. */
+  const lineup = isLive ? liveLineupSlots(T, wk) : optimalLineup(act, p => pw(p, wk));
   const startIds = new Set(lineup.filter(s => s.player).map(s => s.player.id));
-  const bench = act.filter(p => !startIds.has(p.id)).sort((a, b) => pw(b, wk) - pw(a, wk));
-  const total = sum(lineup.map(s => s.player ? pw(s.player, wk) : 0));
+  const bench = act.filter(p => !startIds.has(p.id)).sort((a, b) => val(b) - val(a));
+  const total = sum(lineup.map(s => s.player ? val(s.player) : 0));
   const played = wk <= S.lastWeek;
+  const lr = isLive ? liveRoster(T, wk) : null;
 
   const weeks = []; for (let w = 1; w <= S.regEnd; w++) weeks.push(w);
   wrap.appendChild(card('Week ' + wk, null, h('div.row', { style: { gap: '14px' } },
@@ -4165,9 +4734,12 @@ function viewLineup() {
       h('select', { onchange: e => { LineupUI.team = +e.target.value; LineupUI.compare = []; render(); } },
         teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, t.name)))),
     h('label.fld', 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; render(); } },
-      weeks.map(w => h('option', { value: w, selected: w === wk }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
+      weeks.map(w => h('option', { value: w, selected: w === wk },
+        'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
     h('span', { style: { flex: 1 } }),
-    played ? h('span.tag', 'This week has already been played — projections are shown for reference') : null)));
+    isLive ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } },
+      '● Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
+      : played ? h('span.tag', 'This week has already been played — projections are shown for reference') : null)));
 
   // ---- the optimal lineup ----
   const byes = act.filter(p => p.wk && !p.wk[wk]);
@@ -4176,33 +4748,43 @@ function viewLineup() {
     const o = p ? weekOutlook(p, wk) : null;
     // the alternative has to come off the bench — someone already starting
     // elsewhere is not a choice you get to make
-    const alts = p ? bench.filter(x => (SLOT_ELIG[s.slot] || [s.slot]).includes(x.pos))
-      .sort((a, b) => pw(b, wk) - pw(a, wk)).slice(0, 3) : [];
-    const gap = alts.length && p ? pw(p, wk) - pw(alts[0], wk) : null;
-    return { s, p, o, alts, gap, close: gap !== null && gap < 2.5 };
+    // a swap is only a real choice while both players still have a game to play
+    const swappable = (x) => !isLive || livePlayerState(x, wk) === 'upcoming';
+    const alts = p ? bench.filter(x => (SLOT_ELIG[s.slot] || [s.slot]).includes(x.pos) && swappable(x))
+      .sort((a, b) => val(b) - val(a)).slice(0, 3) : [];
+    const locked = p ? !swappable(p) : false;
+    const gap = alts.length && p && !locked ? val(p) - val(alts[0]) : null;
+    return { s, p, o, alts, gap, locked, close: gap !== null && gap < 2.5 };
   });
   const cols = [
     { k: 'slot', h: 'Slot', sortable: false, f: r => h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r.s.slot] || r.s.slot) },
     {
       k: 'player', h: 'Player', sortable: false, f: r => r.p
-        ? h('div.row', { style: { gap: '6px', minWidth: 0 } }, posPill(r.p.pos), pname(r.p),
+        ? h('div', { style: { minWidth: 0 } }, h('div.row', { style: { gap: '7px', minWidth: 0 } },
+          isSimple() ? playerFace(r.p) : null, posPill(r.p.pos), pname(r.p),
           injuryTag(r.p.injury),
           // on a phone the tag costs more width than it earns — the card directly
           // below this table is the real place these calls get made
-          r.close && !isNarrow() ? h('span.tag', { style: { borderColor: 'var(--s4)', color: 'var(--s4)' } }, 'close call') : null)
+          r.close && !isNarrow() ? h('span.tag', { style: { borderColor: 'var(--s4)', color: 'var(--s4)' } }, 'close call') : null),
+          // on a phone the status rides under the name instead of taking a column
+          isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null)
         : h('span.muted.tiny', 'nobody eligible')
     },
     { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o && r.o.opp ? h('span.tiny', r.o.opp) : r.o && r.o.bye ? h('span.tag', 'BYE') : h('span.muted.tiny', '—') },
+    isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => r.p ? liveBadge(r.p, wk) : null } : null,
     // on a phone the range rides under the projection instead of taking a column
-    { k: 'proj', h: 'Projected', num: true, sortable: false, f: r => !r.o ? '—' : h('div',
-      h('b.mono', fmt(r.o.mean, 1)),
-      isNarrow() && !r.o.bye ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
-    { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sortable: false, f: r => r.o && !r.o.bye ? h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : '—' },
+    { k: 'proj', h: isLive ? 'Points' : 'Projected', num: true, sortable: false, f: r => !r.o ? '—' : h('div',
+      h('b.mono', { class: r.o.final ? 'up' : null }, fmt(r.o.mean, 1)),
+      isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
+    { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sortable: false, f: r => r.o && !r.o.bye && !r.o.final ? h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : h('span.muted', '—') },
     {
-      k: 'alt', prio: 2, h: 'Next best', sortable: false, f: r => r.alts.length
-        ? h('div.row', { style: { gap: '5px' } }, h('span.tiny.muted', r.alts[0].name.split(' ').slice(-1)[0] || r.alts[0].name),
-          h('span.tiny.mono', { class: r.close ? 'down' : 'muted' }, '−' + fmt(r.gap, 1)))
-        : h('span.muted.tiny', '—')
+      // once a starter's game has begun there is no next-best decision to make
+      k: 'alt', prio: 2, h: 'Next best', sortable: false, f: r => r.locked
+        ? h('span.muted.tiny', 'locked')
+        : r.alts.length && r.gap !== null
+          ? h('div.row', { style: { gap: '5px' } }, h('span.tiny.muted', r.alts[0].name.split(' ').slice(-1)[0] || r.alts[0].name),
+            h('span.tiny.mono', { class: r.close ? 'down' : 'muted' }, '−' + fmt(r.gap, 1)))
+          : h('span.muted.tiny', '—')
     },
     {
       k: 'cmp', h: '', sortable: false, f: r => r.p ? h('button.btn.sm', {
@@ -4210,15 +4792,20 @@ function viewLineup() {
       }, LineupUI.compare.includes(r.p.id) ? '✓' : '+') : null
     }
   ];
-  wrap.appendChild(card('Optimal lineup — week ' + wk,
-    fmt(total, 1) + ' projected points' + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
-    table(cols, rows, {})));
+  wrap.appendChild(card(isLive ? 'Your lineup — week ' + wk : 'Optimal lineup — week ' + wk,
+    (isLive
+      ? fmt(total, 1) + ' live — ' + fmt(lr.banked, 1) + ' banked plus ' + fmt(lr.projected, 1) + ' still projected'
+      : fmt(total, 1) + ' projected points')
+    + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
+    table(cols.filter(Boolean), rows, {})));
 
   // ---- the decisions that actually matter ----
   const closeOnes = rows.filter(r => r.close && r.p);
   wrap.appendChild(card('Calls worth thinking about', closeOnes.length
     ? 'these slots are within 2.5 projected points of the next option — close enough that the projection is not the whole answer'
-    : 'no slot is within 2.5 points of its alternative this week, so the optimal lineup is comfortable',
+      + (isLive ? '. Only players who have not kicked off are listed: the rest can no longer be changed.' : '')
+    : (isLive ? 'Nothing left to decide — every slot with a game still to come has a clear best option.'
+      : 'no slot is within 2.5 points of its alternative this week, so the optimal lineup is comfortable'),
     closeOnes.length
       ? h('div', { style: { display: 'grid', gap: '9px' } }, closeOnes.map(r => {
         const alt = r.alts[0];
@@ -4252,20 +4839,22 @@ function viewLineup() {
     const bestSlot = (S.cfg.rosterPositions || []).filter(x => !['BN', 'IR', 'TAXI'].includes(x))
       .find(sl => (SLOT_ELIG[sl] || [sl]).includes(p.pos));
     const starterHere = bestSlot ? lineup.find(s => s.slot === bestSlot) : null;
-    const behind = starterHere && starterHere.player ? pw(starterHere.player, wk) - pw(p, wk) : null;
+    const behind = starterHere && starterHere.player ? val(starterHere.player) - val(p) : null;
     return { p, o, behind };
   });
-  wrap.appendChild(card('Bench', bench.length + ' players not in the optimal lineup', table([
+  wrap.appendChild(card('Bench', bench.length + (isLive ? ' players not in the lineup' : ' players not in the optimal lineup'), table([
     { k: 'pos', h: 'Pos', f: r => posPill(r.p.pos), sort: r => r.p.pos },
-    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div.row', { style: { gap: '6px' } }, pname(r.p), injuryTag(r.p.injury)) },
+    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p), injuryTag(r.p.injury)),
+      isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null) },
     { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE') : h('span.tiny', r.o.opp || '—') },
-    { k: 'proj', h: 'Projected', num: true, sort: r => r.o.mean, f: r => h('div',
+    isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => liveBadge(r.p, wk) } : null,
+    { k: 'proj', h: isLive ? 'Points' : 'Projected', num: true, sort: r => r.o.mean, f: r => h('div',
       h('b.mono', fmt(r.o.mean, 1)),
-      isNarrow() && !r.o.bye ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
-    { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sort: r => r.o.ceil, f: r => r.o.bye ? '—' : h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) },
+      isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
+    { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sort: r => r.o.ceil, f: r => r.o.bye || r.o.final ? h('span.muted', '—') : h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) },
     { k: 'behind', prio: 2, h: 'Behind starter', num: true, sort: r => r.behind === null ? 999 : r.behind, f: r => r.behind === null ? '—' : h('span.mono', { class: r.behind < 2.5 ? 'down' : 'muted' }, '−' + fmt(r.behind, 1)) },
     { k: 'cmp', h: '', sortable: false, f: r => h('button.btn.sm', { onclick: () => { toggleCompare(r.p.id); render(); } }, LineupUI.compare.includes(r.p.id) ? '✓' : '+') }
-  ], benchRows, { sortKey: 'proj', sortDir: -1 })));
+  ].filter(Boolean), benchRows, { sortKey: 'proj', sortDir: -1 })));
   return wrap;
 }
 function toggleCompare(id) {
@@ -4498,6 +5087,1209 @@ function viewTrades() {
   ], list, { sortKey: 'n', sortDir: -1 })));
   return wrap;
 }
+/* ==================================================================
+   Expanded simulation surfaces + head-to-head
+   ================================================================== */
+
+/* ---------- leverage: which games actually decide the season ---------- */
+const LevUI = { week: 'all', n: 6 };
+function simLeverageCard(res) {
+  if (!res.leverage || !res.leverage.length) return null;
+  const weeks = []; for (let w = res.fromWeek; w <= S.regEnd; w++) if (res.leverage.some(g => g.week === w)) weeks.push(w);
+  if (LevUI.week !== 'all' && !weeks.includes(LevUI.week)) LevUI.week = 'all';
+  const picked = LevUI.week === 'all' ? res.leverage : res.leverage.filter(g => g.week === LevUI.week);
+  const shown = picked.slice(0, LevUI.n);
+
+  const opts = [{ k: 'all', label: 'Rest of season' }].concat(weeks.map(w => ({ k: w, label: 'Wk ' + w })));
+  const controls = h('div.row', { style: { gap: '12px', marginBottom: '12px' } },
+    segmented(opts, LevUI.week, k => { LevUI.week = k; LevUI.n = 6; render(); }),
+    h('span', { style: { flex: 1 } }),
+    h('span.tiny.muted', picked.length + ' game' + (picked.length === 1 ? '' : 's') + ' weighed'));
+
+  const body = h('div', { style: { display: 'grid', gap: '12px' } }, shown.map((g, i) => {
+    const A = g.a.team, B = g.b.team;
+    // the two worlds this game leaves behind. Exactly one of them happens, so
+    // "if A wins" is A's win-branch and B's lose-branch, and vice versa.
+    const worlds = [
+      { win: A, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] },
+      { win: B, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] }
+    ];
+    const worldBox = (wd) => h('div', {
+      style: {
+        minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
+        padding: '9px 11px', background: 'var(--surface-1)'
+      }
+    },
+      h('div.tiny', { style: { fontWeight: 700, marginBottom: '7px', color: 'var(--text-primary)' } },
+        'If ', h('span', { style: { color: 'var(--s1)' } }, wd.win.name), ' wins'),
+      h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r2 => h('div', {
+        style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: '8px', alignItems: 'center' }
+      },
+        h('span.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: r2.won ? 640 : 500, color: r2.won ? 'var(--text-primary)' : 'var(--text-secondary)' } }, r2.t.short),
+        h('div.bar-track', { style: { width: isNarrow() ? '52px' : '74px', height: '8px' } },
+          h('div.bar-fill', { style: { width: (clamp(r2.po, 0, 1) * 100) + '%', background: r2.won ? 'var(--s1)' : 'var(--text-muted)' } })),
+        h('span.mono.tiny', { style: { minWidth: '92px', textAlign: 'right' } },
+          h('b', pct(r2.po, 0)), h('span.muted', ' playoffs · '), h('b', pct(r2.ti, 1)), h('span.muted', ' title'))))));
+
+    const tag = g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
+    const lead = Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b;
+    const sentence = `${lead.team.name} ${lead.swing >= 0.005 ? 'go from ' + pct(lead.poLose, 0) + ' to ' + pct(lead.poWin, 0) + ' to make the playoffs' : 'barely move either way'}`
+      + (Math.abs(lead.titleSwing) > 0.004 ? `, and from ${pct(lead.tiLose, 1)} to ${pct(lead.tiWin, 1)} to win it` : '')
+      + '.';
+
+    return h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '11px 13px', background: 'var(--surface-2)' } },
+      h('div.row', { style: { justifyContent: 'space-between', marginBottom: '8px', gap: '8px' } },
+        h('div.row', { style: { gap: '8px', minWidth: 0 } },
+          h('b.mono.tiny', '#' + (i + 1)),
+          h('span.tag', { style: { flex: 'none', borderColor: g.week === res.fromWeek ? 'var(--s1)' : null, color: g.week === res.fromWeek ? 'var(--s1)' : null } },
+            'Week ' + g.week + (g.week === res.fromWeek ? ' · next up' : '')),
+          h('b', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, A.name + '  v  ' + B.name),
+          tag ? h('span.tag', { style: { borderColor: tag[1], color: tag[1], flex: 'none' } }, tag[0]) : null),
+        h('span.tiny.muted', { style: { flex: 'none' } }, 'up to ' + pct(g.swing, 0) + ' of playoff odds on the line')),
+      h('div.grid.split2', worldBox(worlds[0]), h('div.tiny.muted', { style: { textAlign: 'center', alignSelf: 'center' } }, 'or'), worldBox(worlds[1])),
+      h('div.tiny.sec', { style: { marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '7px' } }, sentence));
+  }));
+
+  const more = picked.length > shown.length
+    ? h('div.row', { style: { marginTop: '11px', justifyContent: 'center' } },
+      h('button.btn.sm', { onclick: () => { LevUI.n += 6; render(); } }, 'Show ' + Math.min(6, picked.length - shown.length) + ' more'))
+    : null;
+
+  // the whole remaining season at a glance, so nothing is hidden behind the top six
+  const allTbl = table([
+    { k: 'week', h: 'Week', num: true, sort: g => g.week, f: g => h('b.mono', g.week) },
+    { k: 'game', h: 'Matchup', sortable: false, f: g => h('div.row', { style: { gap: '5px', minWidth: 0 } }, h('span.tiny', g.a.team.short), h('span.tiny.muted', 'v'), h('span.tiny', g.b.team.short)) },
+    { k: 'swing', h: 'Playoff swing', num: true, sort: g => g.swing, f: g => h('div.meter', { style: { justifyContent: 'flex-end' } },
+      isNarrow() ? null : h('div.bar-track', { style: { width: '64px' } }, h('div.bar-fill', { style: { width: (clamp(g.swing / 0.35, 0, 1) * 100) + '%', background: g.swing > 0.22 ? 'var(--critical)' : g.swing > 0.12 ? 'var(--s4)' : 'var(--seq-300)' } })),
+      h('b.mono', pct(g.swing, 0))) },
+    { k: 'title', prio: 2, h: 'Title swing', num: true, sort: g => Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), f: g => pct(Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), 1) },
+    { k: 'fav', prio: 2, h: 'Most at stake', sortable: false, f: g => h('span.tiny', (Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b).team.name) }
+  ], picked, { sortKey: 'swing', sortDir: -1 });
+  const wt = withTable(h('div', controls, body, more), allTbl);
+
+  return card(LevUI.week === 'all' ? 'Games that matter most — rest of season' : 'Games that matter most — week ' + LevUI.week,
+    'every simulated season is split by who won each game, then read back. Each box is one of the two worlds the game leaves behind: where both teams stand if it goes that way.',
+    wt.body, wt.btn);
+}
+
+/* ---------- playoff odds through the season ---------- */
+function simTrajectoryCard(res) {
+  const start = res.fromWeek, end = S.regEnd;
+  if (end - start < 1) return null;
+  const teams = S.teams.slice().sort((a, b) => res.by[b.rosterId].playoff - res.by[a.rosterId].playoff);
+  const colors = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s7)'];
+  const featured = teams.slice(0, 5).concat(teams.slice(-1));
+  const colorOf = {}; featured.forEach((t, i) => colorOf[t.rosterId] = colors[i % colors.length]);
+  // anchor the line on where the table actually stands right now, so the chart
+  // reads as a race in progress rather than starting from nowhere
+  const nowField = new Set(S.teams.slice()
+    .sort((a, b) => (b.wins + 0.5 * b.ties) - (a.wins + 0.5 * a.ties) || b.fpts - a.fpts)
+    .slice(0, res.playoffTeams).map(t => t.rosterId));
+  const anchor = S.lastWeek >= 1 ? S.lastWeek : null;
+  const pts = (t) => {
+    const a = [];
+    if (anchor) a.push({ x: anchor, y: nowField.has(t.rosterId) ? 100 : 0, label: 'Week ' + anchor + ' (actual)' });
+    for (let w = start; w <= end; w++) a.push({ x: w, y: res.by[t.rosterId].fieldAt[w] * 100, label: 'Week ' + w });
+    return a;
+  };
+  const bg = teams.filter(t => !colorOf[t.rosterId]).map(t => ({ name: t.name, color: 'var(--text-muted)', width: 1, opacity: .28, points: pts(t) }));
+  const fg = featured.map(t => ({ name: t.name, color: colorOf[t.rosterId], width: 2, points: pts(t) }));
+  const chart = lineChart(bg.concat(fg), {
+    h: 250, dots: false, maxTip: 12, y0: 0, y1: 100, floorAtZero: true,
+    yFmt: v => Math.round(v) + '%', xFmt: v => 'Wk ' + Math.round(v), xTicks: Math.min(6, end - start + (anchor ? 1 : 0)),
+    aria: 'odds of sitting in the playoff field after each week'
+  });
+  const legend = h('div.legend', { style: { marginTop: '8px' } },
+    featured.map(t => h('span', h('i', { style: { background: colorOf[t.rosterId] } }), t.name))
+      .concat(bg.length ? [h('span', h('i', { style: { background: 'var(--text-muted)', opacity: .3 } }), bg.length + ' more')] : []));
+  const tbl = table([
+    { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) }
+  ].concat(Array.from({ length: end - start + 1 }, (_, i) => ({
+    k: 'w' + (start + i), h: 'W' + (start + i), num: true,
+    sort: r => res.by[r.t.rosterId].fieldAt[start + i],
+    f: r => pct(res.by[r.t.rosterId].fieldAt[start + i], 0)
+  }))), teams.map(t => ({ t })), {});
+  const wt = withTable(h('div', chart, legend), tbl);
+  return card('Playoff position, week by week',
+    'the share of simulated seasons in which each team is inside the cut with the season paused at that week'
+    + (anchor ? ' — week ' + anchor + ' is where the real table stands today' : ''),
+    wt.body, wt.btn);
+}
+
+/* ---------- seed distribution ---------- */
+function simSeedCard(res) {
+  const n = S.teams.length;
+  const teams = S.teams.slice().sort((a, b) => res.by[a.rosterId].seed - res.by[b.rosterId].seed);
+  const cols = Array.from({ length: n }, (_, i) => String(i + 1));
+  const grid = heat(teams, cols, (t, c) => res.by[t.rosterId].seedDist[+c] * 100, {
+    rowLabel: t => t.name,
+    fmt: v => v < 0.5 ? '·' : Math.round(v) + '',
+    tip: (t, c, v) => `<div class="k">${t.name} · ${ord(+c)} seed</div><b>${fmt(v, 1)}%</b> of simulated seasons`
+      + (+c <= res.playoffTeams ? '<br>inside the playoff cut' : '<br>missed the playoffs')
+  });
+  return card('Where everyone finishes', 'percentage of simulated seasons ending at each seed — ' + res.playoffTeams + ' make the bracket',
+    h('div', grid, h('div', { style: { marginTop: '10px' } }, seqLegend('never', 'often', 'Share of seasons'))));
+}
+
+/* ---------- schedule luck and strength ---------- */
+function simLuckCard(res) {
+  if (!res.simWeeks) return null;
+  const rows = S.teams.map(t => ({ t, s: res.by[t.rosterId] })).filter(r => r.s.allPlayPct !== null);
+  if (!rows.length) return null;
+  const sos = rows.map(r => r.s.sos).filter(v => v !== null);
+  const sosMean = sos.length ? mean(sos) : 0;
+  const bars = rows.slice().sort((a, b) => b.s.luck - a.s.luck).map(r => ({
+    label: r.t.name, v: r.s.luck,
+    tip: `<div class="k">${r.t.name}</div>Projected to win <b>${fmt(r.s.simWins, 1)}</b> of the remaining ${res.simWeeks}<br>`
+      + `Beats <b>${pct(r.s.allPlayPct, 0)}</b> of the league in a typical week, which is worth ${fmt(r.s.allPlayPct * res.simWeeks, 1)} wins<br>`
+      + `Schedule is worth <b>${sgn(r.s.luck, 2)}</b> wins`
+  }));
+  return card('What the schedule is worth',
+    'simulated wins minus the wins that scoring alone earns — blue means the remaining fixtures are doing a team a favour',
+    h('div',
+      divBar(bars, { labelW: isNarrow() ? '110px' : '170px', dec: 2 }),
+      h('div.tiny.muted', { style: { marginTop: '10px' } },
+        'A team that beats 60% of the league each week "deserves" 0.6 wins a week. The gap between that and the games it is actually projected to win is the schedule.'),
+      table([
+        { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
+        { k: 'allplay', h: 'Beats', num: true, tip: 'Share of the league this team outscores in a typical remaining week', sort: r => r.s.allPlayPct, f: r => pct(r.s.allPlayPct, 0) },
+        { k: 'w', h: 'Proj W', num: true, sort: r => r.s.simWins, f: r => h('b.mono', fmt(r.s.simWins, 1)) },
+        { k: 'luck', h: 'Schedule', num: true, sort: r => r.s.luck, f: r => deltaTag(r.s.luck, 2, ' W') },
+        { k: 'sos', prio: 2, h: 'Opponent PPG', num: true, tip: 'Average score the remaining opponents are projected to post', sort: r => r.s.sos || 0, f: r => r.s.sos === null ? '—' : h('span', { class: r.s.sos > sosMean ? 'down mono' : 'up mono' }, fmt(r.s.sos, 1)) },
+        { k: 'pf', prio: 2, h: 'Season PF range', num: true, sortable: false, f: r => h('span.tiny.mono.muted', fmt(r.s.ptsP10, 0) + '–' + fmt(r.s.ptsP90, 0)) }
+      ], rows, { sortKey: 'luck', sortDir: -1 })));
+}
+
+/* ---------- still alive ---------- */
+function simAliveCard(res) {
+  const start = res.fromWeek, end = S.regEnd;
+  if (end - start < 2) return null;
+  const rows = S.teams.map(t => {
+    const s = res.by[t.rosterId];
+    let outWeek = null;
+    for (let w = start; w <= end; w++) if (s.aliveAt[w] < 0.5) { outWeek = w; break; }
+    return { t, s, outWeek };
+  }).sort((a, b) => (b.outWeek === null ? 99 : b.outWeek) - (a.outWeek === null ? 99 : a.outWeek) || b.s.playoff - a.s.playoff);
+  const anyOut = rows.some(r => r.outWeek !== null);
+  if (!anyOut) return null;
+  return card('When the maths runs out',
+    'the first week by which more than half the simulations have a team unable to reach the cut line on wins alone',
+    table([
+      { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
+      { k: 'out', h: 'Out of it by', sort: r => r.outWeek === null ? 99 : r.outWeek, f: r => r.outWeek === null ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'alive all season') : h('b', 'week ' + r.outWeek) },
+      { k: 'playoff', h: 'Playoffs', num: true, sort: r => r.s.playoff, f: r => pct(r.s.playoff, 0) },
+      { k: 'alive', prio: 2, h: 'Alive at the end', num: true, sort: r => r.s.aliveAt[S.regEnd], f: r => pct(r.s.aliveAt[S.regEnd], 0) }
+    ], rows, { sortKey: 'out', sortDir: -1 }));
+}
+
+/* ---------- the week ranked: close games, mismatches, upsets ---------- */
+function simWeekRankCard(res) {
+  const games = (schedule()[res.onlyWeek - 1] || []);
+  if (games.length < 2) return null;
+  const rows = games.map(([a, b]) => {
+    const A = S.teamById[a], B = S.teamById[b], ra = res.by[a], rb = res.by[b];
+    if (!A || !B || !ra || !rb) return null;
+    // the two score arrays are run-for-run aligned, so the margin needs no extra simulation
+    const n = Math.min(ra.weekScores.length, rb.weekScores.length);
+    const m = new Array(n);
+    for (let i = 0; i < n; i++) m[i] = ra.weekScores[i] - rb.weekScores[i];
+    m.sort((x, y) => x - y);
+    const q = (p) => m[clamp(Math.floor(p * (n - 1)), 0, n - 1)];
+    const favA = ra.weekWin >= rb.weekWin;
+    return {
+      A, B, ra, rb, favA,
+      fav: favA ? A : B, dog: favA ? B : A,
+      favP: Math.max(ra.weekWin, rb.weekWin),
+      margin: Math.abs(q(0.5)),
+      close: m.filter(x => Math.abs(x) <= 10).length / n,
+      swing: Math.abs(ra.weekWin - rb.weekWin)
+    };
+  }).filter(Boolean);
+  if (!rows.length) return null;
+  const tightest = rows.slice().sort((x, y) => x.swing - y.swing)[0];
+  const widest = rows.slice().sort((x, y) => y.swing - x.swing)[0];
+  return card('The week at a glance',
+    `closest game: ${tightest.A.short} v ${tightest.B.short} · biggest mismatch: ${widest.fav.short} over ${widest.dog.short}`,
+    table([
+      { k: 'game', h: 'Matchup', sortable: false, f: r => h('div.row', { style: { gap: '5px', minWidth: 0 } },
+        h('b.tiny', r.fav.short), h('span.tiny.muted', 'v'), h('span.tiny', r.dog.short)) },
+      { k: 'fav', h: 'Favourite', sortable: false, prio: 2, f: r => teamCell(r.fav, { sub: false }) },
+      { k: 'p', h: 'Win prob', num: true, sort: r => r.favP, f: r => h('b.mono', pct(r.favP, 0)) },
+      { k: 'margin', h: 'Median margin', num: true, sort: r => r.margin, f: r => h('span.mono', fmt(r.margin, 1)) },
+      { k: 'close', h: 'One-score', num: true, tip: 'Chance the game finishes within ten points', sort: r => r.close, f: r => pct(r.close, 0) },
+      { k: 'upset', h: 'Upset', num: true, sort: r => 1 - r.favP, f: r => {
+        const u = 1 - r.favP;
+        return h('span', { class: u > 0.4 ? 'up mono' : 'mono muted' }, pct(u, 0));
+      } }
+    ], rows, { sortKey: 'p', sortDir: 1 }));
+}
+
+/* ================= 12. HEAD TO HEAD ================= */
+const H2HUI = { a: null, b: null, week: null, sims: 4000, res: null };
+
+/** One week, both teams, many times: the distribution of the margin between them. */
+function h2hSim(A, B, wk, n) {
+  /* A week already under way is part settled: the finished games are banked and
+     only the open slots are drawn, which is what makes the odds move as Sunday runs. */
+  const live = wk === S.liveWeek;
+  const lineup = (T) => {
+    if (live) {
+      const lr = liveRoster(T, wk);
+      return { banked: lr.banked, arr: lr.open.map(r => ({ m: r.used, sd: volFromMean(r.p.pos, r.used) })) };
+    }
+    return {
+      banked: 0,
+      arr: optimalLineup(activePlayers(T), p => pw(p, wk))
+        .map(s => {
+          const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
+          let m = s.player ? pw(s.player, wk) : 0;
+          if (m <= 0.05) m = STREAM[pos] !== undefined ? STREAM[pos] : 0;
+          return { m, sd: volFromMean(pos, m) };
+        }).filter(x => x.m > 0.05)
+    };
+  };
+  const la = lineup(A), lb = lineup(B);
+  const draw = (l) => {
+    let s = 0;
+    for (let k = 0; k < l.arr.length; k++) { if (rnd() < BUST_RATE) continue; s += drawScore(l.arr[k].m, l.arr[k].sd); }
+    return l.banked + Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
+  };
+  seedRng(hashStr(A.rosterId + '|' + B.rosterId + '|' + wk) >>> 0);
+  const margins = new Float64Array(n), sa = new Float64Array(n), sb = new Float64Array(n);
+  let wins = 0, ties = 0;
+  for (let i = 0; i < n; i++) {
+    const x = draw(la), y = draw(lb);
+    sa[i] = x; sb[i] = y; margins[i] = x - y;
+    if (x > y) wins++; else if (x === y) ties++;
+  }
+  const q = (arr, p) => { const a = Array.from(arr).sort((x, y) => x - y); return a[clamp(Math.floor(p * (a.length - 1)), 0, a.length - 1)]; };
+  const marr = Array.from(margins);
+  return {
+    n, pA: wins / n, pB: (n - wins - ties) / n, tie: ties / n,
+    meanA: mean(Array.from(sa)), meanB: mean(Array.from(sb)),
+    medMargin: q(margins, .5), loMargin: q(margins, .1), hiMargin: q(margins, .9),
+    blowoutA: marr.filter(m => m > 30).length / n, blowoutB: marr.filter(m => m < -30).length / n,
+    closeGame: marr.filter(m => Math.abs(m) <= 10).length / n,
+    margins: marr, aScores: Array.from(sa), bScores: Array.from(sb)
+  };
+}
+
+/** The weeks these two are scheduled against each other. */
+function weeksBetween(A, B) {
+  const sched = schedule(), out = [];
+  for (let w = 1; w <= S.regEnd; w++) {
+    const games = sched[w - 1] || [];
+    if (games.some(g => (g[0] === A.rosterId && g[1] === B.rosterId) || (g[1] === A.rosterId && g[0] === B.rosterId))) out.push(w);
+  }
+  return out;
+}
+
+/** Every time these two have actually played. */
+function h2hHistory(A, B) {
+  const out = [];
+  for (let w = 1; w <= S.lastWeek; w++) {
+    const ms = S.matchups[w] || [];
+    const ma = ms.find(m => m.roster_id === A.rosterId), mb = ms.find(m => m.roster_id === B.rosterId);
+    if (!ma || !mb) continue;
+    if (ma.matchup_id === null || ma.matchup_id === undefined || ma.matchup_id !== mb.matchup_id) continue;
+    out.push({ week: w, a: ma.points || 0, b: mb.points || 0 });
+  }
+  return out;
+}
+
+function viewH2H() {
+  const wrap = h('div.grid');
+  const teams = S.teams;
+  if (teams.length < 2) return wrap.appendChild(card('Head to head', null, h('div.empty', 'Need at least two teams.'))), wrap;
+  if (H2HUI.a === null || !S.teamById[H2HUI.a]) H2HUI.a = S.myRosterId || teams[0].rosterId;
+  if (H2HUI.b === null || !S.teamById[H2HUI.b] || H2HUI.b === H2HUI.a) H2HUI.b = (teams.find(t => t.rosterId !== H2HUI.a) || teams[0]).rosterId;
+  const A = S.teamById[H2HUI.a], B = S.teamById[H2HUI.b];
+  // one colour per team, held across every card on the page, so "blue" always
+  // means the same franchise rather than "good"
+  const CA = 'var(--s1)', CB = 'var(--s2)';
+  /* Only offer the weeks these two actually play. Simulating week 4 between two
+     teams who meet in weeks 2 and 11 is an answer to a question nobody asked. */
+  const meet = A.rosterId === B.rosterId ? [] : weeksBetween(A, B);
+  const allWeeks = []; for (let w = 1; w <= S.regEnd; w++) allWeeks.push(w);
+  const weeks = meet.length ? meet : allWeeks;
+  const next = meet.find(w => w > S.lastWeek);
+  if (H2HUI.week === null || !weeks.includes(H2HUI.week)) {
+    H2HUI.week = next || weeks[weeks.length - 1] || clamp(S.lastWeek + 1, 1, S.regEnd);
+    H2HUI.res = null;
+  }
+  const wk = H2HUI.week;
+  const isLive = wk === S.liveWeek;
+
+  wrap.appendChild(card('Pick two teams', null, h('div.row', { style: { gap: '14px' } },
+    h('label.fld', { style: { minWidth: '210px' } }, 'Team A',
+      h('select', { onchange: e => { H2HUI.a = +e.target.value; H2HUI.res = null; render(); } },
+        teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === A.rosterId }, t.name)))),
+    h('label.fld', { style: { minWidth: '210px' } }, 'Team B',
+      h('select', { onchange: e => { H2HUI.b = +e.target.value; H2HUI.res = null; render(); } },
+        teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === B.rosterId }, t.name)))),
+    h('label.fld', meet.length ? (meet.length === 1 ? 'They meet once' : 'They meet ' + meet.length + ' times') : 'Neutral week',
+      h('select', { onchange: e => { H2HUI.week = +e.target.value; H2HUI.res = null; render(); } },
+        weeks.map(w => h('option', { value: w, selected: w === wk },
+          'Week ' + w + (w <= S.lastWeek ? ' (played)' : w === next ? ' (next meeting)' : ''))))),
+    h('label.fld', ' ', h('button.btn', { onclick: () => { const t = H2HUI.a; H2HUI.a = H2HUI.b; H2HUI.b = t; H2HUI.res = null; render(); } }, '⇄ Swap')),
+    h('span', { style: { flex: 1 } }),
+    meet.length
+      ? h('span.tiny.muted', { style: { maxWidth: '300px' } },
+        meet.length === 1
+          ? 'Week ' + meet[0] + ' is the only week these two play each other.'
+          : 'Weeks ' + meet.slice(0, -1).join(', ') + ' and ' + meet[meet.length - 1] + ' are the only weeks these two play each other.')
+      : h('span.tiny.muted', { style: { maxWidth: '320px', color: 'var(--text-secondary)' } },
+        A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.')
+  )));
+  if (A.rosterId === B.rosterId) return wrap.appendChild(card(null, null, h('div.empty', 'Pick two different teams.'))), wrap;
+
+  /* ---- the headline: this week, straight up ---- */
+  if (!H2HUI.res || H2HUI.res.key !== A.rosterId + '|' + B.rosterId + '|' + wk) {
+    H2HUI.res = Object.assign(h2hSim(A, B, wk, H2HUI.sims), { key: A.rosterId + '|' + B.rosterId + '|' + wk });
+  }
+  const r = H2HUI.res;
+  const favA = r.pA >= r.pB;
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
+    kpi(A.short + ' win', pct(r.pA, 0), (isLive ? 'live ' : 'projected ') + fmt(r.meanA, 1) + ' pts'),
+    kpi(B.short + ' win', pct(r.pB, 0), (isLive ? 'live ' : 'projected ') + fmt(r.meanB, 1) + ' pts'),
+    kpi('Typical margin', (favA ? A.short : B.short) + ' by ' + fmt(Math.abs(r.medMargin), 1), 'median across ' + kfmt(r.n) + ' runs'),
+    kpi('One-score game', pct(r.closeGame, 0), 'within 10 points'),
+    kpi('Blowout', pct(Math.max(r.blowoutA, r.blowoutB), 0), (r.blowoutA > r.blowoutB ? A.short : B.short) + ' by 30+')
+  ));
+
+  const NB = 25;
+  const sortedM = r.margins.slice().sort((x, y) => x - y);
+  const mq = (q) => sortedM[clamp(Math.floor(q * (sortedM.length - 1)), 0, sortedM.length - 1)];
+  // run the axis to the half-percentile so the end bars are not a pile of clipped tail
+  let lo = mq(0.004), hi = mq(0.996);
+  const span = Math.max(1, hi - lo); lo = Math.min(lo, -span * 0.04); hi = Math.max(hi, span * 0.04);
+  const bw = (hi - lo) / NB;
+  const bins = Array.from({ length: NB }, (_, i) => {
+    const x0 = lo + i * bw;
+    return { x: Math.round(x0 + bw / 2), v: 0, color: x0 + bw / 2 >= 0 ? CA : CB, label: (x0 >= 0 ? A.short : B.short) + ' by ' + fmt(Math.abs(x0 + bw / 2), 0) };
+  });
+  r.margins.forEach(m => { const i = clamp(Math.floor((m - lo) / bw), 0, NB - 1); bins[i].v++; });
+  bins.forEach(b => b.v /= r.n);
+  wrap.appendChild(card('Margin, week ' + wk, A.name + ' to the right, ' + B.name + ' to the left — '
+    + (isLive ? 'points already scored are banked; only the open slots are drawn' : 'both lineups set optimally for this week'),
+    h('div', histogram(bins, { h: 190, w: chartW(900, 360), stretch: true, rule: 0, aria: 'margin distribution' }),
+      h('div.tiny.muted', { style: { marginTop: '8px' } },
+        `Middle 80% of outcomes run from ${(r.loMargin >= 0 ? A.short + ' by ' : B.short + ' by ')}${fmt(Math.abs(r.loMargin), 0)} to `
+        + `${(r.hiMargin >= 0 ? A.short + ' by ' : B.short + ' by ')}${fmt(Math.abs(r.hiMargin), 0)}.`))));
+
+  /* ---- slot by slot ---- */
+  const la = isLive ? liveLineupSlots(A, wk) : optimalLineup(activePlayers(A), p => pw(p, wk));
+  const lb = isLive ? liveLineupSlots(B, wk) : optimalLineup(activePlayers(B), p => pw(p, wk));
+  const slotRows = la.map((sa, i) => {
+    const sb = lb[i] || {};
+    const va = sa.player ? pwShown(sa.player, wk) : 0, vb = sb.player ? pwShown(sb.player, wk) : 0;
+    return { slot: sa.slot, a: sa.player, b: sb.player, va, vb, d: va - vb };
+  });
+  const aWon = slotRows.filter(x => x.d > 0).length;
+  // a five-column table with two player names in it does not fit a phone, so on
+  // narrow screens each slot becomes two stacked lines instead
+  const slotStack = h('div', { style: { display: 'grid', gap: '2px' } }, slotRows.map(r2 => {
+    const line = (pl, v, won, col) => h('div.row', { style: { gap: '6px', minWidth: 0 } },
+      pl ? posPill(pl.pos) : h('span.pill.pos-NA', '—'),
+      pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
+      pl && isLive ? liveBadge(pl, wk) : null,
+      h('span', { style: { flex: 1 } }),
+      h('span.mono.tiny', { style: { fontWeight: won ? 700 : 500, color: won ? col : 'var(--text-muted)' } }, fmt(v, 1)));
+    return h('div', { style: { borderBottom: '1px solid var(--grid)', padding: '7px 0' } },
+      h('div.row', { style: { gap: '7px', marginBottom: '3px' } },
+        h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot),
+        h('span', { style: { flex: 1 } }),
+        h('span.tiny.mono', { class: r2.d > 0 ? 'up' : r2.d < 0 ? 'down' : 'flat' }, sgn(r2.d, 1))),
+      line(r2.a, r2.va, r2.d > 0, CA), line(r2.b, r2.vb, r2.d < 0, CB));
+  }));
+  wrap.appendChild(card('Slot by slot — week ' + wk,
+    `${A.short} wins ${aWon} of ${slotRows.length} slots ${isLive ? 'so far' : 'on projection'} · totals ${fmt(sum(slotRows.map(x => x.va)), 1)} to ${fmt(sum(slotRows.map(x => x.vb)), 1)}`
+    + (isLive ? ' · points already scored are shown as scored' : ''),
+    isNarrow() ? slotStack : table([
+      { k: 'slot', h: 'Slot', sortable: false, f: r2 => h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot) },
+      { k: 'a', h: A.short, sortable: false, f: r2 => r2.a ? h('div.row', { style: { gap: '6px' } }, posPill(r2.a.pos), pname(r2.a), isLive ? liveBadge(r2.a, wk) : null) : h('span.muted.tiny', 'empty') },
+      { k: 'va', h: isLive ? 'Pts' : 'Proj', num: true, sortable: false, f: r2 => h('span.mono', { class: r2.d > 0 ? 'up' : '' }, fmt(r2.va, 1)) },
+      { k: 'vb', h: isLive ? 'Pts' : 'Proj', num: true, sortable: false, f: r2 => h('span.mono', { class: r2.d < 0 ? 'up' : '' }, fmt(r2.vb, 1)) },
+      { k: 'b', h: B.short, sortable: false, f: r2 => r2.b ? h('div.row', { style: { gap: '6px' } }, posPill(r2.b.pos), pname(r2.b), isLive ? liveBadge(r2.b, wk) : null) : h('span.muted.tiny', 'empty') },
+      { k: 'd', prio: 2, h: 'Edge', num: true, sortable: false, f: r2 => deltaTag(r2.d, 1) }
+    ], slotRows, {})));
+
+  /* ---- the franchises, not just this week ---- */
+  const metrics = [
+    { k: 'Starting lineup now', a: A.now, b: B.now, d: 1, tip: 'Projected points per week from the optimal lineup' },
+    { k: 'Future lineup', a: A.future, b: B.future, d: 1, tip: 'Age-adjusted projection two to three seasons out' },
+    { k: 'Dynasty capital', a: A.totalValue, b: B.totalValue, d: 0, tip: 'Players plus draft picks at today’s market' },
+    { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, d: 0 },
+    { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, d: 0 },
+    { k: 'Points for', a: A.fpts, b: B.fpts, d: 1 },
+    { k: 'Average age', a: A.age || 0, b: B.age || 0, d: 1, invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' }
+  ];
+  const scaleOf = (m) => { const mx = Math.max(Math.abs(m.a), Math.abs(m.b), 0.0001); return (m.a - m.b) / mx; };
+  const cw = isNarrow() ? '62px 1fr 62px' : '92px 1fr 92px';
+  const aWins = metrics.filter(m => m.invert ? m.a < m.b : m.a > m.b).length;
+  wrap.appendChild(card('The two franchises', `${A.short} leads ${aWins} of these ${metrics.length}`,
+    h('div', { style: { display: 'grid', gap: '7px' } }, [
+      h('div', { style: { display: 'grid', gridTemplateColumns: cw, gap: '10px', alignItems: 'center', paddingBottom: '2px' } },
+        h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
+        h('div'),
+        h('b.tiny', { style: { color: CB } }, B.short))
+    ].concat(metrics.map(m => {
+      const lead = m.invert ? (m.a < m.b) : (m.a > m.b);
+      const row = h('div', { style: { display: 'grid', gridTemplateColumns: cw, gap: '10px', alignItems: 'center' } },
+        h('span.mono.tiny', { style: { textAlign: 'right', fontWeight: lead ? 700 : 500, color: lead ? CA : 'var(--text-muted)' } }, m.d ? fmt(m.a, m.d) : kfmt(Math.round(m.a))),
+        h('div',
+          h('div.tiny.muted', { style: { textAlign: 'center', marginBottom: '2px' } }, m.k),
+          h('div', { style: { position: 'relative', height: '9px', background: 'var(--div-neutral)', borderRadius: '3px' } },
+            h('div', {
+              style: {
+                position: 'absolute', top: 0, bottom: 0, borderRadius: '3px',
+                left: scaleOf(m) >= 0 ? '50%' : (50 + scaleOf(m) * 50) + '%',
+                width: Math.abs(scaleOf(m)) * 50 + '%',
+                background: scaleOf(m) >= 0 ? CA : CB
+              }
+            }),
+            h('div', { style: { position: 'absolute', left: '50%', top: '-2px', bottom: '-2px', width: '1px', background: 'var(--axis)' } }))),
+        h('span.mono.tiny', { style: { fontWeight: !lead ? 700 : 500, color: !lead ? CB : 'var(--text-muted)' } }, m.d ? fmt(m.b, m.d) : kfmt(Math.round(m.b))));
+      if (m.tip) bindTT(row, `<div class="k">${m.k}</div>${m.tip}`);
+      return row;
+    })))));
+
+  /* ---- positional edge ---- */
+  const posRows = POS4.map(p => ({
+    pos: p, aNow: A.posNow[p] || 0, bNow: B.posNow[p] || 0,
+    aVal: A.posValue[p] || 0, bVal: B.posValue[p] || 0
+  }));
+  wrap.appendChild(h('div.grid.split',
+    card('Positional edge — this season', 'starting output per week · right is ' + A.short + ', left is ' + B.short,
+      divBar(posRows.map(x => ({ label: x.pos, v: x.aNow - x.bNow, tip: `<div class="k">${x.pos}</div>${A.short} ${fmt(x.aNow, 1)} · ${B.short} ${fmt(x.bNow, 1)}` })), { labelW: '48px', dec: 1, posColor: CA, negColor: CB })),
+    card('Positional edge — dynasty value', 'market value at each position',
+      divBar(posRows.map(x => ({ label: x.pos, v: x.aVal - x.bVal, vl: sgn((x.aVal - x.bVal) / 1000, 1) + 'k', tip: `<div class="k">${x.pos}</div>${A.short} ${kfmt(Math.round(x.aVal))} · ${B.short} ${kfmt(Math.round(x.bVal))}` })), { labelW: '48px', dec: 0, posColor: CA, negColor: CB }))));
+
+  /* ---- season outlook, if a sim exists ---- */
+  if (S.sim && S.sim.by[A.rosterId] && S.sim.by[B.rosterId]) {
+    const sa = S.sim.by[A.rosterId], sb = S.sim.by[B.rosterId];
+    const row = (label, va, vb, f) => h('div', { style: { display: 'grid', gridTemplateColumns: isNarrow() ? '58px 1fr 58px' : '74px 1fr 74px', gap: '10px', alignItems: 'center' } },
+      h('span.mono.tiny', { style: { textAlign: 'right', fontWeight: va >= vb ? 700 : 500 } }, f(va)),
+      h('div', h('div.tiny.muted', { style: { textAlign: 'center', marginBottom: '2px' } }, label),
+        oddsBar([{ v: va, color: CA }, { v: Math.max(0.0001, vb), color: CB }], { h: 8 })),
+      h('span.mono.tiny', { style: { fontWeight: vb > va ? 700 : 500 } }, f(vb)));
+    wrap.appendChild(card('Season outlook', 'from the last full-season simulation you ran',
+      h('div', { style: { display: 'grid', gap: '8px' } },
+        row('Projected wins', sa.wins, sb.wins, v => fmt(v, 1)),
+        row('Playoff odds', sa.playoff, sb.playoff, v => pct(v, 0)),
+        row('Title odds', sa.title, sb.title, v => pct(v, 1)),
+        row('Average seed', S.teams.length + 1 - sa.seed, S.teams.length + 1 - sb.seed, v => ord(Math.round(S.teams.length + 1 - v))))));
+  }
+
+  else {
+    wrap.appendChild(card('Season outlook', 'needs a full-season simulation to compare playoff and title odds',
+      h('div.row', { style: { gap: '12px' } },
+        h('button.btn.pri', {
+          onclick: () => { S.sim = simulate(2000); SimUI.res = S.sim; SimUI.mode = 'season'; render(); }
+        }, 'Run 2,000 seasons'),
+        h('span.tiny.muted', 'the Simulator tab keeps the full result'))));
+  }
+
+  /* ---- what they have actually done to each other ---- */
+  const hist = h2hHistory(A, B);
+  if (hist.length) {
+    let aw = 0, bw = 0;
+    hist.forEach(g => { if (g.a > g.b) aw++; else if (g.b > g.a) bw++; });
+    wrap.appendChild(card('When they have actually met', `${aw}–${bw} to ${aw >= bw ? A.name : B.name} this season`,
+      table([
+        { k: 'week', h: 'Week', num: true, f: g => h('b.mono', g.week) },
+        { k: 'a', h: A.short, num: true, f: g => h('span.mono', { class: g.a > g.b ? 'up' : '' }, fmt(g.a, 1)) },
+        { k: 'b', h: B.short, num: true, f: g => h('span.mono', { class: g.b > g.a ? 'up' : '' }, fmt(g.b, 1)) },
+        { k: 'd', h: 'Margin', num: true, sort: g => g.a - g.b, f: g => deltaTag(g.a - g.b, 1) }
+      ], hist, { sortKey: 'week', sortDir: 1 })));
+  }
+
+  /* ---- do they match up as trade partners? ---- */
+  const scA = scoutTeam(A), scB = scoutTeam(B);
+  const fits = [];
+  scA.holes.forEach(hA => { const sB = scB.surplus.find(x => x.pos === hA.pos); if (sB) fits.push({ from: B, to: A, pos: hA.pos, z: sB.z - hA.z }); });
+  scB.holes.forEach(hB => { const sA = scA.surplus.find(x => x.pos === hB.pos); if (sA) fits.push({ from: A, to: B, pos: hB.pos, z: sA.z - hB.z }); });
+  wrap.appendChild(card('Do they fit as trade partners?',
+    fits.length ? 'each of these is a position one of them is deep at and the other is thin at' : null,
+    fits.length
+      ? h('div', { style: { display: 'grid', gap: '7px' } }, fits.sort((x, y) => y.z - x.z).map(f =>
+        h('div.row', { style: { gap: '8px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '8px 10px', background: 'var(--surface-2)' } },
+          posPill(f.pos), h('b.tiny', f.from.name), h('span.tiny.muted', '→'), h('b.tiny', f.to.name),
+          h('span', { style: { flex: 1 } }),
+          h('span.tiny.muted', 'gap ' + fmt(f.z, 1) + ' SD'),
+          h('button.btn.sm', {
+            onclick: () => {
+              FinderUI.team = f.to.rosterId; FinderUI.partners = [f.from.rosterId];
+              FinderUI.positions = [f.pos]; FinderUI.shape = 'any'; FinderUI.focus = null; FinderUI.results = null;
+              S.view = 'finder'; render(); window.scrollTo(0, 0);
+            }
+          }, 'Find a deal')))) 
+      : h('div.empty', 'Neither team is deep where the other is thin — a trade here would have to be about value, not need.')));
+  return wrap;
+}
+/* ==================================================================
+   Live week — actual points where the games are finished, projections
+   where they are not.
+   ================================================================== */
+
+/* Sleeper publishes the NFL schedule with a status per game. Without it there is
+   no honest way to tell "scored zero" from "has not kicked off yet". */
+async function loadNflSchedule(season) {
+  const key = 'nflsched:' + season;
+  const rec = await idbGet(key);
+  const FRESH = 8 * 60 * 1000;          // statuses move during a game day
+  if (rec && Date.now() - rec.t < FRESH && rec.d) return rec.d;
+  try {
+    const j = await getJSON('https://api.sleeper.app/schedule/nfl/regular/' + season, 2);
+    if (!Array.isArray(j) || !j.length) return (rec && rec.d) || null;
+    const out = {};
+    j.forEach(g => {
+      const w = +g.week; if (!w) return;
+      out[w] = out[w] || {};
+      if (g.home) out[w][g.home] = { status: g.status, date: g.date, opp: g.away, home: true };
+      if (g.away) out[w][g.away] = { status: g.status, date: g.date, opp: g.home, home: false };
+    });
+    await idbSet(key, { t: Date.now(), d: out });
+    return out;
+  } catch (e) { return (rec && rec.d) || null; }
+}
+/* The per-week scores feed carries what the season schedule does not: a real
+   kickoff time and a live quarter. That is what makes slates and in-game
+   proration possible. */
+async function loadWeekScores(season, week) {
+  const key = 'nflscores:' + season + ':' + week;
+  const rec = await idbGet(key);
+  const FRESH = 3 * 60 * 1000;
+  if (rec && Date.now() - rec.t < FRESH && rec.d) return rec.d;
+  try {
+    const j = await getJSON(`https://api.sleeper.app/scores/nfl/regular/${season}/${week}`, 2);
+    if (!Array.isArray(j) || !j.length) return (rec && rec.d) || null;
+    const games = j.map(g => {
+      const m = g.metadata || {};
+      const q = m.quarter_num !== undefined && m.quarter_num !== null ? +m.quarter_num : null;
+      return {
+        id: g.game_id, start: g.start_time || (m.date_time ? Date.parse(m.date_time) : null),
+        status: g.status, home: m.home_team, away: m.away_team,
+        over: !!m.is_over || GAME_OVER[g.status] === 1,
+        inProgress: !!m.is_in_progress, started: !!m.has_started,
+        quarter: m.quarter || null, quarterNum: q
+      };
+    }).filter(g => g.home && g.away);
+    const out = { games: games, byTeam: {} };
+    games.forEach(g => { out.byTeam[g.home] = g; out.byTeam[g.away] = g; });
+    await idbSet(key, { t: Date.now(), d: out });
+    return out;
+  } catch (e) { return (rec && rec.d) || null; }
+}
+/** Pull the scores feed for a week if it is not already in hand. */
+async function ensureWeekScores(wk) {
+  S.weekScores = S.weekScores || {};
+  const got = await loadWeekScores(S.season, wk);
+  if (got) { S.weekScores[wk] = got; S._live = null; }
+  return got;
+}
+function weekScoreGame(team, wk) {
+  const ws = S.weekScores && S.weekScores[wk];
+  return (ws && team && ws.byTeam[team]) || null;
+}
+const GAME_OVER = { complete: 1, canceled: 1, postponed: 1 };
+function nflGame(team, wk) {
+  const s = S.nflSched && S.nflSched[wk];
+  return (s && team && s[team]) || null;
+}
+/** Has any game in this NFL week finished or kicked off? */
+function weekStarted(wk) {
+  const s = S.nflSched && S.nflSched[wk];
+  if (s) return Object.keys(s).some(t => s[t].status !== 'pre_game');
+  return !!(S.matchups[wk] || []).some(m => (m.points || 0) > 0);
+}
+/** Are all of this NFL week's games done? */
+function weekFinished(wk) {
+  const s = S.nflSched && S.nflSched[wk];
+  if (s) { const ks = Object.keys(s); return ks.length > 0 && ks.every(t => GAME_OVER[s[t].status]); }
+  return !!(S.matchups[wk] || []).some(m => (m.points || 0) > 0);
+}
+/** done · live · upcoming · bye · unknown */
+function livePlayerState(p, wk) {
+  const sg = weekScoreGame(p && p.team, wk);
+  if (sg) return sg.over ? 'done' : (sg.started || sg.inProgress) ? 'live' : 'upcoming';
+  if (!S.nflSched) return wk <= S.lastWeek ? 'done' : 'upcoming';
+  const g = nflGame(p && p.team, wk);
+  if (!g) return 'bye';
+  if (GAME_OVER[g.status]) return 'done';
+  return g.status === 'pre_game' ? 'upcoming' : 'live';
+}
+/** How much of a player's game is still to be played, 0 to 1. */
+function liveRemaining(p, wk, state) {
+  if (state === 'done' || state === 'bye') return 0;
+  if (state !== 'live') return 1;
+  const sg = weekScoreGame(p && p.team, wk);
+  const q = sg && sg.quarterNum;
+  // halfway through the quarter on average; overtime is the tail end of nothing
+  if (!q || q < 1) return 1;
+  if (q >= 5) return 0.04;
+  return clamp((4 - q + 0.5) / 4, 0.04, 1);
+}
+
+/* What one player is worth to a live week: the points they have banked, plus the
+   share of their projection still to come. A finished game is all points and no
+   projection; a game that has not kicked off is all projection. */
+function liveValue(p, wk) {
+  const state = livePlayerState(p, wk);
+  const m = (S.matchups[wk] || []).find(x => x.players_points && x.players_points[p.id] !== undefined);
+  const actual = m ? m.players_points[p.id] : null;
+  const proj = pw(p, wk);
+  const rem = liveRemaining(p, wk, state);
+  const banked = state === 'done' ? (actual || 0) : (state === 'live' ? (actual || 0) : 0);
+  const open = state === 'bye' ? 0 : proj * rem;
+  const sg = weekScoreGame(p && p.team, wk);
+  return {
+    state: state, actual: actual, proj: proj, remaining: rem,
+    banked: banked, open: open, used: banked + open,
+    settled: state === 'done' || state === 'bye',
+    quarter: sg ? sg.quarter : null,
+    opp: (nflGame(p && p.team, wk) || {}).opp || pwOpp(p, wk) || null
+  };
+}
+/** The number to show for a player in a given week — live where the week is live. */
+function pwShown(p, wk) { return wk === S.liveWeek ? liveValue(p, wk).used : pw(p, wk); }
+
+/* Which starters a team fields in a given week. Sleeper reports the lineup the
+   manager actually set for the current and past weeks; for weeks that have not
+   arrived the stored lineup is stale, so the optimiser stands in. */
+function startersFor(t, wk) {
+  const m = (S.matchups[wk] || []).find(x => x.roster_id === t.rosterId);
+  if (m && Array.isArray(m.starters) && wk <= Math.max(S.lastWeek, S.liveWeek || 0)) {
+    const ids = m.starters.filter(id => id && id !== '0');
+    if (ids.length) return ids.map(id => S.index[id] || ensurePlayer(id));
+  }
+  return optimalLineup(activePlayers(t), p => pw(p, wk)).map(s => s.player).filter(Boolean);
+}
+
+/* The heart of it: banked points for finished games, projections for everyone
+   else. A player whose game is under way has not finished playing, so their
+   projection still stands — mixing a half-played line into a final score would
+   silently understate every team on a Sunday afternoon. */
+function liveRoster(t, wk) {
+  const key = t.rosterId + '|' + wk;
+  S._live = S._live || {};
+  if (S._live[key]) return S._live[key];
+  const m = (S.matchups[wk] || []).find(x => x.roster_id === t.rosterId);
+  const pts = (m && m.players_points) || {};
+  const rows = startersFor(t, wk).map(p => {
+    const v = liveValue(p, wk);
+    // the roster's own matchup row is the authority on what this player scored
+    if (typeof pts[p.id] === 'number') {
+      v.actual = pts[p.id];
+      v.banked = v.state === 'done' || v.state === 'live' ? pts[p.id] : 0;
+      v.used = v.banked + v.open;
+    } else if (v.state === 'done' || v.state === 'live') {
+      v.actual = v.actual === null ? 0 : v.actual;
+      v.banked = v.actual; v.used = v.banked + v.open;
+    }
+    return Object.assign({ p: p }, v);
+  });
+  const banked = sum(rows.map(r => r.banked));
+  const openRows = rows.filter(r => r.open > 0.05);
+  const out = {
+    rows: rows, banked: banked,
+    projected: sum(openRows.map(r => r.open)),
+    total: banked + sum(openRows.map(r => r.open)),
+    doneN: rows.filter(r => r.state === 'done').length,
+    liveN: rows.filter(r => r.state === 'live').length,
+    leftN: rows.filter(r => r.state === 'upcoming').length,
+    byeN: rows.filter(r => r.state === 'bye').length,
+    open: openRows.map(r => ({ p: r.p, used: r.open })),
+    reported: m ? (m.points || 0) : 0
+  };
+  S._live[key] = out;
+  return out;
+}
+
+/** Pull the week's scores and game statuses again, without reloading the league. */
+async function refreshLiveWeek() {
+  const wk = S.liveWeek || clamp(S.lastWeek + 1, 1, S.regEnd);
+  try {
+    const [ms, sched] = await Promise.all([
+      sl(`/league/${S.leagueId}/matchups/${wk}`).catch(() => null),
+      (async () => { await idbSet('nflsched:' + S.season, null); return loadNflSchedule(S.season); })()
+    ]);
+    if (ms && ms.length) S.matchups[wk] = ms;
+    if (sched) S.nflSched = sched;
+  } catch (e) { }
+  S._live = null; S._wpSnaps = null;
+  // a week that has just finished stops being the live one
+  if (S.liveWeek && weekFinished(S.liveWeek)) { S.lastWeek = S.liveWeek; S.liveWeek = null; S._sched = null; }
+}
+
+/** The lineup a manager actually has set, paired with the league's starting slots. */
+function liveLineupSlots(t, wk) {
+  const slots = (S.cfg.rosterPositions || []).filter(x => !['BN', 'IR', 'TAXI'].includes(x));
+  const players = startersFor(t, wk);
+  const fits = slots.every((sl, i) => !players[i] || (SLOT_ELIG[sl] || [sl]).indexOf(players[i].pos) >= 0);
+  // Sleeper's starters array is positional, but if a league's data does not line
+  // up, showing a kicker in the QB slot helps nobody — reseat them by eligibility
+  if (fits) return slots.map((slot, i) => ({ slot: slot, player: players[i] || null }));
+  return optimalLineup(players, p => pwShown(p, wk));
+}
+/** A short badge saying where a player's game is up to. */
+function liveBadge(p, wk) {
+  const v = liveValue(p, wk);
+  if (v.state === 'bye') return h('span.tag', 'BYE');
+  if (v.state === 'done') return h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'final');
+  if (v.state === 'live') return h('span.tag', { title: 'game in progress — points so far are banked, the rest of the projection still counts', style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, v.quarter ? String(v.quarter) : 'playing');
+  return h('span.tag', 'to play');
+}
+
+/** Win probability with the banked points held fixed and only the open slots drawn. */
+function liveWinProb(A, B, wk, n) {
+  n = n || 4000;
+  const la = liveRoster(A, wk), lb = liveRoster(B, wk);
+  const mk = (l) => l.open.map(r => ({ m: r.used, sd: volFromMean(r.p.pos, r.used) }));
+  const oa = mk(la), ob = mk(lb);
+  const draw = (arr, base) => {
+    let s = 0;
+    for (let k = 0; k < arr.length; k++) { if (rnd() < BUST_RATE) continue; s += drawScore(arr[k].m, arr[k].sd); }
+    return base + Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
+  };
+  seedRng(hashStr(A.rosterId + '~' + B.rosterId + '~' + wk) >>> 0);
+  let aw = 0, tie = 0;
+  const margins = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = draw(oa, la.banked), y = draw(ob, lb.banked);
+    margins[i] = x - y;
+    if (x > y) aw++; else if (x === y) tie++;
+  }
+  const srt = Array.from(margins).sort((x, y) => x - y);
+  const q = (p) => srt[clamp(Math.floor(p * (n - 1)), 0, n - 1)];
+  return {
+    pA: aw / n, pB: (n - aw - tie) / n, tie: tie / n,
+    med: q(.5), lo: q(.1), hi: q(.9),
+    a: la, b: lb,
+    settled: !oa.length && !ob.length
+  };
+}
+
+/** This week's matchups, both sides scored live. */
+function liveMatchups(wk) {
+  return (schedule()[wk - 1] || []).map(([a, b]) => {
+    const A = S.teamById[a], B = S.teamById[b];
+    if (!A || !B) return null;
+    return Object.assign({ A: A, B: B }, liveWinProb(A, B, wk));
+  }).filter(Boolean);
+}
+
+/* ---------- slates ----------
+   A fantasy week is not a smooth line, it is a handful of windows: Thursday
+   night, the Sunday slates, Monday night, plus whatever international or
+   Saturday game the schedule has that week. Kickoff times come from the scores
+   feed, and the labels are worked out in US Eastern because that is what the
+   slate names mean. */
+function etParts(ms) {
+  try {
+    const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hour12: false });
+    const p = {}; f.formatToParts(new Date(ms)).forEach(x => p[x.type] = x.value);
+    return { day: p.weekday, hour: +p.hour };
+  } catch (e) { const d = new Date(ms); return { day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()], hour: d.getHours() }; }
+}
+function slateLabel(ms) {
+  const { day, hour } = etParts(ms);
+  if (day === 'Thu') return 'TNF';
+  if (day === 'Fri') return 'Fri';
+  if (day === 'Sat') return 'Sat';
+  if (day === 'Mon') return 'MNF';
+  if (day === 'Tue' || day === 'Wed') return day;
+  if (hour < 12) return 'Sun AM';
+  if (hour < 15) return 'Sun early';
+  if (hour < 19) return 'Sun late';
+  return 'SNF';
+}
+/** The week's kickoff windows, in order, with how many games each carries. */
+function weekSlates(wk) {
+  const ws = S.weekScores && S.weekScores[wk];
+  if (ws && ws.games.length && ws.games.every(g => g.start)) {
+    const by = {};
+    ws.games.forEach(g => {
+      const k = slateLabel(g.start);
+      by[k] = by[k] || { label: k, start: g.start, n: 0, done: 0 };
+      by[k].start = Math.min(by[k].start, g.start);
+      by[k].n++; if (g.over) by[k].done++;
+    });
+    return Object.values(by).sort((a, b) => a.start - b.start);
+  }
+  // no kickoff times: fall back to one window per distinct game date
+  const sc = S.nflSched && S.nflSched[wk];
+  if (!sc) return [];
+  const by = {};
+  Object.keys(sc).forEach(t => {
+    const d = sc[t].date; if (!d) return;
+    const ms = Date.parse(d + 'T17:00:00Z');
+    const k = slateLabel(ms);
+    by[k] = by[k] || { label: k, start: ms, n: 0, done: 0 };
+    by[k].n += 0.5; if (GAME_OVER[sc[t].status]) by[k].done += 0.5;
+  });
+  return Object.values(by).sort((a, b) => a.start - b.start);
+}
+/** How many of the week's games are finished. */
+function weekGamesDone(wk) {
+  const ws = S.weekScores && S.weekScores[wk];
+  if (ws) return { done: ws.games.filter(g => g.over).length, total: ws.games.length };
+  const sc = S.nflSched && S.nflSched[wk];
+  if (!sc) return { done: 0, total: 0 };
+  const ks = Object.keys(sc);
+  return { done: ks.filter(t => GAME_OVER[sc[t].status]).length / 2, total: ks.length / 2 };
+}
+
+/* ---------- win-probability history ----------
+   Nothing records an intra-week path for us, so the app keeps its own: one
+   sample per visit, plus a synthetic point at the start of the week from the
+   pure projection, so the chart says something on the very first load. */
+function liveSnapKey(wk) { return 'wp:' + S.leagueId + ':' + wk; }
+function recordLiveSnapshot(wk) {
+  if (typeof HYP !== 'undefined' && HYP.on) return;      // never record a what-if
+  if (!wk || !weekStarted(wk) || weekFinished(wk)) return;
+  const key = liveSnapKey(wk);
+  let snaps = LS.get(key, []);
+  const now = Date.now();
+  const gd = weekGamesDone(wk);
+  const rec = { t: now, g: gd.done, gt: gd.total, p: {}, s: {} };
+  liveMatchups(wk).forEach(g => {
+    rec.p[g.A.rosterId] = Math.round(g.pA * 1000) / 1000;
+    rec.p[g.B.rosterId] = Math.round(g.pB * 1000) / 1000;
+    rec.s[g.A.rosterId] = Math.round(g.a.total * 10) / 10;
+    rec.s[g.B.rosterId] = Math.round(g.b.total * 10) / 10;
+  });
+  if (!Object.keys(rec.p).length) return;
+  // one sample every ten minutes is plenty; anything closer is noise
+  const last = snaps[snaps.length - 1];
+  if (last && Math.abs(now - last.t) < 10 * 60 * 1000) snaps[snaps.length - 1] = rec;
+  else snaps.push(rec);
+  snaps.sort((a, b) => a.t - b.t);
+  if (snaps.length > 400) snaps = snaps.slice(-400);
+  try { localStorage.setItem('dcc:' + key, JSON.stringify(snaps)); } catch (e) { }
+  S._wpSnaps = S._wpSnaps || {}; S._wpSnaps[wk] = snaps;
+}
+function liveSeries(wk) {
+  S._wpSnaps = S._wpSnaps || {};
+  if (!S._wpSnaps[wk]) S._wpSnaps[wk] = LS.get(liveSnapKey(wk), []);
+  return S._wpSnaps[wk];
+}
+/** The pre-week anchor: what the odds were before anybody had played. */
+function preWeekOdds(wk) {
+  const out = {};
+  (schedule()[wk - 1] || []).forEach(([a, b]) => {
+    const A = S.teamById[a], B = S.teamById[b];
+    if (!A || !B) return;
+    const r = h2hSim(A, B, wk, 1500);
+    out[a] = r.pA; out[b] = r.pB;
+  });
+  return out;
+}
+/* ================= 13. THIS WEEK ================= */
+const WeekUI = { week: null, open: null, prob: null };
+
+function currentWeek() {
+  if (S.liveWeek) return S.liveWeek;
+  return clamp(S.lastWeek + 1, 1, S.regEnd);
+}
+
+/** Actual where the game is over, projection where it is not. */
+function liveTeamLine(l, T, colour) {
+  return h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } },
+    h('div.row', { style: { justifyContent: 'space-between', gap: '8px' } },
+      teamCell(T, { sub: false }),
+      h('b.mono', { style: { fontSize: '18px' } }, fmt(l.total, 1))),
+    h('div.row', { style: { gap: '9px' } },
+      h('span.tiny.muted', l.banked > 0.05 ? h('span', h('b.sec', fmt(l.banked, 1)), ' scored') : h('span', 'nothing scored yet')),
+      l.projected > 0.05 ? h('span.tiny.muted', '+ ', h('b.sec', fmt(l.projected, 1)), ' projected') : null,
+      h('span', { style: { flex: 1 } }),
+      h('span.tiny.muted', l.doneN + ' done'
+        + (l.liveN ? ' · ' + l.liveN + ' playing' : '')
+        + (l.leftN ? ' · ' + l.leftN + ' to come' : ''))));
+}
+
+function viewWeek() {
+  const wrap = h('div.grid');
+  const weeks = []; for (let w = 1; w <= S.regEnd; w++) weeks.push(w);
+  if (WeekUI.week === null || !weeks.includes(WeekUI.week)) WeekUI.week = currentWeek();
+  const wk = WeekUI.week;
+  const live = wk === S.liveWeek;
+  const done = weekFinished(wk) && wk <= S.lastWeek;
+  const games = liveMatchups(wk);
+
+  // the scores feed carries kickoff times and live quarters; fetch it once per
+  // week the user actually looks at, then redraw
+  S.weekScores = S.weekScores || {};
+  S._wsAsked = S._wsAsked || {};
+  if (!S.weekScores[wk] && !S._wsAsked[wk] && wk <= S.regEnd) {
+    S._wsAsked[wk] = true;
+    ensureWeekScores(wk).then(got => { if (got) render(); });
+  }
+  if (live) recordLiveSnapshot(wk);
+
+  wrap.appendChild(card('Week ' + wk + (live ? ' — in progress' : done ? ' — final' : ' — not started'),
+    S.nflSched
+      ? 'points from finished games are counted as scored; everyone whose game has not ended is counted at their projection'
+      : 'the NFL game schedule could not be loaded, so every played week is treated as final',
+    h('div.row', { style: { gap: '14px' } },
+      h('label.fld', 'Week', h('select', { onchange: e => { WeekUI.week = +e.target.value; WeekUI.open = null; render(); } },
+        weeks.map(w => h('option', { value: w, selected: w === wk },
+          'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (final)' : ''))))),
+      h('span', { style: { flex: 1 } }),
+      live ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, '● live') : null,
+      h('button.btn.sm', {
+        onclick: async (e) => {
+          const b = e.target; b.disabled = true; b.textContent = 'Checking…';
+          await refreshLiveWeek();
+          render();
+        }
+      }, '↻ Recheck'))));
+
+  if (!games.length) {
+    wrap.appendChild(card(null, null, h('div.empty', 'No matchups scheduled for week ' + wk + '.')));
+    return wrap;
+  }
+
+  const openGame = games.find(g => g.A.rosterId === WeekUI.open);
+  if (openGame) { weekDetail(wrap, openGame, wk, live); return wrap; }
+
+  /* ---- the biggest game of the week ---- */
+  const sim = S.sim && S.sim.leverage && S.sim.leverage.some(x => x.week === wk) ? S.sim : null;
+  if (sim) {
+    const g = sim.leverage.filter(x => x.week === wk)[0];
+    const pair = games.find(x => (x.A.rosterId === g.a.team.rosterId && x.B.rosterId === g.b.team.rosterId)
+      || (x.A.rosterId === g.b.team.rosterId && x.B.rosterId === g.a.team.rosterId));
+    wrap.appendChild(card('The biggest game this week',
+      'measured by how far the season moves depending on who wins — the same yardstick the Simulator uses',
+      h('div', { style: { display: 'grid', gap: '11px' } },
+        h('div.row', { style: { gap: '10px' } },
+          h('b', { style: { fontSize: '16px' } }, g.a.team.name + '  v  ' + g.b.team.name),
+          h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--critical)' } }, pct(g.swing, 0) + ' of playoff odds on the line'),
+          h('span', { style: { flex: 1 } }),
+          pair ? h('span.tiny.muted', 'live ' + fmt(pair.a.total, 1) + ' – ' + fmt(pair.b.total, 1)) : null),
+        h('div.grid.split2',
+          leverageWorld(g, 0), h('div.tiny.muted', { style: { textAlign: 'center', alignSelf: 'center' } }, 'or'), leverageWorld(g, 1)),
+        h('div.row', h('button.btn.sm', {
+          onclick: () => { SimUI.mode = 'season'; LevUI.week = wk; S.view = 'sim'; render(); window.scrollTo(0, 0); }
+        }, 'See every game this week ranked →')))));
+  } else {
+    wrap.appendChild(card('The biggest game this week',
+      'which game moves the season most depends on the rest of the season, so this needs a full simulation',
+      h('div.row', { style: { gap: '12px' } },
+        h('button.btn.pri', {
+          onclick: () => { S.sim = simulate(2000); SimUI.res = S.sim; SimUI.mode = 'season'; render(); }
+        }, 'Run 2,000 seasons'),
+        h('span.tiny.muted', 'about a quarter of a second'))));
+  }
+
+  /* ---- the matchups ---- */
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))' } },
+    games.map(g => {
+      const favA = g.pA >= g.pB;
+      const body = h('div', { style: { display: 'grid', gap: '10px' } },
+        liveTeamLine(g.a, g.A, 'var(--s1)'),
+        h('div', { style: { display: 'grid', gap: '4px' } },
+          h('div', { style: { position: 'relative', height: '9px', background: 'var(--surface-3)', borderRadius: '3px', overflow: 'hidden' } },
+            h('div', { style: { position: 'absolute', inset: '0 auto 0 0', width: (g.pA * 100) + '%', background: 'var(--s1)' } })),
+          h('div.row', { style: { justifyContent: 'space-between' } },
+            h('b.mono.tiny', { style: { color: favA ? 'var(--s1)' : 'var(--text-muted)' } }, pct(g.pA, 0)),
+            h('span.tiny.muted', g.settled ? 'final' : 'win probability'),
+            h('b.mono.tiny', { style: { color: !favA ? 'var(--s2)' : 'var(--text-muted)' } }, pct(g.pB, 0)))),
+        liveTeamLine(g.b, g.B, 'var(--s2)'),
+        h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px' } },
+          g.settled ? 'Everyone has played.'
+            : `Typical result: ${(g.med >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.med), 1)} · middle 80% from `
+            + `${(g.lo >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.lo), 0)} to ${(g.hi >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.hi), 0)}`),
+        h('div.row', h('button.btn.sm', {
+          onclick: () => { WeekUI.open = g.A.rosterId; render(); window.scrollTo(0, 0); }
+        }, 'Win probability & players →')));
+      const c = card(null, null, body);
+      c.style.cursor = 'pointer';
+      c.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('.plink')) return;
+        WeekUI.open = g.A.rosterId; render(); window.scrollTo(0, 0);
+      });
+      return c;
+    })));
+
+  /* ---- everyone, ranked ---- */
+  const rows = S.teams.map(t => {
+    const l = liveRoster(t, wk);
+    const g = games.find(x => x.A.rosterId === t.rosterId || x.B.rosterId === t.rosterId);
+    const opp = !g ? null : (g.A.rosterId === t.rosterId ? g.B : g.A);
+    const p = !g ? null : (g.A.rosterId === t.rosterId ? g.pA : g.pB);
+    return { t, l, opp, p };
+  });
+  wrap.appendChild(card('Everyone this week',
+    'scored the same way — banked where the games are over, projected where they are not',
+    table([
+      { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
+      { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.opp ? h('span.tiny', r.opp.short) : h('span.muted.tiny', 'bye') },
+      { k: 'total', h: 'Live total', num: true, sort: r => r.l.total, f: r => h('b.mono', fmt(r.l.total, 1)) },
+      { k: 'banked', h: 'Scored', num: true, sort: r => r.l.banked, f: r => r.l.banked > 0.05 ? fmt(r.l.banked, 1) : h('span.muted', '—') },
+      { k: 'left', prio: 2, h: 'Still to play', num: true, sort: r => r.l.leftN + r.l.liveN, f: r => h('span.mono', (r.l.leftN + r.l.liveN) + ' of ' + r.l.rows.length) },
+      { k: 'p', h: 'Win prob', num: true, sort: r => r.p === null ? -1 : r.p, f: r => r.p === null ? '—' : h('span.mono', { class: r.p > 0.5 ? 'up' : 'muted' }, pct(r.p, 0)) }
+    ], rows, { sortKey: 'total', sortDir: -1 })));
+  return wrap;
+}
+
+/** One of the two worlds a leverage game leaves behind. */
+function leverageWorld(g, which) {
+  const A = g.a.team, B = g.b.team;
+  const wd = which === 0
+    ? { win: A, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] }
+    : { win: B, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] };
+  return h('div', {
+    style: { minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '9px 11px', background: 'var(--surface-1)' }
+  },
+    h('div.tiny', { style: { fontWeight: 700, marginBottom: '7px' } }, 'If ', h('span', { style: { color: 'var(--s1)' } }, wd.win.name), ' wins'),
+    h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r => h('div', {
+      style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: '8px', alignItems: 'center' }
+    },
+      h('span.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: r.won ? 640 : 500 } }, r.t.short),
+      h('div.bar-track', { style: { width: isNarrow() ? '52px' : '74px', height: '8px' } },
+        h('div.bar-fill', { style: { width: (clamp(r.po, 0, 1) * 100) + '%', background: r.won ? 'var(--s1)' : 'var(--text-muted)' } })),
+      h('span.mono.tiny', { style: { minWidth: '92px', textAlign: 'right' } },
+        h('b', pct(r.po, 0)), h('span.muted', ' playoffs · '), h('b', pct(r.ti, 1)), h('span.muted', ' title'))))));
+}
+
+/** Every starter on both sides of one matchup. */
+function weekPlayerTable(g) {
+  const rows = [];
+  g.a.rows.forEach(r => rows.push(Object.assign({ side: g.A }, r)));
+  g.b.rows.forEach(r => rows.push(Object.assign({ side: g.B }, r)));
+  const badge = (st) => st === 'done' ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'final')
+    : st === 'live' ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'playing')
+      : st === 'bye' ? h('span.tag', 'BYE') : h('span.tag', 'to play');
+  return table([
+    { k: 'side', h: 'Team', sort: r => r.side.name, f: r => h('span.tiny', r.side.short) },
+    { k: 'pos', prio: 2, h: 'Pos', sortable: false, f: r => posPill(r.p.pos) },
+    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => isSimple()
+      ? h('div.row', { style: { gap: '7px', minWidth: 0 } }, playerFace(r.p), pname(r.p), r.p.team ? teamLogo(r.p.team) : null)
+      : pname(r.p) },
+    { k: 'st', h: 'Status', sortable: false, f: r => badge(r.state) },
+    { k: 'used', h: 'Counted', num: true, sort: r => r.used, f: r => h('b.mono', fmt(r.used, 1)) },
+    { k: 'actual', prio: 2, h: 'Actual', num: true, sort: r => r.actual || 0, f: r => r.actual === null ? '—' : h('span.mono', fmt(r.actual, 1)) },
+    { k: 'proj', prio: 2, h: 'Projected', num: true, sort: r => r.proj, f: r => h('span.mono.muted', fmt(r.proj, 1)) }
+  ], rows, { sortKey: 'used', sortDir: -1 });
+}
+
+/** One matchup's detail: how the odds moved, and every starter on both sides. */
+function weekDetail(wrap, g, wk, live) {
+  const CA = 'var(--s1)', CB = 'var(--s2)';
+  wrap.appendChild(h('div.row', { style: { gap: '10px' } },
+    h('button.btn', { onclick: () => { WeekUI.open = null; render(); window.scrollTo(0, 0); } }, '← All matchups'),
+    h('span', { style: { flex: 1 } }),
+    live ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null));
+
+  const side = (l, T, colour, p) => h('div', { style: { display: 'grid', gap: '3px', minWidth: 0 } },
+    h('div.row', { style: { gap: '8px', minWidth: 0 } },
+      h('b', { style: { fontSize: '16px', color: colour, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, T.name),
+      h('span', { style: { flex: 1 } }),
+      h('b.mono', { style: { fontSize: '22px' } }, fmt(l.total, 1))),
+    h('div.row', { style: { gap: '9px' } },
+      h('span.tiny.muted', h('b.sec', fmt(l.banked, 1)), ' scored'),
+      l.projected > 0.05 ? h('span.tiny.muted', '+ ', h('b.sec', fmt(l.projected, 1)), ' projected') : null,
+      h('span', { style: { flex: 1 } }),
+      h('b.mono.tiny', { style: { color: colour } }, pct(p, 0))));
+
+  wrap.appendChild(card(null, null, h('div', { style: { display: 'grid', gap: '11px' } },
+    side(g.a, g.A, CA, g.pA),
+    h('div', { style: { position: 'relative', height: '10px', background: 'var(--surface-3)', borderRadius: '3px', overflow: 'hidden' } },
+      h('div', { style: { position: 'absolute', inset: '0 auto 0 0', width: (g.pA * 100) + '%', background: CA } })),
+    side(g.b, g.B, CB, g.pB),
+    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px' } },
+      g.settled ? 'Everyone has played.'
+        : `Typical result: ${(g.med >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.med), 1)} · middle 80% from `
+        + `${(g.lo >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.lo), 0)} to ${(g.hi >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.hi), 0)}`))));
+
+  const chart = matchupProbChart(wk, g);
+  if (chart) wrap.appendChild(chart);
+
+  wrap.appendChild(card('Every starter', '"counted" is the number the live total uses — actual points once a game is over, projection until then',
+    weekPlayerTable(g)));
+}
+
+/** ESPN-style win-probability trace for one matchup, cut into the week's slates. */
+function matchupProbChart(wk, g) {
+  // nothing has moved until somebody has played
+  if (!weekStarted(wk)) return null;
+  const CA = 'var(--s1)', CB = 'var(--s2)';
+  const snaps = liveSeries(wk).filter(s => s.p[g.A.rosterId] !== undefined);
+  const slates = weekSlates(wk);
+  if (!slates.length) return null;
+
+  /* Wall-clock time wastes most of its width on an empty Friday and crushes the
+     three Sunday windows into a smudge. The axis is the week's slates instead:
+     pregame, then one equal column per kickoff window, with readings placed
+     proportionally inside the window they fall in. */
+  const bounds = [slates[0].start - 3 * 3600 * 1000].concat(slates.map(sl => sl.start));
+  bounds.push(slates[slates.length - 1].start + 4 * 3600 * 1000);
+  const nWin = bounds.length - 1;
+  const slateX = (t) => {
+    if (t <= bounds[0]) return 0;
+    for (let i = 0; i < nWin; i++) {
+      if (t < bounds[i + 1]) return i + (t - bounds[i]) / Math.max(1, bounds[i + 1] - bounds[i]);
+    }
+    return nWin;
+  };
+  const labels = ['Pre'].concat(slates.map(sl => sl.label));
+  const t0 = bounds[0];
+  const pre = preWeekOdds(wk);
+
+  const pts = [{ x: 0, y: (pre[g.A.rosterId] !== undefined ? pre[g.A.rosterId] : g.pA) * 100, label: 'Before kickoff' }];
+  snaps.forEach(s => {
+    if (s.t <= t0) return;
+    pts.push({
+      x: slateX(s.t), y: s.p[g.A.rosterId] * 100,
+      label: new Date(s.t).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+        + (s.s && s.s[g.A.rosterId] !== undefined ? ' · ' + fmt(s.s[g.A.rosterId], 1) + '–' + fmt(s.s[g.B.rosterId], 1) : '')
+    });
+  });
+  const lastX = pts[pts.length - 1].x;
+  const nowX = slateX(Date.now());
+  // a week that is over ends where the readings ended; only a live week has a "now"
+  if (!weekFinished(wk) && nowX > lastX + 0.02) {
+    pts.push({ x: nowX, y: g.pA * 100, label: 'now · ' + fmt(g.a.total, 1) + '–' + fmt(g.b.total, 1) });
+  }
+  if (pts.length < 2) {
+    // the week ran without the app being open for it; say so rather than
+    // drawing a chart out of a single point
+    return card('Win probability', null, h('div.empty',
+      h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'No readings from this week'),
+      h('div.tiny', { style: { marginTop: '6px', maxWidth: '460px', margin: '6px auto 0' } },
+        'The trace is built from readings taken while this page is open, so it only exists for weeks you watched. '
+        + 'Open the app during a week and it fills in on its own.')));
+  }
+  pts.sort((a, b) => a.x - b.x);
+
+  const xEnd = pts[pts.length - 1].x;
+  const ticks = labels.map((lb, i) => ({ x: i, label: lb, rule: i > 0 })).filter(t => t.x <= xEnd + 0.01);
+  const chart = lineChart([{ name: g.A.short, color: CA, width: 2.4, points: pts }], {
+    h: 270, dots: false, y0: 0, y1: 100, yRule: 50, yTicks: 2, x0: 0, x1: Math.max(1, xEnd),
+    yFmt: v => Math.abs(v - 50) < 1 ? '50' : String(Math.round(v > 50 ? v : 100 - v)),
+    xTickValues: ticks,
+    aria: 'win probability through the week'
+  });
+  const moved = Math.max.apply(null, pts.map(p => Math.abs(p.y - pts[0].y)));
+  const swung = pts.some(p => (p.y - 50) * (pts[0].y - 50) < 0);
+  return card('Win probability',
+    `${g.A.name} above the line, ${g.B.name} below · ${snaps.length} reading${snaps.length === 1 ? '' : 's'} taken`
+    + (moved > 1 ? ` · biggest move ${moved.toFixed(0)} points` : '')
+    + (swung ? ' · the lead has changed hands' : ''),
+    h('div',
+      h('div.row', { style: { gap: '7px', marginBottom: '6px' } },
+        h('span', { style: { width: '16px', height: '9px', borderRadius: '2px', background: CA, display: 'inline-block' } }),
+        h('b.tiny', g.A.name)),
+      chart,
+      h('div.row', { style: { gap: '7px', marginTop: '6px' } },
+        h('span', { style: { width: '16px', height: '9px', borderRadius: '2px', background: CB, display: 'inline-block' } }),
+        h('b.tiny', g.B.name),
+        h('span.tiny.muted', '— ahead whenever the line is below the middle')),
+      h('div.tiny.muted', { style: { marginTop: '8px' } },
+        'One column per kickoff window' + (slates.length ? ' (' + slates.map(sl => sl.label + ' ×' + Math.round(sl.n)).join(', ') + ')' : '')
+        + '. The line is only as detailed as the times this page was open — it takes a reading on load, at most one every ten minutes.')));
+}
 /* ================= hypothetical roster sandbox =================
    Release, sign and swap players and picks, then look at any page as if those
    moves had happened. Nothing here touches Sleeper — it is a local rebuild of
@@ -4582,6 +6374,7 @@ function hypMovePick(key, toRosterId) {
 /* which views actually change when a roster changes */
 const HYP_VIEWS = { roster: 1, lineup: 1, power: 1, sim: 1, finder: 1, trade: 1, scout: 1, stock: 1, player: 1 };
 const HYP_UNAFFECTED = {
+  week: 'This Week is scored from games that are already happening. A hypothetical roster does not change points that have been banked, so the live totals and matchups here stay real.',
   standings: 'Active Rankings is pure results — wins, losses and points actually scored. A hypothetical roster cannot change games that have already been played.',
   draft: 'The draft board is a historical record of picks that were actually made, so a hypothetical roster does not change it.',
   trades: 'Trade History is a record of deals that actually happened, so a hypothetical roster does not change it. The grades already use live market values.'
@@ -4928,6 +6721,8 @@ async function boot(leagueId, onStep) {
     if (me) { const t = S.teams.find(t => t.ownerId === me); if (t) S.myRosterId = t.rosterId; }
     if (!S.myRosterId) S.myRosterId = S.teams[0].rosterId;
     RosterUI.team = S.myRosterId; TradeUI.a = S.myRosterId; FinderUI.team = S.myRosterId;
+    // if a week is being played right now, that is what you opened the app for
+    if (S.liveWeek && S.view === 'roster') S.view = 'week';
     S.busy = false;
     S.sim = null;
     render();
@@ -4946,6 +6741,7 @@ async function boot(leagueId, onStep) {
   }
 }
 setTheme(currentTheme());
+setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer view
 watchViewport();
 const _last = LS.get('last', null);
 render();
