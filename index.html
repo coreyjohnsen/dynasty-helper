@@ -503,6 +503,58 @@ function setUiMode(m) {
 }
 /** Cards that only earn their space in the dense view. */
 function proOnly(node) { return isSimple() ? null : node; }
+
+/* ---- dynasty or redraft ----
+   A dynasty or keeper league carries value into next year, so half of what this
+   app measures — the ageing curve, the two-to-three-year projection, draft-pick
+   capital, contend-versus-rebuild — is about that carry. A redraft league has no
+   carry: every roster is dissolved in the spring. Rather than show those numbers
+   with a shrug, a redraft league switches them off and prices everything at the
+   market's redraft value instead. */
+function isDynasty() { return S.dynasty !== false; }
+/** Cards, columns and tips that only mean something when next year exists. */
+function dynOnly(node) { return isDynasty() ? node : null; }
+function valueWord() { return isDynasty() ? 'dynasty' : 'redraft'; }
+function capitalLabel() { return isDynasty() ? 'Dynasty capital' : 'Roster value'; }
+/** Sleeper's own answer: 0 redraft, 1 keeper, 2 dynasty. Keepers carry enough
+ *  value into next year to be read as dynasty; the setting can say otherwise. */
+function detectLeagueType(league) {
+  const t = league && league.settings ? league.settings.type : undefined;
+  return t === 0 ? 'redraft' : 'dynasty';
+}
+function leagueTypeKey() { return 'ltype:' + S.leagueId; }
+/** 'auto' follows Sleeper; the other two are the user overruling it. */
+function leagueTypeChoice() { return LS.get(leagueTypeKey(), 'auto'); }
+function setLeagueType(choice) {
+  LS.set(leagueTypeKey(), choice === 'dynasty' || choice === 'redraft' ? choice : 'auto');
+  applyLeagueType();
+}
+function applyLeagueType() {
+  const choice = leagueTypeChoice();
+  const was = S.dynasty;
+  S.detected = detectLeagueType(S.league || {});
+  S.dynasty = (choice === 'auto' ? S.detected : choice) === 'dynasty';
+  if (was === S.dynasty) return false;
+  // the currency, the projections and every roster metric all move together
+  applyValueMode();
+  S._fa = null; S._slotDemand = null; S._live = null; S.sim = null; S._short = {};
+  // rosters are rebuilt because pick ownership changes, then every metric is
+  // recomputed because the currency under all of them just changed
+  if (S.teams && S.teams.length) { buildTeams(); computeStrength(); recordSnapshot(); }
+  return true;
+}
+/** Point every `dv` at the currency this league actually trades in. `idx` is
+ *  passed while the index is still being built, before S.index points at it. */
+function applyValueMode(idx) {
+  const all = idx || S.index || {};
+  const dyn = isDynasty() || S.redraftPricesMissing;
+  for (const id in all) {
+    const p = all[id];
+    if (!p || p.pos === 'PICK') continue;
+    p.dv = dyn ? (p.dvDyn || 0) : (p.rv || 0);
+    p.fppg = isDynasty() ? (p.fppgDyn !== undefined ? p.fppgDyn : p.ppg) : p.ppg;
+  }
+}
 /* Whether a franchise is named by its manager or by its team name. Sleeper lets
    people rename a team mid-season and plenty never set one at all, so the
    username is the stable handle — and it is what everyone calls each other in
@@ -617,7 +669,7 @@ const S = {
   view: 'home', leagueId: null, league: null, users: [], rosters: [], teams: [],
   players: {}, values: null, valuesRedraft: null, picksVal: {}, state: null,
   matchups: {}, drafts: [], draftPicks: {}, tradedPicks: [], transactions: [],
-  ui: 'full', names: 'user', _short: {},
+  ui: 'full', names: 'user', _short: {}, dynasty: true, detected: 'dynasty',
   cfg: {}, week: 1, lastWeek: 0, liveWeek: null, nflSched: null, regEnd: 14,
   me: null, sim: null, simN: 2000,
   history: {}, snapshots: [], busy: false, err: null
@@ -783,7 +835,7 @@ function buildIndex() {
       team: meta.t || p.maybeTeam || null,
       age: p.maybeAge !== null && p.maybeAge !== undefined ? Math.round(p.maybeAge * 10) / 10 : (meta.a || null),
       exp: p.maybeYoe !== null && p.maybeYoe !== undefined ? p.maybeYoe : meta.y,
-      dv: row.value || 0, rv: row.redraftValue || 0,
+      dv: row.value || 0, dvDyn: row.value || 0, rv: row.redraftValue || 0,
       rank: row.overallRank, posRank: row.positionRank, tier: row.maybeTier || null,
       trend30: row.trend30Day || 0, rosterPct: row.maybeRosterPercent,
       tradeFreq: row.maybeTradeFrequency, injury: meta.i || null,
@@ -811,8 +863,21 @@ function buildIndex() {
     else if (p.injury === 'Questionable') p.ppg *= 0.9;
     p.vol = volFor(p.pos, p.ppg);
     const dynBase = scoringAdjust(p.pos, curveLookup(p.pos, p.dvRank), p.dvRank, cfg);
-    p.fppg = Math.max(0.3, dynBase * futureFactor(p.pos, p.age, p.exp));
+    p.fppgDyn = Math.max(0.3, dynBase * futureFactor(p.pos, p.age, p.exp));
+    p.fppg = p.fppgDyn;
   }
+  // FantasyCalc carries a redraft price on the same rows, but if a future
+  // response ever stopped doing so, switching currency would zero every roster
+  // in the league. Sooner an honest fallback than a silently empty app.
+  if (!isDynasty()) {
+    const valued = Object.values(idx).filter(p => (p.dvDyn || 0) > 0);
+    const priced = valued.filter(p => (p.rv || 0) > 0);
+    if (valued.length > 20 && priced.length < valued.length * 0.25) {
+      S.redraftPricesMissing = true;
+      console.warn('No redraft prices in the FantasyCalc response; falling back to dynasty values.');
+    } else S.redraftPricesMissing = false;
+  }
+  applyValueMode(idx);
   // fill in unvalued rostered players from the Sleeper db
   S.pickVals = picks;
   return idx;
@@ -823,12 +888,14 @@ function ensurePlayer(id) {
   const pos = m ? m.p : (/^[A-Z]{2,3}$/.test(id) ? 'DEF' : 'NA');
   const o = {
     id, name: m ? m.n : id, pos, team: m ? m.t : (pos === 'DEF' ? id : null),
-    age: m ? m.a : null, exp: m ? m.y : null, dv: 0, rv: 0, rank: null, posRank: null,
+    age: m ? m.a : null, exp: m ? m.y : null, dv: 0, dvDyn: 0, rv: 0, rank: null, posRank: null,
     trend30: 0, injury: m ? m.i : null, unranked: true
   };
   o.ppg = REPL[pos] !== undefined ? REPL[pos] * (pos === 'DEF' || pos === 'K' ? 1 : 0.8) : 1.5;
   if (o.injury && ['IR', 'Out', 'PUP', 'Sus'].includes(o.injury)) o.ppg *= 0.05;
-  o.fppg = o.ppg * 0.85; o.vol = volFor(pos, o.ppg);
+  o.fppgDyn = o.ppg * 0.85;
+  o.fppg = isDynasty() ? o.fppgDyn : o.ppg;
+  o.vol = volFor(pos, o.ppg);
   S.index[id] = o;
   return o;
 }
@@ -1075,6 +1142,9 @@ async function loadLeague(leagueId, onStep) {
   if (!league) throw new Error('No league found with ID ' + leagueId + '. Check the 18-digit ID in your Sleeper league URL.');
   S.league = league; S.leagueId = leagueId;
   S.cfg = detectFormat(league);
+  // settled before anything is priced, because it decides what "value" means
+  S.detected = detectLeagueType(league);
+  S.dynasty = (leagueTypeChoice() === 'auto' ? S.detected : leagueTypeChoice()) === 'dynasty';
 
   step('Loading NFL week…', 0.1);
   S.state = await sl('/state/nfl');
@@ -1094,10 +1164,10 @@ async function loadLeague(leagueId, onStep) {
   step('Loading player database…', 0.3);
   S.players = await loadSleeperPlayers();
 
-  step('Loading dynasty trade values…', 0.52);
+  step('Loading ' + valueWord() + ' trade values…', 0.52);
   S.values = await loadValues(S.cfg);
   S.index = buildIndex();
-  buildPickCurves();
+  if (isDynasty()) buildPickCurves();
 
   step('Loading weekly matchups…', 0.66);
   const weeks = [];
@@ -1216,11 +1286,15 @@ function buildTeams() {
   const byId = {}; S.teams.forEach(t => byId[t.rosterId] = t);
   S.teamById = byId;
 
-  for (const k in ownerOf) {
-    const [season, round, orig] = k.split('|');
-    if (rookieDone && +season === curRookieSeason) continue;
-    const t = byId[ownerOf[k]]; if (!t) continue;
-    t.picks.push({ season: +season, round: +round, origRosterId: +orig, rosterId: ownerOf[k] });
+  // A redraft league's rosters do not carry future picks: next spring every team
+  // starts from nothing and drafts again, so there is no asset here to hold.
+  if (isDynasty()) {
+    for (const k in ownerOf) {
+      const [season, round, orig] = k.split('|');
+      if (rookieDone && +season === curRookieSeason) continue;
+      const t = byId[ownerOf[k]]; if (!t) continue;
+      t.picks.push({ season: +season, round: +round, origRosterId: +orig, rosterId: ownerOf[k] });
+    }
   }
   S.teams.forEach(t => t.picks.sort((a, b) => a.season - b.season || a.round - b.round || a.origRosterId - b.origRosterId));
   captureBaseline();
@@ -1331,6 +1405,9 @@ function applyProjections() {
     const rest = [];
     for (let k = Math.max(1, S.lastWeek + 1); k <= S.regEnd; k++) if (w[k]) rest.push(w[k].p);
     p.ppg = rest.length ? mean(rest) : mean(all);
+    // in a redraft league the two timelines are the same one, so the future
+    // projection has to follow the real weekly lines rather than the value curve
+    if (!isDynasty()) p.fppg = p.ppg;
     p.vol = volFromMean(p.pos, p.ppg);
     p.projSource = 'sleeper';
     p.byeWeeks = [];
@@ -1344,14 +1421,17 @@ function activePlayers(t) { return t.players.filter(p => !t.taxi.has(p.id) && !t
 function computeStrength() {
   const teams = S.teams;
   const n = teams.length;
-  if (!S.pickCurves) buildPickCurves();
+  if (isDynasty() && !S.pickCurves) buildPickCurves();
 
   // Pass 1 — roster strength only. Pick capital is deliberately left out here:
   // a pick's value depends on the projected finish, which depends on strength,
   // so strength has to be settled before picks can be priced.
+  const dyn = isDynasty();
   teams.forEach(t => {
     t.now = lineupPoints(activePlayers(t), 'ppg');
-    t.futureRoster = lineupPoints(t.players, 'fppg');
+    // with no next season there is no separate future to project: the two
+    // timelines are the same one, so every "future" metric collapses onto now
+    t.futureRoster = dyn ? lineupPoints(t.players, 'fppg') : t.now;
     t.starters = optimalLineup(activePlayers(t), 'ppg');
     t.starterIds = new Set(t.starters.filter(s => s.player).map(s => s.player.id));
     const ages = t.players.filter(p => POS4.includes(p.pos) && p.age && (p.dv || 0) > 300);
@@ -1366,9 +1446,9 @@ function computeStrength() {
   });
 
   // Pass 2 — price every pick off the projected finish of the team that owns its slot.
-  const price = pickPricer(null);
+  const price = dyn ? pickPricer(null) : null;
   teams.forEach(t => {
-    t.pickAssets = t.picks.map(pk => {
+    t.pickAssets = !dyn ? [] : t.picks.map(pk => {
       const q = price(pk);
       const label = pickLabel(pk);
       return Object.assign({}, pk, {
@@ -1383,6 +1463,7 @@ function computeStrength() {
     t.totalValue = t.rosterValue + t.pickCapital;
     t.future = t.futureRoster + t.pickCapital / 620;
   });
+  if (!dyn) teams.forEach(t => { t.future = t.now; });
 
   // ---- actual performance so far ----
   const wk = S.lastWeek;
@@ -1446,8 +1527,10 @@ function computeStrength() {
     const rn = rankOf(teams.map(t => t.posNow[pos]));
     teams.forEach((t, i) => { t.posValue[pos + 'Rank'] = r[i]; t.posNow[pos + 'Rank'] = rn[i]; });
   });
-  // window classification
+  // window classification — contend-or-rebuild is a question about next year, so
+  // a redraft league does not have one and gets no label rather than a wrong one
   teams.forEach(t => {
+    if (!dyn) { t.window = null; return; }
     const c = t.powerZ, f = t.futureZ;
     t.window = c > 0.35 && f > -0.3 ? 'Contend'
       : c > 0.35 ? 'Win-now'
@@ -1766,7 +1849,9 @@ function simulate(nSims, opts) {
 /* ================= value history (stock mode) ================= */
 function recordSnapshot() {
   if (typeof HYP !== 'undefined' && HYP.on) return;   // never record a what-if as history
-  const key = 'snap:' + S.leagueId;
+  // dynasty and redraft prices are different currencies; mixing them into one
+  // series would draw a cliff on the day someone flipped the setting
+  const key = 'snap:' + S.leagueId + (isDynasty() ? '' : ':rd');
   let snaps = LS.get(key, []);
   const today = new Date().toISOString().slice(0, 10);
   const rec = { d: today, t: Date.now(), p: {}, tm: {} };
@@ -2166,7 +2251,10 @@ function table(allCols, rows, opts) {
   opts = opts || {};
   // a column marked prio 2 or higher is secondary: worth having on a desktop,
   // not worth pushing the first three columns off a phone screen for
-  const cols = (isNarrow() || isSimple()) ? allCols.filter(c => !(c.prio >= 2)) : allCols;
+  // a null in the list is a column a view decided not to draw at all — a live-only
+  // status, a dynasty-only projection — so it is dropped before anything else
+  const kept = allCols.filter(Boolean);
+  const cols = (isNarrow() || isSimple()) ? kept.filter(c => !(c.prio >= 2)) : kept;
   const st = { key: opts.sortKey || null, dir: opts.sortDir || -1 };
   if (st.key && !cols.some(c => c.k === st.key)) {
     const kept = cols.find(c => c.num) || cols[cols.length - 1];
@@ -2633,6 +2721,13 @@ function settingsMenu() {
       useUsernames()
         ? 'Sleeper handles, everywhere. Team names show underneath.'
         : 'Team names, everywhere. Usernames show underneath.'),
+    S.league ? group('League type',
+      segmented([{ k: 'auto', label: 'Auto' }, { k: 'dynasty', label: 'Dynasty' }, { k: 'redraft', label: 'Redraft' }],
+        leagueTypeChoice(), m => { setLeagueType(m); render(); }),
+      (leagueTypeChoice() === 'auto' ? 'Sleeper says ' + S.detected + '. ' : 'Overriding Sleeper, which says ' + S.detected + '. ')
+      + (isDynasty()
+        ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
+        : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
     h('hr'),
     h('button.btn', { onclick: () => { settingsOpen = false; hardRefresh(); } }, '↻ Refresh data'),
     h('button.btn', {
@@ -2654,7 +2749,7 @@ function render() {
   const shown = !simple || navExpanded ? VIEWS : VIEWS.filter(v => CORE_VIEWS.includes(v.k) || v.k === S.view);
   const hiddenCount = VIEWS.length - shown.length;
   const side = h('div.side',
-    h('div.brand', h('div.mark'), h('div', h('b', 'Dynasty'), h('small', 'Command Center'))),
+    h('div.brand', h('div.mark'), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
     shown.map(v => h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => { S.view = v.k; render(); window.scrollTo(0, 0); } },
       h('span.ic', v.ic), v.label)),
     simple && (hiddenCount > 0 || navExpanded)
@@ -2794,17 +2889,19 @@ function viewRoster() {
   const leagueAvgValue = mean(teams.map(x => x.totalValue));
   wrap.appendChild(h('div.row', { style: { justifyContent: 'space-between' } },
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
-    h('span.tag', t.window)));
+    t.window ? h('span.tag', t.window) : null));
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(148px,1fr))' } },
-    kpi('Dynasty capital', kfmt(Math.round(t.totalValue)), `${ord(t.valueRank)} of ${teams.length} · ${sgn(Math.round((t.totalValue / leagueAvgValue - 1) * 100), 0)}% vs avg`,
-      `<div class="k">Total dynasty trade value</div>Players <b>${kfmt(Math.round(t.rosterValue))}</b><br>Draft picks <b>${kfmt(Math.round(t.pickCapital))}</b>`),
+    kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), `${ord(t.valueRank)} of ${teams.length} · ${sgn(Math.round((t.totalValue / leagueAvgValue - 1) * 100), 0)}% vs avg`,
+      `<div class="k">Total ${valueWord()} trade value</div>` + (isDynasty()
+        ? `Players <b>${kfmt(Math.round(t.rosterValue))}</b><br>Draft picks <b>${kfmt(Math.round(t.pickCapital))}</b>`
+        : 'Every rostered player at this season’s market price. A redraft league holds no picks, so this is the whole roster.')),
     kpi('Power rank', '#' + t.powerRank, `${fmt(t.power, 1)} rating`,
       `<div class="k">Blend of results so far and projection</div>Projection weight <b>${pct(1 - S.blendW, 0)}</b><br>Results weight <b>${pct(S.blendW, 0)}</b>`),
-    kpi('Future rank', '#' + t.futureRank, `${fmt(t.futurePower, 1)} rating`, `<div class="k">2–3 years out</div>Age-adjusted lineup plus pick capital.`),
+    dynOnly(kpi('Future rank', '#' + t.futureRank, `${fmt(t.futurePower, 1)} rating`, `<div class="k">2–3 years out</div>Age-adjusted lineup plus pick capital.`)),
     kpi('Record', `${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''}`, t.gp ? `${fmt(t.avgPts, 1)} PPG · ${fmt(t.fpts, 0)} PF` : 'No games played'),
     kpi('Proj. lineup', fmt(t.now, 1), 'pts / week', `<div class="k">Optimal starting lineup</div>Sum of projected points for the best legal lineup from this roster.`),
-    kpi('Avg age', t.age ? fmt(t.age, 1) : '—', 'value-weighted', `<div class="k">Weighted by dynasty value</div>Older stars pull this up more than deep-bench veterans.`)
+    dynOnly(kpi('Avg age', t.age ? fmt(t.age, 1) : '—', 'value-weighted', `<div class="k">Weighted by dynasty value</div>Older stars pull this up more than deep-bench veterans.`))
   ));
 
   // positional profile
@@ -2814,13 +2911,13 @@ function viewRoster() {
       label: r.pos + '  ·  ' + ord(r.rank),
       v: r.val, vl: kfmt(Math.round(r.val)),
       color: r.rank <= 3 ? 'var(--s1)' : r.rank >= teams.length - 2 ? 'var(--s8)' : 'var(--seq-300)',
-      tip: `<div class="k">${r.pos}</div>Dynasty value <b>${kfmt(Math.round(r.val))}</b> — ${ord(r.rank)} of ${teams.length}<br>Starting output <b>${fmt(r.now, 1)}</b> pts/wk — ${ord(r.nowRank)}`
+      tip: `<div class="k">${r.pos}</div>${isDynasty() ? 'Dynasty' : 'Redraft'} value <b>${kfmt(Math.round(r.val))}</b> — ${ord(r.rank)} of ${teams.length}<br>Starting output <b>${fmt(r.now, 1)}</b> pts/wk — ${ord(r.nowRank)}`
     })), { labelW: '86px', max: Math.max(...posRows.map(r => r.val)) })),
     card('Projected starting lineup', fmt(t.now, 1) + ' pts/week', lineupTable(t))
   ));
 
   // full roster
-  wrap.appendChild(card('Full roster', `${t.players.length} players · ${t.pickAssets.length} picks`, rosterTable(t),
+  wrap.appendChild(card('Full roster', `${t.players.length} players` + (isDynasty() ? ` · ${t.pickAssets.length} picks` : ''), rosterTable(t),
     isSimple() ? null : segmented([{ k: true, label: 'By position' }, { k: false, label: 'Flat' }], RosterUI.group, v => { RosterUI.group = v; render(); })));
   return wrap;
 }
@@ -2867,10 +2964,10 @@ function rosterTable(t) {
     },
     { k: 'team', prio: 2, h: 'NFL', f: r => r.team || '—' },
     { k: 'age', prio: 2, h: 'Age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
-    { k: 'dv', h: 'Value', num: true, tip: 'FantasyCalc dynasty trade value for this league format', f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
+    { k: 'dv', h: 'Value', num: true, tip: 'FantasyCalc ' + valueWord() + ' trade value for this league format', f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
     { k: 'posRank', prio: 2, h: 'Pos rk', num: true, f: r => r.posRank ? r.pos + fmt(r.posRank, 0) : '—' },
     { k: 'ppg', h: 'Proj', num: true, tip: 'Projected points per week in this league’s scoring', f: r => r.ppg === null || r.ppg === undefined ? '—' : fmt(r.ppg, 1) },
-    { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, tip: 'Age-adjusted projection 2–3 seasons out', f: r => r.fppg ? fmt(r.fppg, 1) : '—' },
+    isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, tip: 'Age-adjusted projection 2–3 seasons out', f: r => r.fppg ? fmt(r.fppg, 1) : '—' } : null,
     { k: 'trend30', prio: 2, h: '30d', num: true, tip: 'Value change over the last 30 days', f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') },
     { k: 'share', prio: 2, h: '% of team', num: true, sort: r => (r.dv || 0) / (t.totalValue || 1), f: r => h('div.meter', { style: { justifyContent: 'flex-end' } }, h('div.bar-track', { style: { width: '44px', height: '7px' } }, h('div.bar-fill', { style: { width: clamp((r.dv || 0) / (t.totalValue || 1) * 100 * 3.2, 0, 100) + '%' } })), h('span.tiny.mono.muted', pct((r.dv || 0) / (t.totalValue || 1), 1))) }
   ];
@@ -2919,19 +3016,24 @@ function rosterTable(t) {
 /* ================= 3. POWER RANKINGS ================= */
 const PowerUI = { mode: 'now' };
 function viewPower() {
+  if (!isDynasty() && PowerUI.mode === 'future') PowerUI.mode = 'now';
   const teams = S.teams.slice();
   const wrap = h('div.grid');
   if (!S.sim) S.sim = simulate(S.simN);
   const sim = S.sim;
 
   wrap.appendChild(h('div.row', { style: { justifyContent: 'space-between' } },
-    segmented([{ k: 'now', label: 'This season' }, { k: 'future', label: 'Future' }, { k: 'pos', label: 'By position' }], PowerUI.mode, m => { PowerUI.mode = m; render(); }),
+    segmented(isDynasty()
+      ? [{ k: 'now', label: 'This season' }, { k: 'future', label: 'Future' }, { k: 'pos', label: 'By position' }]
+      : [{ k: 'now', label: 'This season' }, { k: 'pos', label: 'By position' }],
+      PowerUI.mode, m => { PowerUI.mode = m; render(); }),
     h('span.tiny.muted', S.gamesPlayed
       ? `Week ${S.lastWeek} complete — rating is ${pct(S.blendW, 0)} results, ${pct(1 - S.blendW, 0)} projection`
       : 'Preseason — rating is 100% projection')));
 
   if (PowerUI.mode === 'pos') return wrap.appendChild(powerByPosition()), wrap;
-  const future = PowerUI.mode === 'future';
+  // a redraft league has no second timeline to rank, so that tab does not exist
+  const future = PowerUI.mode === 'future' && isDynasty();
   const key = future ? 'futurePower' : 'power';
   teams.sort((a, b) => b[key] - a[key]);
 
@@ -2959,7 +3061,7 @@ function viewPower() {
   const cols = [
     { k: 'i', h: '#', num: true, f: r => h('b.mono', r.i), sortable: false },
     { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
-    { k: 'window', prio: 2, h: 'Window', sort: r => r.t.window, f: r => h('span.tag', r.t.window) },
+    isDynasty() ? { k: 'window', prio: 2, h: 'Window', sort: r => r.t.window, f: r => h('span.tag', r.t.window) } : null,
     {
       k: 'rating', h: (future ? 'Future' : 'Power') + (isNarrow() ? '' : ' rating'), num: true,
       // the bar is 70px of a 390px screen; the number carries the same information
@@ -2968,7 +3070,7 @@ function viewPower() {
         h('b.mono', fmt(r.rating, 1)))
     },
     { k: 'proj', prio: 2, h: 'Proj lineup', num: true, tip: 'Projected points per week from the optimal lineup', f: r => fmt(future ? r.t.future : r.t.now, 1) },
-    { k: 'value', prio: 2, h: 'Capital', num: true, tip: 'Total dynasty trade value incl. picks', f: r => kfmt(Math.round(r.t.totalValue)) },
+    { k: 'value', prio: 2, h: isDynasty() ? 'Capital' : 'Value', num: true, tip: isDynasty() ? 'Total dynasty trade value incl. picks' : 'Total redraft trade value of the roster', f: r => kfmt(Math.round(r.t.totalValue)) },
     { k: 'rec', prio: 2, h: 'Record', sort: r => r.t.winPct === null ? -1 : r.t.winPct, f: r => `${r.t.wins}-${r.t.losses}${r.t.ties ? '-' + r.t.ties : ''}` },
     { k: 'pwins', prio: 2, h: 'Proj W', num: true, tip: 'Projected final regular-season wins', f: r => fmt(r.s.wins, 1) },
     {
@@ -3000,7 +3102,7 @@ function viewPower() {
         t.avatar ? h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.avatar'),
         h('div', { style: { minWidth: 0 } },
           h('div', { style: { fontWeight: 620, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, t.name),
-          h('div.tiny.muted', t.window + ' · ' + t.wins + '-' + t.losses))),
+          h('div.tiny.muted', (t.window ? t.window + ' · ' : '') + t.wins + '-' + t.losses))),
       h('div.hidenarrow',
         h('div.bar-track', { style: { height: '9px' } },
           h('div.bar-fill', { style: { width: clamp((r.rating - 20) / 60 * 100, 4, 100) + '%', background: r.i <= 3 ? 'var(--s1)' : 'var(--seq-300)' } })),
@@ -3035,7 +3137,7 @@ function viewPower() {
     if (S.lastWeek >= 2) wrap.appendChild(weeklyTrajectory());
   } else {
     wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))' } },
-      proOnly(card('Contend vs. build', 'each team’s two-axis position', contendMatrix())),
+      proOnly(dynOnly(card('Contend vs. build', 'each team’s two-axis position', contendMatrix()))),
       card('Draft capital', 'total value of picks held', barList(
         S.teams.slice().sort((a, b) => b.pickCapital - a.pickCapital).map(t => ({
           label: t.name, v: t.pickCapital, vl: kfmt(Math.round(t.pickCapital)),
@@ -3099,11 +3201,11 @@ function powerByPosition() {
       rowLabel: t => t.name, fmt: v => fmt(v, 1),
       tip: (t, p, v) => `<div class="k">${t.name} · ${p}</div>Starters produce <b>${fmt(v, 1)}</b> pts/wk — ${ord(t.posNow[p + 'Rank'])} of ${teams.length}`
     }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', 'Points per week')))));
-  wrap.appendChild(card('Positional dynasty value', 'total trade value at each position, all rostered players',
+  wrap.appendChild(card('Positional ' + valueWord() + ' value', 'total trade value at each position, all rostered players',
     h('div', heat(teams, POS4, (t, p) => t.posValue[p], {
       rowLabel: t => t.name, fmt: v => kfmt(Math.round(v)),
       tip: (t, p, v) => `<div class="k">${t.name} · ${p}</div>Value <b>${kfmt(Math.round(v))}</b> — ${ord(t.posValue[p + 'Rank'])} of ${teams.length}`
-    }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', 'Dynasty value')))));
+    }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', isDynasty() ? 'Dynasty value' : 'Redraft value')))));
   const cols = [{ k: 'name', h: 'Team', sort: r => r.name, f: r => teamCell(r, { sub: false }) }];
   POS4.forEach(p => {
     cols.push({ k: p + 'n', h: p + ' pts', num: true, sort: r => r.posNow[p], f: r => fmt(r.posNow[p], 1) });
@@ -3230,7 +3332,7 @@ function tradeEval(A, B, aOut, bOut, simN) {
     return {
       team: t, players, picks, act, starters, posNow, posValue,
       now: sum(starters.map(s => s.player ? s.player.ppg : 0)),
-      futureRoster: lineupPoints(players, 'fppg'),
+      futureRoster: isDynasty() ? lineupPoints(players, 'fppg') : lineupPoints(act, 'ppg'),
       age: ages.length ? sum(ages.map(p => p.age * p.dv)) / sum(ages.map(p => p.dv)) : null
     };
   };
@@ -3251,12 +3353,14 @@ function tradeEval(A, B, aOut, bOut, simN) {
     });
   };
 
+  const dyn = isDynasty();
   const aSh = shell(A, aOut, bOut), bSh = shell(B, bOut, aOut);
   const aShB = shell(A, [], []), bShB = shell(B, [], []);
   const ov = {};
   ov[A.rosterId] = { now: aSh.now, futureRoster: aSh.futureRoster };
   ov[B.rosterId] = { now: bSh.now, futureRoster: bSh.futureRoster };
-  const priceBefore = pickPricer(null), priceAfter = pickPricer(ov);
+  const zero = () => ({ value: 0, slot: 0, tier: '', rank: 0 });
+  const priceBefore = dyn ? pickPricer(null) : zero, priceAfter = dyn ? pickPricer(ov) : zero;
   const aAfter = finish(aSh, priceAfter), bAfter = finish(bSh, priceAfter);
   const aBefore = finish(aShB, priceBefore), bBefore = finish(bShB, priceBefore);
 
@@ -3371,7 +3475,8 @@ function viewTrade() {
     return card(null, null, h('div', { style: { display: 'grid', gap: '9px' } },
       h('label.fld', which === 'a' ? 'Team A gives' : 'Team B gives', sel(which)),
       h('div.row', { style: { justifyContent: 'space-between' } },
-        h('span.tiny.muted', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power · ${ord(T.futureRank)} future`), h('span.tag', T.window)),
+        h('span.tiny.muted', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power` + (isDynasty() ? ` · ${ord(T.futureRank)} future` : '')),
+        T.window ? h('span.tag', T.window) : null),
       box,
       h('div.row', { style: { justifyContent: 'space-between' } },
         h('b.mono', kfmt(Math.round(sum(out.map(a => a.dv)))) + ' out'),
@@ -3450,7 +3555,7 @@ function tradeResult(R) {
       { label: A.name + ' receives', v: R.bGives, vl: kfmt(Math.round(R.bGives)) },
       { label: B.name + ' receives', v: R.aGives, vl: kfmt(Math.round(R.aGives)) }
     ], { labelW: '170px' }),
-    h('div.tiny.muted', 'Values are live FantasyCalc dynasty values for this league’s exact format. Balance alone does not make a trade good — the impact tables below are what matter.')
+    h('div.tiny.muted', 'Values are live FantasyCalc ' + valueWord() + ' values for this league’s exact format. Balance alone does not make a trade good — the impact tables below are what matter.')
   )));
 
   const impact = (T, before, after, sim) => {
@@ -3458,11 +3563,11 @@ function tradeResult(R) {
     const sa = R.simAfter ? R.simAfter.by[T.rosterId] : null;
     const rows = [
       ['Lineup pts/wk', before.now, after.now, 1, R.nowRankAfter[T.rosterId], T.powerRank && rankOf(S.teams.map(x => x.now))[S.teams.indexOf(T)]],
-      ['Future rating', before.future, after.future, 1, R.futRankAfter[T.rosterId], T.futureRank],
-      ['Dynasty capital', before.value, after.value, 0, R.valRankAfter[T.rosterId], T.valueRank]
-    ];
+      isDynasty() ? ['Future rating', before.future, after.future, 1, R.futRankAfter[T.rosterId], T.futureRank] : null,
+      [capitalLabel(), before.value, after.value, 0, R.valRankAfter[T.rosterId], T.valueRank]
+    ].filter(Boolean);
     return h('div', { style: { display: 'grid', gap: '10px' } },
-      h('div.row', teamCell(T), h('span', { style: { flex: 1 } }), h('span.tag', T.window)),
+      h('div.row', teamCell(T), h('span', { style: { flex: 1 } }), T.window ? h('span.tag', T.window) : null),
       h('table.tbl', h('thead', h('tr', h('th', 'Metric'), h('th.num', 'Before'), h('th.num', 'After'), h('th.num', 'Change'), h('th.num', 'Rank'))),
         h('tbody', rows.map(([lbl, b, a, d, rkA, rkB]) => h('tr',
           h('td', lbl), h('td.num.mono', fmt(b, d)), h('td.num.mono', h('b', fmt(a, d))),
@@ -3549,12 +3654,14 @@ function viewFinder() {
   const T = S.teamById[FinderUI.team];
   const others = teams.filter(t => t.rosterId !== T.rosterId);
   const wrap = h('div.grid');
-  const mode = FinderUI.mode === 'auto' ? windowToMode(T.window) : FinderUI.mode;
+  // In a redraft league every team is contending by definition — there is no
+  // future to rebuild toward — so the objective is fixed and the picker goes.
+  const mode = !isDynasty() ? 'contend' : (FinderUI.mode === 'auto' ? windowToMode(T.window) : FinderUI.mode);
   const modeOpts = [{ k: 'auto', label: 'Auto (' + T.window + ')' }, { k: 'contend', label: 'Contend' }, { k: 'rebuild', label: 'Rebuild' }, { k: 'balanced', label: 'Balanced' }];
   const dirty = () => { FinderUI.results = null; };
 
   const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : arr.concat([v]);
-  const posChips = h('div.chipwrap', ['QB', 'RB', 'WR', 'TE', 'PICK'].map(p =>
+  const posChips = h('div.chipwrap', (isDynasty() ? ['QB', 'RB', 'WR', 'TE', 'PICK'] : ['QB', 'RB', 'WR', 'TE']).map(p =>
     h('button.chip' + (FinderUI.positions.includes(p) ? '.on' : ''), {
       onclick: () => { FinderUI.positions = toggle(FinderUI.positions, p); dirty(); render(); }
     }, p)));
@@ -3564,7 +3671,7 @@ function viewFinder() {
       onclick: () => { FinderUI.partners = []; dirty(); render(); }
     }, 'Everyone')].concat(others.map(t =>
       h('button.chip' + ((focus && focus.side === 'get' ? focus.owner.rosterId === t.rosterId : FinderUI.partners.includes(t.rosterId)) ? '.on' : ''), {
-        title: t.name + ' — ' + t.window,
+        title: t.name + (t.window ? ' — ' + t.window : ''),
         disabled: !!(focus && focus.side === 'get'),
         onclick: () => { FinderUI.partners = toggle(FinderUI.partners, t.rosterId); dirty(); render(); }
       }, t.name))));
@@ -3597,7 +3704,7 @@ function viewFinder() {
       h('label.fld', { style: { minWidth: '240px' } }, 'Your team',
         h('select', { onchange: e => { FinderUI.team = +e.target.value; FinderUI.partners = []; dirty(); render(); } },
           teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, t.name)))),
-      h('label.fld', 'Strategy', segmented(modeOpts, FinderUI.mode, m => { FinderUI.mode = m; dirty(); render(); })),
+      dynOnly(h('label.fld', 'Strategy', segmented(modeOpts, FinderUI.mode, m => { FinderUI.mode = m; dirty(); render(); }))),
       h('label.fld', 'Value tolerance',
         h('select', { onchange: e => { FinderUI.tol = +e.target.value; dirty(); } },
           [[0.08, 'Tight (±8%)'], [0.14, 'Normal (±14%)'], [0.22, 'Loose (±22%)']].map(([v, l]) => h('option', { value: v, selected: FinderUI.tol === v }, l))))),
@@ -3668,6 +3775,7 @@ function viewFinder() {
 }
 function windowToMode(w) { return ['Contend', 'Win-now'].includes(w) ? 'contend' : ['Rebuild', 'Retool'].includes(w) ? 'rebuild' : 'balanced'; }
 function modeBlurb(m) {
+  if (!isDynasty()) return 'Looking for deals that raise your starting lineup this season — the only season there is.';
   return {
     contend: 'Looking for deals that raise your starting lineup now — you give up youth and picks, you get proven production.',
     rebuild: 'Looking for deals that raise your future value — you sell aging producers for young players and draft capital.',
@@ -3675,6 +3783,8 @@ function modeBlurb(m) {
   }[m];
 }
 function objectiveFor(mode) {
+  // with one timeline, the objective is simply this week's lineup
+  if (!isDynasty()) return (b, a) => a.now - b.now;
   if (mode === 'contend') return (b, a) => (a.now - b.now) * 1.0 + (a.future - b.future) * 0.18;
   if (mode === 'rebuild') return (b, a) => (a.future - b.future) * 1.0 + (a.now - b.now) * 0.12 + (a.pickCapital - b.pickCapital) / 900;
   return (b, a) => (a.now - b.now) * 0.55 + (a.future - b.future) * 0.55;
@@ -3697,7 +3807,7 @@ function faPool() {
 function bestFreeAgentFor(players, taxi, ir, n) {
   const scored = faPool().map(fa => {
     const gain = marginalAdd(players, taxi, ir, fa, 'ppg');
-    const future = marginalAdd(players, taxi, ir, fa, 'fppg');
+    const future = isDynasty() ? marginalAdd(players, taxi, ir, fa, 'fppg') : 0;
     return { p: fa, gain: gain, future: future, score: gain + 0.35 * future + (fa.dv || 0) / 4000 };
   });
   scored.sort((a, b) => b.score - a.score);
@@ -3718,7 +3828,8 @@ function findTrades(T, mode, tol, filters) {
     const rmp = new Set(out.filter(a => a.kind === 'pick').map(a => a.id));
     const picks = t.pickAssets.filter(p => !rmp.has(p.id)).concat(inc.filter(a => a.kind === 'pick').map(a => a.ref));
     const act = players.filter(p => !t.taxi.has(p.id) && !t.ir.has(p.id));
-    return { picks, now: lineupPoints(act, 'ppg'), futureRoster: lineupPoints(players, 'fppg') };
+    const now = lineupPoints(act, 'ppg');
+    return { picks, now, futureRoster: isDynasty() ? lineupPoints(players, 'fppg') : now };
   };
   /* Both sides at once, because the picks have to be priced against the standings
      the swap produces — improving your roster pushes your own picks later. */
@@ -3727,9 +3838,9 @@ function findTrades(T, mode, tol, filters) {
     const ov = {};
     ov[T1.rosterId] = { now: a.now, futureRoster: a.futureRoster };
     ov[T2.rosterId] = { now: b.now, futureRoster: b.futureRoster };
-    const price = pickPricer(ov);
-    const capA = sum(a.picks.map(pk => price(pk).value));
-    const capB = sum(b.picks.map(pk => price(pk).value));
+    const price = isDynasty() ? pickPricer(ov) : null;
+    const capA = price ? sum(a.picks.map(pk => price(pk).value)) : 0;
+    const capB = price ? sum(b.picks.map(pk => price(pk).value)) : 0;
     return [
       { now: a.now, future: a.futureRoster + capA / 620, pickCapital: capA },
       { now: b.now, future: b.futureRoster + capB / 620, pickCapital: capB }
@@ -3737,8 +3848,8 @@ function findTrades(T, mode, tol, filters) {
   };
   const quick = (t, out, inc) => {
     const sh = shellQ(t, out, inc);
-    const price = pickPricer(null);
-    const cap = sum(sh.picks.map(pk => price(pk).value));
+    const price = isDynasty() ? pickPricer(null) : null;
+    const cap = price ? sum(sh.picks.map(pk => price(pk).value)) : 0;
     return { now: sh.now, future: sh.futureRoster + cap / 620, pickCapital: cap };
   };
   const shapeOk = (give, get) => {
@@ -3896,7 +4007,8 @@ function tradeCardRow(r, T, i) {
   return h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 12px', background: 'var(--surface-2)' } },
     h('div.row', { style: { justifyContent: 'space-between', marginBottom: '8px' } },
       h('div.row', { style: { gap: '7px' } }, h('b.mono.tiny', '#' + (i + 1)), h('b', 'with ' + r.partner.name),
-        h('span.tag', r.partner.window), shapeTag ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, shapeTag) : null),
+        r.partner.window ? h('span.tag', r.partner.window) : null,
+        shapeTag ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, shapeTag) : null),
       h('div.row', { style: { gap: '10px' } },
         h('span.tiny.muted', 'balance ' + pct(r.fair, 0)),
         h('button.btn.sm', {
@@ -3920,8 +4032,8 @@ function tradeCardRow(r, T, i) {
           h('span.v', f.gain > 0.05 ? '+' + f.gain.toFixed(1) + ' pts/wk' : kfmt(Math.round(f.p.dv || 0))))))) : null,
     h('div.row', { style: { marginTop: '9px', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '7px' } },
       h('span.tiny.sec', 'Your lineup ', deltaTag(r.myAfter.now - r.myBase.now, 1, ' pts/wk')),
-      h('span.tiny.sec', 'Your future ', deltaTag(r.myAfter.future - r.myBase.future, 1)),
-      h('span.tiny.sec', 'Pick capital ', deltaTag(r.myAfter.pickCapital - r.myBase.pickCapital, 0)),
+      dynOnly(h('span.tiny.sec', 'Your future ', deltaTag(r.myAfter.future - r.myBase.future, 1))),
+      dynOnly(h('span.tiny.sec', 'Pick capital ', deltaTag(r.myAfter.pickCapital - r.myBase.pickCapital, 0))),
       h('span', { style: { flex: 1 } }),
       h('span.tiny.muted', 'they gain too — that’s why this is worth sending')));
 }
@@ -4308,7 +4420,7 @@ function viewStock() {
     kpi(StockUI.range + '-day change', sgn(chg, 0), sgn(chgPct * 100, 1) + '%'),
     kpi('30-day trend', isTeam ? sgn(sum(subject.players.map(p => p.trend30 || 0)), 0) : sgn(subject.trend30 || 0, 0), 'from FantasyCalc'),
     kpi('Range', kfmt(lo) + '–' + kfmt(hi), 'low to high in window'),
-    isTeam ? kpi('League rank', '#' + subject.valueRank, 'by dynasty capital')
+    isTeam ? kpi('League rank', '#' + subject.valueRank, 'by ' + (isDynasty() ? 'dynasty capital' : 'roster value'))
       : kpi('Position rank', (subject.pos || '') + (subject.posRank || '—'), 'overall #' + (subject.rank || '—'))
   ));
 
@@ -4354,10 +4466,10 @@ function viewStock() {
     table([
       { k: 'name', h: 'Team', sort: r => r.name, f: r => teamCell(r) },
       { k: 'totalValue', h: 'Value', num: true, f: r => h('b.mono', kfmt(Math.round(r.totalValue))) },
-      { k: 'rosterValue', prio: 2, h: 'Players', num: true, f: r => kfmt(Math.round(r.rosterValue)) },
-      { k: 'pickCapital', prio: 2, h: 'Picks', num: true, f: r => kfmt(Math.round(r.pickCapital)) },
+      isDynasty() ? { k: 'rosterValue', prio: 2, h: 'Players', num: true, f: r => kfmt(Math.round(r.rosterValue)) } : null,
+      isDynasty() ? { k: 'pickCapital', prio: 2, h: 'Picks', num: true, f: r => kfmt(Math.round(r.pickCapital)) } : null,
       { k: 'trend', h: '30 days', num: true, sort: r => sum(r.players.map(p => p.trend30 || 0)), f: r => deltaTag(sum(r.players.map(p => p.trend30 || 0)), 0) },
-      { k: 'age', prio: 2, h: 'Avg age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
+      isDynasty() ? { k: 'age', prio: 2, h: 'Avg age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' } : null,
       { k: 'spark', prio: 2, h: '', sortable: false, f: r => sparkline(teamSeries(r.rosterId, 30), { w: 70, h: 20 }) }
     ], tv, {
       sortKey: 'totalValue', sortDir: -1,
@@ -4435,18 +4547,23 @@ function viewPlayer() {
   // ---- headline numbers ----
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(146px,1fr))' } },
-    kpi('Dynasty value', kfmt(Math.round(p.dv || 0)), p.rank ? 'overall #' + p.rank : 'unranked',
-      `<div class="k">FantasyCalc dynasty value</div>Priced for this league's exact format — ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
+    kpi(isDynasty() ? 'Dynasty value' : 'Redraft value', kfmt(Math.round(p.dv || 0)), p.rank ? 'overall #' + p.rank : 'unranked',
+      `<div class="k">FantasyCalc ${valueWord()} value</div>Priced for this league's exact format — ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
     kpi('Position rank', (p.pos || '') + (p.posRank || (myIdx >= 0 ? myIdx + 1 : '—')), p.tier ? 'tier ' + p.tier : 'of ' + posPeers.length + ' ranked'),
     kpi('30-day trend', p.trend30 ? sgn(p.trend30, 0) : 'flat', p.trend30 ? sgn(trendPct * 100, 1) + '%' : 'no movement'),
     kpi('Projected', fmt(p.ppg || 0, 1), p.wk ? 'pts / week remaining' : 'pts / week now',
       p.wk
         ? `<div class="k">Sleeper weekly projections</div>Average over the weeks still to play, byes excluded. Each week's projected stat line is scored with this league's own settings, so custom scoring is respected.`
         : `<div class="k">Estimated</div>Sleeper publishes no weekly projection for this player, so this comes from the redraft value's positional rank adjusted for league scoring.` + (p.injury ? '<br>Discounted for the <b>' + p.injury + '</b> tag.' : '')),
-    kpi('Projected 2–3 yrs', fmt(p.fppg || 0, 1), 'pts / week',
-      `<div class="k">Future outlook</div>Dynasty-value rank run through the same curve, then aged with a ${p.pos}-specific decline profile.`),
-    kpi('Redraft value', kfmt(Math.round(p.rv || 0)), p.rv && p.dv ? (p.rv > p.dv ? 'win-now premium' : 'dynasty premium') : '—',
-      '<div class="k">Redraft vs dynasty</div>A player worth more in redraft than dynasty is being paid for production now; the reverse means the market is paying for the years ahead.')
+    dynOnly(kpi('Projected 2–3 yrs', fmt(p.fppg || 0, 1), 'pts / week',
+      `<div class="k">Future outlook</div>Dynasty-value rank run through the same curve, then aged with a ${p.pos}-specific decline profile.`)),
+    // in a redraft league the dynasty price is the interesting comparison, not
+    // the other way round: it says how much of his market is the years ahead
+    isDynasty()
+      ? kpi('Redraft value', kfmt(Math.round(p.rv || 0)), p.rv && p.dvDyn ? (p.rv > p.dvDyn ? 'win-now premium' : 'dynasty premium') : '—',
+        '<div class="k">Redraft vs dynasty</div>A player worth more in redraft than dynasty is being paid for production now; the reverse means the market is paying for the years ahead.')
+      : kpi('Dynasty market', kfmt(Math.round(p.dvDyn || 0)), p.rv && p.dvDyn ? (p.dvDyn > p.rv ? 'priced for the future' : 'priced for now') : '—',
+        '<div class="k">What he is worth elsewhere</div>This league does not pay for it, but the dynasty market does. A player worth far more in dynasty than redraft is young, and in this league that premium buys you nothing.')
   ));
 
   // ---- weekly production ----
@@ -4502,7 +4619,7 @@ function viewPlayer() {
 
   // ---- comparables ----
   const lo = Math.max(0, myIdx - 4), peers = posPeers.slice(lo, lo + 9);
-  wrap.appendChild(card('Around him at ' + p.pos, 'nearest players by dynasty value — click any name',
+  wrap.appendChild(card('Around him at ' + p.pos, 'nearest players by ' + valueWord() + ' value — click any name',
     table([
       { k: 'rk', h: '#', num: true, sortable: false, f: (r) => posPeers.indexOf(r) + 1 },
       { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '6px' } }, pname(r, { style: r.id === p.id ? { fontWeight: '700' } : null }), r.id === p.id ? h('span.tag', 'this player') : null) },
@@ -4510,7 +4627,7 @@ function viewPlayer() {
       { k: 'age', h: 'Age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
       { k: 'dv', h: 'Value', num: true, f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
       { k: 'ppg', h: 'Proj', num: true, f: r => fmt(r.ppg || 0, 1) },
-      { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, f: r => fmt(r.fppg || 0, 1) },
+      isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, f: r => fmt(r.fppg || 0, 1) } : null,
       { k: 'trend30', prio: 2, h: '30d', num: true, f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') },
       { k: 'own', prio: 2, h: 'Roster', sortable: false, f: r => { const o = ownerOfPlayer(r.id); return o ? h('span.tiny', o.short) : h('span.tiny.muted', 'FA'); } }
     ], peers, { onRow: r => openPlayer(r.id) })));
@@ -4707,11 +4824,15 @@ function parseTrades() {
       const season = +dp.season, round = +dp.round;
       const key = season + '|' + round + '|' + dp.roster_id;
       // price it the way the app prices any pick: off the original owner's outlook
+      // a redraft league's picks buy nothing that carries, so they are recorded
+      // as part of the trade but priced at nothing rather than at a rookie-pick rate
       let value = 0, slotLabel = null;
-      try {
-        const q = pickPricer(null)({ season, round, origRosterId: +dp.roster_id });
-        value = q.value; slotLabel = round + '.' + String(q.slot).padStart(2, '0');
-      } catch (e) { value = pickValue(season, round, 'Mid'); }
+      if (isDynasty()) {
+        try {
+          const q = pickPricer(null)({ season, round, origRosterId: +dp.roster_id });
+          value = q.value; slotLabel = round + '.' + String(q.slot).padStart(2, '0');
+        } catch (e) { value = pickValue(season, round, 'Mid'); }
+      }
       const orig = S.teamById[+dp.roster_id];
       const label = season + ' ' + (ROUND_WORD[round] || round + 'th') + (orig ? ' (' + orig.short + ')' : '');
       const asset = { kind: 'pick', id: 'PK|' + key, name: label, pos: 'PICK', value, slotLabel, season, round };
@@ -4827,6 +4948,22 @@ function tradeDirection(stat) {
 function projectedStrategy(t, stat) {
   const dir = tradeDirection(stat);
   const win = t.window;
+  // A redraft league has no window to be in, so the read is simpler and it is
+  // about this season only: are they good, and are they buying or selling it?
+  if (!isDynasty()) {
+    const strong = t.powerZ > 0.35, weak = t.powerZ < -0.35;
+    const inPlay = S.sim && S.sim.by[t.rosterId] ? S.sim.by[t.rosterId].playoff : null;
+    let headline, detail;
+    if (strong && dir.label === 'Buying') { headline = 'Going for it'; detail = 'A strong roster and they are still adding. Expect them to pay up for a difference-maker.'; }
+    else if (strong && dir.label === 'Selling') { headline = 'Selling from strength'; detail = 'Good enough to win and still moving pieces out — usually depth for a starter, so they will want quality back.'; }
+    else if (weak && dir.label === 'Selling') { headline = 'Punting the season'; detail = 'Out of it and shipping useful players. The best place in the league to buy production cheaply.'; }
+    else if (weak && dir.label === 'Buying') { headline = 'Chasing it'; detail = 'Behind and still buying. Either they like their odds more than the table does, or they are a soft touch.'; }
+    else if (strong) { headline = 'Standing pat'; detail = 'Strong roster, no trades yet. Likely to move only for a clear upgrade.'; }
+    else if (weak) { headline = 'Stuck'; detail = 'Weak roster, not trading. Worth an offer — they may not have realised the season is gone.'; }
+    else headline = 'In the pack', detail = 'Middle of the table and not committed either way — the hardest kind of team to read.';
+    if (inPlay !== null && inPlay < 0.12 && !/Punting|Stuck/.test(headline)) detail += ' The simulator gives them ' + pct(inPlay, 0) + ' to make the playoffs.';
+    return { headline, detail, direction: dir, window: null };
+  }
   const contending = ['Contend', 'Win-now'].includes(win);
   const rebuilding = ['Rebuild', 'Retool'].includes(win);
   let headline, detail;
@@ -5133,15 +5270,17 @@ function viewScout() {
     table([
       { k: 'name', h: 'Team', sort: r => r.team.name, f: r => teamCell(r.team) },
       { k: 'power', prio: 2, h: 'Power', num: true, sort: r => r.team.powerRank, f: r => '#' + r.team.powerRank },
-      { k: 'window', prio: 2, h: 'Window', sort: r => r.team.window, f: r => h('span.tag', r.team.window) },
+      isDynasty() ? { k: 'window', prio: 2, h: 'Window', sort: r => r.team.window, f: r => h('span.tag', r.team.window) } : null,
       { k: 'strategy', h: 'Projected strategy', sort: r => r.strategy.headline, f: r => h('b.tiny', r.strategy.headline) },
       { k: 'dir', prio: 2, h: 'Trading', sort: r => r.strategy.direction.label, f: r => h('span.tiny', r.strategy.direction.label + (r.stat && r.stat.n ? ' (' + r.stat.n + ')' : '')) },
       // three pills per cell is 110px twice over on a phone; the top two carry it
       // on a phone the hole is the actionable half — it is what you can go and buy
       { k: 'strong', prio: 2, h: 'Strength', sortable: false, f: r => r.strengths.length ? h('div.row', { style: { gap: '3px' } }, r.strengths.slice(0, isNarrow() ? 2 : 3).map(x => posPill(x.pos))) : h('span.muted.tiny', '—') },
       { k: 'weak', h: 'Hole', sortable: false, f: r => r.holes.length ? h('div.row', { style: { gap: '3px' } }, r.holes.slice(0, isNarrow() ? 2 : 3).map(x => posPill(x.pos))) : h('span.muted.tiny', 'none') },
-      { k: 'age', prio: 2, h: 'Age', num: true, sort: r => r.team.age || 0, f: r => r.team.age ? fmt(r.team.age, 1) : '—' },
-      { k: 'picks', prio: 2, h: 'Pick capital', num: true, sort: r => r.team.pickCapital, f: r => kfmt(Math.round(r.team.pickCapital)) }
+      isDynasty() ? { k: 'age', prio: 2, h: 'Age', num: true, sort: r => r.team.age || 0, f: r => r.team.age ? fmt(r.team.age, 1) : '—' } : null,
+      isDynasty()
+        ? { k: 'picks', prio: 2, h: 'Pick capital', num: true, sort: r => r.team.pickCapital, f: r => kfmt(Math.round(r.team.pickCapital)) }
+        : { k: 'value', prio: 2, h: 'Roster value', num: true, sort: r => r.team.totalValue, f: r => kfmt(Math.round(r.team.totalValue)) }
     ], scouts, { sortKey: 'power', sortDir: 1, onRow: r => { ScoutUI.team = r.team.rosterId; render(); } })));
 
   // ---- selected team dossier ----
@@ -5151,15 +5290,16 @@ function viewScout() {
     h('div', { style: { display: 'grid', gap: '14px' } },
       h('div.row', { style: { gap: '9px' } },
         h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, sc.strategy.headline),
-        h('span.tag', t.window),
+        t.window ? h('span.tag', t.window) : null,
         h('span.tag', sc.strategy.direction.label),
         h('span.tiny.muted', sc.strategy.detail)),
       h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
         kpi('Power', '#' + t.powerRank, fmt(t.power, 1) + ' rating'),
-        kpi('Future', '#' + t.futureRank, fmt(t.futurePower, 1) + ' rating'),
-        kpi('Dynasty capital', kfmt(Math.round(t.totalValue)), ord(t.valueRank) + ' of ' + S.teams.length),
-        kpi('Pick capital', kfmt(Math.round(t.pickCapital)), (t.pickAssets || []).length + ' picks'),
-        kpi('Core age', t.age ? fmt(t.age, 1) : '—', sc.young + ' young / ' + sc.old + ' older starters'),
+        dynOnly(kpi('Future', '#' + t.futureRank, fmt(t.futurePower, 1) + ' rating')),
+        kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), ord(t.valueRank) + ' of ' + S.teams.length),
+        dynOnly(kpi('Pick capital', kfmt(Math.round(t.pickCapital)), (t.pickAssets || []).length + ' picks')),
+        dynOnly(kpi('Core age', t.age ? fmt(t.age, 1) : '—', sc.young + ' young / ' + sc.old + ' older starters')),
+        isDynasty() ? null : kpi('Starting lineup', fmt(t.now, 1), 'projected pts/week'),
         kpi('Trades made', sc.stat ? String(sc.stat.n) : '0', sc.stat && sc.stat.grade ? 'avg grade ' + sc.stat.grade : 'no trades yet')),
       table([
         { k: 'pos', h: 'Pos', f: r => posPill(r.pos), sort: r => r.pos },
@@ -5721,13 +5861,14 @@ function viewH2H() {
   /* ---- the franchises, not just this week ---- */
   const metrics = [
     { k: 'Starting lineup now', a: A.now, b: B.now, d: 1, tip: 'Projected points per week from the optimal lineup' },
-    { k: 'Future lineup', a: A.future, b: B.future, d: 1, tip: 'Age-adjusted projection two to three seasons out' },
-    { k: 'Dynasty capital', a: A.totalValue, b: B.totalValue, d: 0, tip: 'Players plus draft picks at today’s market' },
-    { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, d: 0 },
-    { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, d: 0 },
+    isDynasty() ? { k: 'Future lineup', a: A.future, b: B.future, d: 1, tip: 'Age-adjusted projection two to three seasons out' } : null,
+    { k: capitalLabel(), a: A.totalValue, b: B.totalValue, d: 0, tip: isDynasty() ? 'Players plus draft picks at today’s market' : 'Every rostered player at today’s redraft market' },
+    isDynasty() ? { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, d: 0 } : null,
+    isDynasty() ? { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, d: 0 } : null,
     { k: 'Points for', a: A.fpts, b: B.fpts, d: 1 },
-    { k: 'Average age', a: A.age || 0, b: B.age || 0, d: 1, invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' }
-  ];
+    { k: 'Points against', a: A.fptsAgainst, b: B.fptsAgainst, d: 1, invert: true, tip: 'What their opponents have scored on them — lower is a kinder draw' },
+    isDynasty() ? { k: 'Average age', a: A.age || 0, b: B.age || 0, d: 1, invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' } : null
+  ].filter(Boolean);
   const scaleOf = (m) => { const mx = Math.max(Math.abs(m.a), Math.abs(m.b), 0.0001); return (m.a - m.b) / mx; };
   const cw = isNarrow() ? '62px 1fr 62px' : '92px 1fr 92px';
   const aWins = metrics.filter(m => m.invert ? m.a < m.b : m.a > m.b).length;
@@ -5766,7 +5907,7 @@ function viewH2H() {
   wrap.appendChild(h('div.grid.split',
     card('Positional edge — this season', 'starting output per week · right is ' + A.short + ', left is ' + B.short,
       divBar(posRows.map(x => ({ label: x.pos, v: x.aNow - x.bNow, tip: `<div class="k">${x.pos}</div>${A.short} ${fmt(x.aNow, 1)} · ${B.short} ${fmt(x.bNow, 1)}` })), { labelW: '48px', dec: 1, posColor: CA, negColor: CB })),
-    card('Positional edge — dynasty value', 'market value at each position',
+    card('Positional edge — ' + valueWord() + ' value', 'market value at each position',
       divBar(posRows.map(x => ({ label: x.pos, v: x.aVal - x.bVal, vl: sgn((x.aVal - x.bVal) / 1000, 1) + 'k', tip: `<div class="k">${x.pos}</div>${A.short} ${kfmt(Math.round(x.aVal))} · ${B.short} ${kfmt(Math.round(x.bVal))}` })), { labelW: '48px', dec: 0, posColor: CA, negColor: CB }))));
 
   /* ---- season outlook, if a sim exists ---- */
@@ -6506,6 +6647,16 @@ function matchupProbChart(wk, g) {
    answers "what is this and where do I go" before it answers anything else. */
 
 /** One line each, so a tile says what the page is for rather than repeating its name. */
+/** Two of these read differently once there is no next season to rank. */
+function blurbFor(k) {
+  if (!isDynasty()) {
+    if (k === 'power') return 'The league ranked on this season, by projection and by results';
+    if (k === 'scout') return 'Who needs what — every roster’s holes and surpluses right now';
+    if (k === 'stock') return 'Redraft value over time, for a player or a whole franchise';
+    if (k === 'trade') return 'Price a trade at redraft value and see what it does to the season';
+  }
+  return VIEW_BLURB[k] || '';
+}
 const VIEW_BLURB = {
   week: 'Live scores, win probability and the game that matters most',
   roster: 'Any roster in full — value, projections and the starting lineup',
@@ -6514,7 +6665,7 @@ const VIEW_BLURB = {
   finder: 'Trades that fit both rosters, scanned across the league',
   trades: 'Every completed trade, graded at today’s market',
   h2h: 'Two teams side by side, this week and as franchises',
-  power: 'The league ranked now and two to three years out',
+  power: 'The league ranked, by projection and by what has happened',
   standings: 'Wins, losses and points actually scored',
   scout: 'Who needs what — every roster’s holes and surpluses',
   sim: 'Playoff odds, seeds, and the games with most riding on them',
@@ -6532,7 +6683,7 @@ function viewHome() {
   const me = S.teamById[S.myRosterId];
   const wk = S.liveWeek || clamp(S.lastWeek + 1, 1, S.regEnd);
   const fmtStr = `${cfg.superflex ? 'Superflex' : '1QB'} · ${cfg.actualTeams} teams · `
-    + `${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'}`;
+    + `${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'} · ${isDynasty() ? 'dynasty' : 'redraft'}`;
   const state = S.liveWeek ? 'Week ' + S.liveWeek + ' in progress'
     : S.lastWeek >= S.regEnd ? 'Regular season complete'
       : S.lastWeek ? 'Through week ' + S.lastWeek : 'Preseason';
@@ -6557,8 +6708,8 @@ function viewHome() {
     wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
       kpi('Your record', rec, S.gamesPlayed ? fmt(me.avgPts, 1) + ' per week' : 'no games yet'),
       kpi('Power rank', '#' + me.powerRank, 'of ' + S.teams.length),
-      kpi('Future rank', '#' + me.futureRank, 'two to three years out'),
-      kpi('Dynasty capital', kfmt(Math.round(me.totalValue)), ord(me.valueRank) + ' in the league'),
+      dynOnly(kpi('Future rank', '#' + me.futureRank, 'two to three years out')),
+      kpi(capitalLabel(), kfmt(Math.round(me.totalValue)), ord(me.valueRank) + ' in the league'),
       simBy ? kpi('Playoff odds', pct(simBy.playoff, 0), pct(simBy.title, 1) + ' title')
         : kpi('Playoff odds', '—', 'run the simulator')));
   }
@@ -6594,16 +6745,19 @@ function viewHome() {
         h('span.ic', v.ic),
         h('span', { style: { minWidth: 0 } },
           h('b', v.label),
-          h('span.tiny.muted', { style: { display: 'block', lineHeight: '1.35', marginTop: '2px' } }, VIEW_BLURB[k] || '')));
+          h('span.tiny.muted', { style: { display: 'block', lineHeight: '1.35', marginTop: '2px' } }, blurbFor(k))));
     }))));
 
   /* ---- where the numbers come from ---- */
   wrap.appendChild(card('Where this comes from', null,
     h('div.tiny.sec', { style: { lineHeight: '1.55' } },
       'Rosters, matchups, drafts and trades are read live from ', h('b', 'Sleeper'),
-      '; weekly projections are Sleeper’s own lines re-scored through this league’s settings; player and pick values are ',
-      h('b', 'FantasyCalc'), ' dynasty prices for a ', cfg.superflex ? 'superflex' : '1QB', ' ', String(cfg.numTeams),
-      '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league. Everything is computed in this browser — nothing is stored anywhere else.')));
+      '; weekly projections are Sleeper’s own lines re-scored through this league’s settings; ',
+      isDynasty() ? 'player and pick values are ' : 'player values are ',
+      h('b', 'FantasyCalc'), ' ', valueWord(), ' prices for a ', cfg.superflex ? 'superflex' : '1QB', ' ', String(cfg.numTeams),
+      '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league.',
+      isDynasty() ? null : h('span', ' Because this is a redraft league, nothing carries to next season: no long-range projections, no ageing curve, and next year’s draft is a fresh start rather than an asset to hold.'),
+      ' Everything is computed in this browser — nothing is stored anywhere else.')));
   return wrap;
 }
 /* ================= hypothetical roster sandbox =================
@@ -6770,6 +6924,9 @@ function hypBalanceSuggestion(led) {
   const pool = assetsOf(T).filter(a => {
     const key = a.kind === 'pick' ? pickKeyOf(a) : a.id;
     if (already.has(key)) return false;
+    // and not something already promised elsewhere in this sandbox: re-routing
+    // a player who is part of another leg repairs this trade by breaking that one
+    if (a.kind === 'pick' ? HYP.picks[key] !== undefined : HYP.moves[key] !== undefined) return false;
     const baseOwner = a.kind === 'pick' ? S.base.pickOwn[key] : S.base.own[key];
     return baseOwner === needFrom;
   });
@@ -6812,8 +6969,8 @@ function hypBar() {
   const summary = h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(118px,1fr))', gap: '12px' } },
     stat('Lineup pts/wk', b.now, a.now, 1),
     rankStat('Power rank', b.powerRank, a.powerRank),
-    rankStat('Future rank', b.futureRank, a.futureRank),
-    stat('Dynasty capital', b.totalValue, a.totalValue, 0),
+    dynOnly(rankStat('Future rank', b.futureRank, a.futureRank)),
+    stat(capitalLabel(), b.totalValue, a.totalValue, 0),
     b.playoff !== null ? stat('Playoff odds', b.playoff, a.playoff, 0, true) : null,
     b.title !== null ? stat('Title odds', b.title, a.title, 1, true) : null
   );
