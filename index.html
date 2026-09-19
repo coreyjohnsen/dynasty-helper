@@ -95,7 +95,12 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .topbar .lg{font-weight:640;letter-spacing:-.012em}
 .topbar .sub{color:var(--text-muted);font-size:12px}
 .topbar .grow{flex:1}
-.content{padding:20px;max-width:1500px;width:100%}
+/* The content column takes whatever width the window gives it. Nothing here is
+   a wall of prose, and every grid is auto-fit, so a wide monitor buys more
+   cards per row rather than longer lines. The cap is past any ordinary display
+   — it only stops a table spreading itself across an ultrawide. */
+.content{padding:20px 22px;width:100%;max-width:2400px}
+@media (min-width:1700px){ .content{padding:22px 30px} }
 
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
@@ -244,7 +249,9 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 
 .board{display:grid;gap:3px;min-width:760px}
 .cell{border-radius:6px;padding:5px 6px;font-size:11px;border:1px solid var(--border);background:var(--surface-1);min-height:46px;overflow:hidden}
-.cell .pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+:root[data-ui="simple"] .cell{min-height:54px;padding:6px 7px}
+:root[data-ui="simple"] .board{min-width:1040px}
 .cell .mt{color:var(--text-muted);font-size:10px;display:flex;gap:4px;align-items:center}
 
 /* ============ simple mode ============
@@ -274,9 +281,51 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 :root[data-ui="simple"] .btn{padding:8px 14px;font-size:13.5px}
 :root[data-ui="simple"] .seg button{padding:7px 14px;font-size:13.5px}
 :root[data-ui="simple"] .side{width:auto}
+/* ---- settings menu ---- */
+.menuwrap{position:relative}
+.menupanel{position:absolute;top:calc(100% + 8px);right:0;z-index:60;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r);box-shadow:0 10px 34px rgba(11,11,11,.16),0 2px 8px rgba(11,11,11,.08);padding:14px;width:288px;display:grid;gap:15px}
+.menupanel .mlbl{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
+.menupanel .mnote{font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.35}
+.menupanel .seg{width:100%}
+.menupanel .seg button{flex:1;text-align:center}
+.menupanel hr{border:0;border-top:1px solid var(--border);margin:0}
+.menupanel .btn{width:100%;justify-content:center}
+@media (max-width:560px){ .menupanel{width:min(300px,calc(100vw - 28px))} }
+
 /* imagery — only ever used in simple mode */
 .face{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--surface-3);flex:none}
 .face.lg{width:44px;height:44px;border-radius:12px}
+.face.sm{width:22px;height:22px;border-radius:50%}
+.face.xs{width:18px;height:18px;border-radius:50%}
+.pnrow{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:nowrap}
+/* a name with its headshot, wherever a name appears on its own */
+.pnf{display:inline-flex;align-items:center;gap:7px;min-width:0;max-width:100%}
+.pnf.mir{flex-direction:row-reverse}
+/* ---- head-to-head slot ladder: a mirror down the middle ---- */
+.ladderrow{display:grid;gap:12px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--grid)}
+.ladderrow:last-child{border-bottom:0}
+.ladderrow.ladderhd{padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ladderrow .pl{display:flex;align-items:center;gap:7px;min-width:0}
+.ladderrow .pl.l{justify-content:flex-end;text-align:right;flex-direction:row}
+.ladderrow .pl .plink{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---- home ---- */
+.hero{display:flex;align-items:center;gap:18px;padding:4px 2px}
+.hero h1{font-size:28px;letter-spacing:-.025em;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
+.heroav{width:60px;height:60px;border-radius:16px;object-fit:cover;flex:none;background:linear-gradient(140deg,var(--s1),var(--s7))}
+.tilegrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
+.tile{display:flex;align-items:flex-start;gap:11px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;min-width:0;transition:border-color .12s,background .12s,transform .12s}
+.tile:hover{border-color:var(--s1);background:var(--surface-2);transform:translateY(-1px)}
+.tile:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.tile .ic{font-size:15px;color:var(--s1);flex:none;line-height:1.45}
+.tile b{font-size:13.5px;font-weight:640;display:block}
+@media (max-width:560px){
+  .hero{gap:13px}
+  .hero h1{font-size:21px}
+  .heroav{width:46px;height:46px;border-radius:13px}
+  .tilegrid{grid-template-columns:minmax(0,1fr)}
+}
+td .pnf,.asset .pnf{vertical-align:middle}
 .tlogo{width:18px;height:18px;object-fit:contain;flex:none;vertical-align:-4px}
 :root[data-ui="simple"] .avatar{width:30px;height:30px;border-radius:9px}
 :root[data-ui="simple"] .tm{gap:10px}
@@ -288,6 +337,23 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .pcard .val{text-align:right;flex:none;font-variant-numeric:tabular-nums}
 .rankrow{display:grid;grid-template-columns:34px 1fr minmax(120px,1.1fr) auto;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--grid)}
 .rankrow:last-child{border-bottom:0}
+/* ---- this-week matchup card: team, odds, team ---- */
+.mvs{display:grid;grid-template-columns:minmax(0,1fr) minmax(86px,1.05fr) minmax(0,1fr);gap:10px;align-items:start}
+.mvs .tmside{display:grid;gap:5px;min-width:0;justify-items:center;text-align:center}
+.mvs .tmside .nm{font-weight:640;font-size:13.5px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.mvs .tmside .sc{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05;letter-spacing:-.02em}
+.mvs .tmside .dt{font-size:11px;color:var(--text-muted);line-height:1.3}
+.mvs .tmside .dt.cnt{font-size:10px;white-space:nowrap;letter-spacing:-.01em}
+.mvs .mid{display:grid;gap:5px;align-content:start;padding-top:46px;max-width:380px;width:100%;margin-inline:auto}
+.mvs .mid .bar{position:relative;height:10px;background:var(--surface-3);border-radius:5px;overflow:hidden}
+.mvs .mid .bar>i{position:absolute;inset:0 auto 0 0;border-radius:5px 0 0 5px;display:block}
+.mvs .mid .pcts{display:flex;justify-content:space-between;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.mvs .mid .cap{text-align:center;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+.mvs .mlogo{width:36px;height:36px;border-radius:10px;object-fit:cover;background:var(--surface-3)}
+@media (max-width:420px){
+  .mvs{grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr);gap:7px}
+  .mvs .tmside .sc{font-size:21px}
+}
 .rankrow .pos{font-size:19px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
 @media (max-width:620px){
   .rankrow{grid-template-columns:28px 1fr auto;gap:10px}
@@ -437,6 +503,30 @@ function setUiMode(m) {
 }
 /** Cards that only earn their space in the dense view. */
 function proOnly(node) { return isSimple() ? null : node; }
+/* Whether a franchise is named by its manager or by its team name. Sleeper lets
+   people rename a team mid-season and plenty never set one at all, so the
+   username is the stable handle — and it is what everyone calls each other in
+   the group chat. Every surface reads t.name, so this flips all of them at once. */
+function useUsernames() { return S.names !== 'team'; }
+function setNameMode(m) {
+  S.names = m === 'team' ? 'team' : 'user';
+  LS.set('names', S.names);
+  S._short = {};
+}
+/** Initials for a multi-word name, the first few characters for a single word —
+ *  "manager10" and "manager4" both reducing to "M" makes comparisons unreadable. */
+function abbrev(name, fallback) {
+  const clean = String(name || '').replace(/[^A-Za-z0-9 ]/g, '').trim();
+  const words = clean.split(/\s+/).filter(Boolean);
+  let s;
+  if (words.length > 1) s = words.map(w => w[0]).join('').slice(0, 3);
+  else {
+    // keep any trailing number: "manager10" and "manager4" must not both be "MANA"
+    const m = clean.match(/^([A-Za-z]*)(\d*)$/);
+    s = m ? (m[1].slice(0, 3) + m[2]).slice(0, 5) : clean.slice(0, 4);
+  }
+  return s.toUpperCase() || fallback;
+}
 function isNarrow() {
   return typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < NARROW_AT;
 }
@@ -524,10 +614,10 @@ const sl = (p) => getJSON(SLEEPER + p);
 
 /* ---------- state ---------- */
 const S = {
-  view: 'roster', leagueId: null, league: null, users: [], rosters: [], teams: [],
+  view: 'home', leagueId: null, league: null, users: [], rosters: [], teams: [],
   players: {}, values: null, valuesRedraft: null, picksVal: {}, state: null,
   matchups: {}, drafts: [], draftPicks: {}, tradedPicks: [], transactions: [],
-  ui: 'full',
+  ui: 'full', names: 'user', _short: {},
   cfg: {}, week: 1, lastWeek: 0, liveWeek: null, nflSched: null, regEnd: 14,
   me: null, sim: null, simN: 2000,
   history: {}, snapshots: [], busy: false, err: null
@@ -1090,29 +1180,15 @@ function buildTeams() {
     const u = userById[r.owner_id] || {};
     const meta = u.metadata || {};
     const st = r.settings || {};
-    const name = meta.team_name || u.display_name || ('Team ' + r.roster_id);
+    const teamName = meta.team_name || u.display_name || ('Team ' + r.roster_id);
+    const userName = u.display_name || meta.team_name || ('Team ' + r.roster_id);
     const ids = [];
     (r.players || []).forEach(x => { const id = String(x); if (claimed.has(id)) return; claimed.add(id); ids.push(id); });
     const players = ids.map(id => ensurePlayer(id));
     const taxi = new Set((r.taxi || []).map(String));
     const ir = new Set((r.reserve || []).map(String));
-    return {
-      rosterId: r.roster_id, ownerId: r.owner_id, name,
-      // initials for a multi-word name, the first few characters for a single word —
-      // "manager10" and "manager4" both reducing to "M" makes every comparison unreadable
-      short: (function () {
-        const clean = name.replace(/[^A-Za-z0-9 ]/g, '').trim();
-        const words = clean.split(/\s+/).filter(Boolean);
-        let s;
-        if (words.length > 1) s = words.map(w => w[0]).join('').slice(0, 3);
-        else {
-          // keep any trailing number: "manager10" and "manager4" must not both be "MANA"
-          const m = clean.match(/^([A-Za-z]*)(\d*)$/);
-          s = m ? (m[1].slice(0, 3) + m[2]).slice(0, 5) : clean.slice(0, 4);
-        }
-        return s.toUpperCase() || ('T' + r.roster_id);
-      })(),
-      owner: u.display_name || '—',
+    const team = {
+      rosterId: r.roster_id, ownerId: r.owner_id, teamName, userName,
       avatar: meta.avatar || (u.avatar ? 'https://sleepercdn.com/avatars/thumbs/' + u.avatar : null),
       players, taxi, ir, division: st.division || null,
       wins: st.wins || 0, losses: st.losses || 0, ties: st.ties || 0,
@@ -1122,6 +1198,20 @@ function buildTeams() {
       waiver: st.waiver_budget_used || 0,
       picks: []
     };
+    // `name` is read in a few hundred places; making it an accessor is what lets
+    // the username toggle flip every one of them without a reload. `owner` is
+    // the subtitle, so it always carries whichever name is not the headline.
+    Object.defineProperty(team, 'name', { enumerable: true, get: () => useUsernames() ? team.userName : team.teamName });
+    Object.defineProperty(team, 'owner', { enumerable: true, get: () => useUsernames() ? team.teamName : team.userName });
+    Object.defineProperty(team, 'short', {
+      enumerable: true, get: () => {
+        const n = team.name;
+        S._short = S._short || {};
+        if (S._short[n] === undefined) S._short[n] = abbrev(n, 'T' + team.rosterId);
+        return S._short[n];
+      }
+    });
+    return team;
   });
   const byId = {}; S.teams.forEach(t => byId[t.rosterId] = t);
   S.teamById = byId;
@@ -1962,7 +2052,7 @@ function posPill(pos) { return h('span.pill.pos-' + (pos || 'NA'), pos || '—')
    carries on with the initials or the abbreviation it already had. */
 function playerFace(p, opts) {
   opts = opts || {};
-  const cls = '.face' + (opts.lg ? '.lg' : '');
+  const cls = '.face' + (opts.lg ? '.lg' : opts.xs ? '.xs' : opts.sm ? '.sm' : '');
   const initials = (() => {
     if (!p) return '—';
     if (p.pos === 'DEF' || p.pos === 'K') return p.pos;
@@ -1970,7 +2060,7 @@ function playerFace(p, opts) {
     return w.length > 1 ? (w[0][0] + w[w.length - 1][0]).toUpperCase() : (w[0] || '?').slice(0, 2).toUpperCase();
   })();
   const stub = () => h('div' + cls, {
-    style: { display: 'grid', placeItems: 'center', fontSize: opts.lg ? '14px' : '10.5px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.02em' }
+    style: { display: 'grid', placeItems: 'center', fontSize: opts.lg ? '14px' : opts.xs ? '7.5px' : opts.sm ? '8.5px' : '10.5px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.02em' }
   }, initials);
   if (!/^\d+$/.test(String(p && p.id))) return stub();
   // a headshot that fails to load is swapped for the initials, so the row keeps
@@ -1994,7 +2084,7 @@ function playerCard(p, opts) {
   return h('div.pcard', { style: opts.style || null },
     playerFace(p),
     h('div.meta',
-      h('div.nm', pname(p)),
+      h('div.nm', pname(p, { face: false })),
       h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
         opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury))),
     opts.value !== undefined ? h('div.val', opts.value) : null);
@@ -2268,6 +2358,14 @@ function histogram(bins, opts) {
   const g = svg('svg', Object.assign({ class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': opts.aria || 'distribution' },
     opts.stretch ? { preserveAspectRatio: 'none' } : {}));
   g.style.height = H + 'px';
+  // `stretch` lets the bars fill a narrower container, which is what it is for.
+  // Letting them fill a *wider* one pulls the axis labels and the bar corners
+  // out of shape, so the drawing stops at the width it was designed at.
+  if (opts.stretch) {
+    g.style.maxWidth = (opts.maxW || W) + 'px';
+    g.style.display = 'block';
+    g.style.marginInline = 'auto';
+  }
   // a vertical rule at a meaningful x — zero on a margin chart, say
   if (opts.rule !== undefined) {
     const ri = bins.findIndex(b => b.x >= opts.rule);
@@ -2476,6 +2574,7 @@ function bracketView(sim) {
 }
 /* ================= app shell ================= */
 const VIEWS = [
+  { k: 'home', ic: '⌂', label: 'Home' },
   { k: 'week', ic: '◉', label: 'This Week' },
   { k: 'roster', ic: '▤', label: 'Rosters' },
   { k: 'lineup', ic: '⚖', label: 'Start / Sit' },
@@ -2492,7 +2591,7 @@ const VIEWS = [
 ];
 /* The tabs simple mode leads with. The rest are still there, one tap behind
    "More" — hiding them outright would be a different app, not a calmer one. */
-const CORE_VIEWS = ['week', 'roster', 'lineup', 'trade', 'finder', 'power', 'sim'];
+const CORE_VIEWS = ['home', 'week', 'roster', 'lineup', 'trade', 'finder', 'power', 'sim'];
 let navExpanded = false;
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
@@ -2500,6 +2599,52 @@ function setTheme(t) {
   LS.set('theme', t);
 }
 function currentTheme() { return LS.get('theme', 'system'); }
+
+/* One menu for everything that changes how the app looks rather than what it
+   says. It survives a render so a click inside it does not close it, and one
+   document-level listener closes it on the next click elsewhere. */
+let settingsOpen = false;
+let _settingsBound = false;
+function settingsMenu() {
+  if (!_settingsBound && typeof document !== 'undefined') {
+    _settingsBound = true;
+    document.addEventListener('click', (e) => {
+      if (!settingsOpen) return;
+      if (e.target.closest && e.target.closest('.menuwrap')) return;
+      settingsOpen = false; render();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen) { settingsOpen = false; render(); } });
+  }
+  const group = (label, control, note) => h('div',
+    h('div.mlbl', label), control, note ? h('div.mnote', note) : null);
+  const panel = h('div.menupanel',
+    group('View',
+      segmented([{ k: 'simple', label: 'Default' }, { k: 'full', label: 'Minimal' }], S.ui,
+        m => { setUiMode(m); navExpanded = false; render(); }),
+      S.ui === 'simple'
+        ? 'Cards, photos and the numbers that matter.'
+        : 'Stripped back and dense — every table, column and chart, no imagery.'),
+    group('Theme',
+      segmented([{ k: 'system', label: 'Auto' }, { k: 'light', label: 'Light' }, { k: 'dark', label: 'Dark' }],
+        currentTheme(), t => { setTheme(t); render(); })),
+    group('Name teams by',
+      segmented([{ k: 'user', label: 'Username' }, { k: 'team', label: 'Team name' }], S.names,
+        m => { setNameMode(m); render(); }),
+      useUsernames()
+        ? 'Sleeper handles, everywhere. Team names show underneath.'
+        : 'Team names, everywhere. Usernames show underneath.'),
+    h('hr'),
+    h('button.btn', { onclick: () => { settingsOpen = false; hardRefresh(); } }, '↻ Refresh data'),
+    h('button.btn', {
+      onclick: () => { settingsOpen = false; S.league = null; S._sched = null; hypExit(); render(); }
+    }, 'Change league'));
+  return h('div.menuwrap',
+    h('button.btn' + (settingsOpen ? '.pri' : ''), {
+      title: 'Settings', 'aria-expanded': settingsOpen ? 'true' : 'false',
+      onclick: () => { settingsOpen = !settingsOpen; render(); }
+    }, '⚙ Settings'),
+    settingsOpen ? panel : null);
+}
 
 function render() {
   const app = $('#app');
@@ -2529,26 +2674,15 @@ function render() {
     h('div.grow', { style: { flex: '1' } }),
     h('span.tag', { style: S.liveWeek ? { borderColor: 'var(--s1)', color: 'var(--s1)' } : null },
       S.liveWeek ? '● Week ' + S.liveWeek : S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
-    segmented([{ k: 'simple', label: 'Simple' }, { k: 'full', label: 'Full' }], S.ui,
-      m => { setUiMode(m); navExpanded = false; render(); }),
-    // simple mode keeps the top bar to one line: the theme becomes one button
-    // that cycles, rather than three chips that are almost always untouched
-    isSimple()
-      ? h('button.btn', {
-        title: 'Theme: ' + currentTheme(),
-        onclick: () => { const order = ['system', 'light', 'dark']; setTheme(order[(order.indexOf(currentTheme()) + 1) % 3]); render(); }
-      }, currentTheme() === 'dark' ? '☾' : currentTheme() === 'light' ? '☀' : '◐')
-      : segmented([{ k: 'system', label: 'Auto' }, { k: 'light', label: 'Light' }, { k: 'dark', label: 'Dark' }], currentTheme(), t => { setTheme(t); render(); }),
     h('button.btn' + (HYP.on ? '.hypon' : ''), {
       title: 'Try roster changes and see every page recompute',
       onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
     }, HYP.on ? '⚗ Hypothetical · ' + hypCount() : '⚗ Hypothetical'),
-    h('button.btn', { onclick: () => hardRefresh() }, '↻ Refresh'),
-    h('button.btn', { onclick: () => { S.league = null; S._sched = null; hypExit(); render(); } }, 'Change league')
+    settingsMenu()
   );
   const content = h('div.content');
   const V = {
-    week: viewWeek, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
+    home: viewHome, week: viewWeek, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
     h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
     draft: viewDraft, stock: viewStock, player: viewPlayer
   }[S.view];
@@ -2697,7 +2831,7 @@ function lineupTable(t) {
       h('span.tag', { style: { textAlign: 'center' } }, SLOT_LABEL[s.slot] || s.slot),
       p ? h('div.row', { style: { gap: '7px', minWidth: 0 } },
         isSimple() ? playerFace(p) : posPill(p.pos),
-        pname(p, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '540' } }),
+        pname(p, { face: false, style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '540' } }),
         injuryTag(p.injury),
         p.team ? (isSimple() ? teamLogo(p.team) : h('span.tiny.muted', p.team)) : null) : h('span.muted.tiny', 'empty'),
       h('span.mono.tiny.sec', p ? fmt(p.ppg, 1) : '—'));
@@ -2755,7 +2889,7 @@ function rosterTable(t) {
         h('div.meta', h('div.nm', r.name || r.label), h('div.sub', badge(r) || h('span', 'draft pick'))),
         h('div.val', h('b.mono', kfmt(Math.round(r.dv || 0)))))
       : h('div.pcard', playerFace(r),
-        h('div.meta', h('div.nm', pname(r, { style: { fontWeight: r._slot === 'START' ? 650 : 560 } })),
+        h('div.meta', h('div.nm', pname(r, { face: false, style: { fontWeight: r._slot === 'START' ? 650 : 560 } })),
           h('div.sub', posPill(r.pos), r.team ? teamLogo(r.team) : null,
             r.age ? h('span', fmt(r.age, 0) + 'y') : null, badge(r), injuryTag(r.injury))),
         h('div.val',
@@ -3188,7 +3322,23 @@ function fairness(aVal, bVal) {
 }
 
 /* ================= 2. TRADE CALCULATOR ================= */
-const TradeUI = { a: null, b: null, aOut: [], bOut: [], q1: '', q2: '', sims: 1200, result: null };
+/* Five thousand seasons is enough that a one-point swing in title odds is real
+   rather than noise, and it runs in about a second — so there is nothing left
+   for the user to choose, only a button to press. */
+const TRADE_SIMS = 5000;
+const TradeUI = { a: null, b: null, aOut: [], bOut: [], q1: '', q2: '', result: null, sig: null, running: false };
+/** What the current proposal is, so a repeat render does not re-run the sim. */
+function tradeSig() {
+  return [TradeUI.a, TradeUI.b, TradeUI.aOut.map(a => a.id).join(','), TradeUI.bOut.map(a => a.id).join(',')].join('|');
+}
+/** Run the evaluation now, synchronously. */
+function tradeRunNow() {
+  const A = S.teamById[TradeUI.a], B = S.teamById[TradeUI.b];
+  if (!A || !B || !(TradeUI.aOut.length || TradeUI.bOut.length)) { TradeUI.result = null; TradeUI.sig = null; return null; }
+  TradeUI.result = tradeEval(A, B, TradeUI.aOut, TradeUI.bOut, TRADE_SIMS);
+  TradeUI.sig = tradeSig();
+  return TradeUI.result;
+}
 function viewTrade() {
   const teams = S.teams;
   if (TradeUI.a === null) TradeUI.a = (S.myRosterId || teams[0].rosterId);
@@ -3207,6 +3357,7 @@ function viewTrade() {
     const all = assetsOf(T).sort((x, y) => y.dv - x.dv);
     const filtered = all.filter(a => !chosen.has(a.id) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
     const box = h('div.tradebox', out.length ? out.map(a => h('div.asset', { onclick: () => { TradeUI[which + 'Out'] = out.filter(x => x.id !== a.id); TradeUI.result = null; render(); } },
+      isSimple() && a.kind === 'player' && a.ref ? playerFace(a.ref, { sm: true }) : null,
       posPill(a.pos), h('span', a.name), h('span.v', kfmt(Math.round(a.dv))), h('span.x', '×')))
       : h('div.tiny.muted', { style: { padding: '18px 6px', textAlign: 'center' } }, 'Click players below to add them'));
     const search = h('input', {
@@ -3230,7 +3381,8 @@ function viewTrade() {
   function assetRow(a, which) {
     return h('div.asset.pickable', {
       onclick: () => { TradeUI[which + 'Out'] = TradeUI[which + 'Out'].concat([a]); TradeUI.result = null; render(); }
-    }, posPill(a.pos), h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name),
+    }, isSimple() && a.kind === 'player' && a.ref ? playerFace(a.ref, { sm: true }) : null,
+      posPill(a.pos), h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name),
       a.kind === 'pick' && a.ref.slotLabel
         ? bindTT(h('span.tiny.muted', { tabindex: 0, style: { flex: 'none' } }, 'proj ' + a.ref.slotLabel),
           `<div class="k">Projected slot</div>${a.ref.origTeam || ''}Currently projects as pick <b>${a.ref.slotLabel}</b> (${a.ref.tier}) because its original owner projects to finish around ${ord(Math.round(a.ref.ownerRank))}.`)
@@ -3246,16 +3398,32 @@ function viewTrade() {
     side(A, 'a', TradeUI.q1), side(B, 'b', TradeUI.q2)));
 
   const canRun = TradeUI.aOut.length || TradeUI.bOut.length;
-  const runBtn = h('button.btn.pri', { disabled: !canRun, onclick: () => { TradeUI.result = tradeEval(A, B, TradeUI.aOut, TradeUI.bOut, TradeUI.sims); render(); } },
-    canRun ? 'Evaluate trade' : 'Add at least one asset');
-  wrap.appendChild(h('div.row', { style: { justifyContent: 'center', gap: '12px' } }, runBtn,
-    h('label.fld', { style: { flexDirection: 'row', alignItems: 'center', gap: '7px' } }, 'Sims',
-      h('select', { onchange: e => { TradeUI.sims = +e.target.value; TradeUI.result = null; }, }, [500, 1200, 3000].map(n => h('option', { value: n, selected: TradeUI.sims === n }, kfmt(n)))))));
+  const sig = tradeSig();
+  const fresh = TradeUI.result && TradeUI.sig === sig;
+  if (!canRun) { TradeUI.result = null; TradeUI.sig = null; }
 
-  if (TradeUI.result) wrap.appendChild(tradeResult(TradeUI.result));
+  // Ten thousand simulated seasons is not something to spend on every click, so
+  // it waits to be asked. The button says whether it would be telling you
+  // something new, and the run happens a frame later so "Simulating…" paints.
+  const run = () => {
+    if (!canRun || TradeUI.running) return;
+    TradeUI.running = true; render();
+    setTimeout(() => {
+      try { tradeRunNow(); } catch (e) { console.error(e); }
+      TradeUI.running = false; render();
+    }, 16);
+  };
+  const runBtn = h('button.btn.pri', { disabled: !canRun || TradeUI.running, onclick: run },
+    TradeUI.running ? 'Simulating…' : !canRun ? 'Add at least one asset' : fresh ? 'Re-evaluate' : 'Evaluate trade');
+  wrap.appendChild(h('div.row', { style: { justifyContent: 'center', gap: '12px', minHeight: '22px' } }, runBtn,
+    h('span.tiny.muted', TradeUI.running ? kfmt(TRADE_SIMS) + ' seasons, with and without the trade'
+      : fresh ? kfmt(TRADE_SIMS) + ' seasons simulated both ways, same random draws in each'
+        : canRun ? kfmt(TRADE_SIMS) + ' simulated seasons, about a second' : '')));
+
+  if (fresh) wrap.appendChild(tradeResult(TradeUI.result));
   else if (canRun) {
     const quick = fairness(sum(TradeUI.aOut.map(a => a.dv)), sum(TradeUI.bOut.map(a => a.dv)));
-    wrap.appendChild(card('Value check', 'press Evaluate for the full picture',
+    wrap.appendChild(card('Value check', 'market prices — press Evaluate for the full picture',
       h('div.row', { style: { justifyContent: 'space-around', textAlign: 'center' } },
         h('div', h('div.tiny.muted', A.name + ' sends'), h('div.big.mono', kfmt(Math.round(sum(TradeUI.aOut.map(a => a.dv)))))),
         h('div', h('div.tiny.muted', 'Fairness'), h('div.big.mono', pct(quick, 0))),
@@ -3720,7 +3888,7 @@ function findTrades(T, mode, tol, filters) {
 }
 function tradeCardRow(r, T, i) {
   const chip = (a) => h('div.asset', { style: { cursor: 'default' } },
-    isSimple() && a.kind === 'player' ? playerFace(a.ref) : null, posPill(a.pos),
+    posPill(a.pos),
     a.kind === 'pick' ? h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name)
       : pname(a.ref, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
     h('span.v', kfmt(Math.round(a.dv))));
@@ -3735,7 +3903,7 @@ function tradeCardRow(r, T, i) {
           onclick: () => {
             TradeUI.a = T.rosterId; TradeUI.b = r.partner.rosterId;
             TradeUI.aOut = r.give.slice(); TradeUI.bOut = r.get.slice();
-            TradeUI.result = tradeEval(T, r.partner, TradeUI.aOut, TradeUI.bOut, TradeUI.sims);
+            tradeRunNow();
             S.view = 'trade'; render(); window.scrollTo(0, 0);
           }
         }, 'Open in calculator'))),
@@ -3895,8 +4063,8 @@ function simSeasonView(res) {
       : kpi('Runs', kfmt(res.n), res.ms + ' ms')
   ));
 
-  const lever = simLeverageCard(res);
-  if (lever) wrap.appendChild(lever);
+  // the table is what the run was for, so it comes first — the leverage card and
+  // everything under it are reading from the same numbers
   wrap.appendChild(card('Simulated season outcomes', 'each row is ' + kfmt(res.n) + ' full seasons', table([
     { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
     { k: 'rec', h: 'Now', sort: r => r.t.wins, f: r => `${r.t.wins}-${r.t.losses}` },
@@ -3909,6 +4077,9 @@ function simSeasonView(res) {
     { k: 'final', prio: 2, h: 'Final', num: true, sort: r => r.s.final, f: r => pct(r.s.final, 0) },
     { k: 'title', h: 'Title', num: true, sort: r => r.s.title, f: r => h('b.mono', pct(r.s.title, 1)) }
   ], rows, { sortKey: 'title', sortDir: -1 })));
+
+  const lever = simLeverageCard(res);
+  if (lever) wrap.appendChild(lever);
 
   const teams = S.teams.slice().sort((a, b) => a.powerRank - b.powerRank);
   if (SimUI.team === null) SimUI.team = teams[0].rosterId;
@@ -3968,7 +4139,7 @@ function viewDraft() {
   };
   const rounds = Math.max(...picks.map(p => p.round));
   const perRound = Math.max(...picks.map(p => p.draft_slot || 1), S.teams.length);
-  const board = h('div.board', { style: { gridTemplateColumns: `36px repeat(${perRound}, minmax(96px,1fr))` } });
+  const board = h('div.board', { style: { gridTemplateColumns: `36px repeat(${perRound}, minmax(${isSimple() ? 132 : 96}px,1fr))` } });
   board.appendChild(h('div'));
   for (let s = 1; s <= perRound; s++) {
     const rid = d.slot_to_roster_id ? d.slot_to_roster_id[s] : null;
@@ -3985,7 +4156,9 @@ function viewDraft() {
         onclick: () => { if (/^\d+$/.test(e.pl.id)) openPlayer(e.pl.id); },
         onkeydown: (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && /^\d+$/.test(e.pl.id)) { ev.preventDefault(); openPlayer(e.pl.id); } }
       },
-        h('div.pn', e.pl.name),
+        isSimple()
+          ? h('div.pnrow', playerFace(e.pl, { xs: true }), h('div.pn', e.pl.name))
+          : h('div.pn', e.pl.name),
         h('div.mt', h('span', { style: { fontWeight: 700 } }, e.pl.pos || '—'),
           h('span', e.pl.team || ''), h('span', { style: { marginLeft: 'auto', opacity: .8 } }, r + '.' + String(s).padStart(2, '0'))));
       bindTT(cell, `<div class="k">Pick ${e.p.pick_no} (${r}.${String(s).padStart(2, '0')}) — ${e.team ? e.team.name : '?'}</div>` +
@@ -4165,7 +4338,7 @@ function viewStock() {
   const fallers = pool.slice().sort((a, b) => a.trend30 - b.trend30).slice(0, 12);
   const ownerOf = {}; S.teams.forEach(t => t.players.forEach(p => ownerOf[p.id] = t));
   const moverCols = [
-    { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r) : posPill(r.pos), pname(r, { style: { fontWeight: 540 } })) },
+    { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r) : posPill(r.pos), pname(r, { face: false, style: { fontWeight: 540 } })) },
     { k: 'owner', prio: 2, h: 'Roster', sort: r => (ownerOf[r.id] || {}).name || 'zz', f: r => ownerOf[r.id] ? h('span.tiny', ownerOf[r.id].short) : h('span.tiny.muted', 'FA') },
     { k: 'dv', h: 'Value', num: true, f: r => kfmt(Math.round(r.dv)) },
     { k: 'trend30', h: '30 days', num: true, f: r => deltaTag(r.trend30, 0) },
@@ -4200,7 +4373,10 @@ function openPlayer(id, back) {
   S.view = 'player';
   render(); window.scrollTo(0, 0);
 }
-/** A player's name, rendered as a link into the player page. */
+/** A player's name, rendered as a link into the player page. In the default
+ *  view it carries the player's headshot, so a face turns up wherever a name
+ *  does — trades, the draft board, head to head, everywhere. Pass
+ *  `face: false` where the surrounding row already shows one. */
 function pname(p, opts) {
   opts = opts || {};
   if (!p || p.pos === 'PICK' || !p.id) return h('span', (p && (p.name || p.label)) || '—');
@@ -4210,7 +4386,10 @@ function pname(p, opts) {
     onclick: (e) => { e.stopPropagation(); openPlayer(p.id); },
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openPlayer(p.id); } }
   }, p.name);
-  return el;
+  if (!isSimple() || opts.face === false) return opts.mirror ? h('span.pnf.mir', el) : el;
+  // mirrored puts the headshot on the outside, so two of these facing each other
+  // read as a pair rather than as two left-aligned lists
+  return h('span.pnf' + (opts.mirror ? '.mir' : ''), playerFace(p, { sm: true }), el);
 }
 
 /* ================= 9. PLAYER PAGE ================= */
@@ -4476,7 +4655,9 @@ function scoutTeam(t) {
     const mv = mean(av), sv = sd_(av) || 1;
     zVal[pos] = (t.posValue[pos] - mv) / sv;
   });
-  const pos = POS_ALL.filter(p => (demand[p] || 0) > 0).map(p => {
+  // kickers and defences are streamed, not built — nobody scouts a roster for
+  // them and nobody trades for them, so they are left out of the scouting view
+  const pos = POS4.filter(p => (demand[p] || 0) > 0).map(p => {
     const group = act.filter(x => x.pos === p).sort((a, b) => (b.ppg || 0) - (a.ppg || 0));
     const good = group.filter(startable);
     const need = demand[p] || 0;
@@ -4761,7 +4942,7 @@ function viewLineup() {
     {
       k: 'player', h: 'Player', sortable: false, f: r => r.p
         ? h('div', { style: { minWidth: 0 } }, h('div.row', { style: { gap: '7px', minWidth: 0 } },
-          isSimple() ? playerFace(r.p) : null, posPill(r.p.pos), pname(r.p),
+          isSimple() ? playerFace(r.p) : null, posPill(r.p.pos), pname(r.p, { face: false }),
           injuryTag(r.p.injury),
           // on a phone the tag costs more width than it earns — the card directly
           // below this table is the real place these calls get made
@@ -4844,7 +5025,7 @@ function viewLineup() {
   });
   wrap.appendChild(card('Bench', bench.length + (isLive ? ' players not in the lineup' : ' players not in the optimal lineup'), table([
     { k: 'pos', h: 'Pos', f: r => posPill(r.p.pos), sort: r => r.p.pos },
-    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p), injuryTag(r.p.injury)),
+    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p, { face: false }), injuryTag(r.p.injury)),
       isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null) },
     { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE') : h('span.tiny', r.o.opp || '—') },
     isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => liveBadge(r.p, wk) } : null,
@@ -4910,10 +5091,11 @@ function viewScout() {
   if (ScoutUI.team === null || !S.teamById[ScoutUI.team]) ScoutUI.team = S.myRosterId || S.teams[0].rosterId;
 
   // ---- league-wide needs matrix ----
-  // a position the league starts but for which nobody has any projected output —
-  // kickers and defences in leagues whose sources don't cover them — is a dead
-  // column of zeroes, so leave it out rather than implying every team is equal there
-  const posList = POS_ALL.filter(p => (slotDemand()[p] || 0) > 0)
+  // kickers and defences are out of the scouting view entirely — they are
+  // streamed week to week, so "who needs a kicker" is not a question anyone
+  // trades on. A position with no projected output anywhere is a dead column
+  // of zeroes too, so leave that out rather than implying every team is equal.
+  const posList = POS4.filter(p => (slotDemand()[p] || 0) > 0)
     .filter(p => scouts.some(sc => { const e = sc.pos.find(x => x.pos === p); return e && e.output > 0.05; }));
   const ordered = scouts.slice().sort((a, b) => a.team.powerRank - b.team.powerRank);
   const grid = h('div', { style: { display: 'grid', gridTemplateColumns: `minmax(130px,1.5fr) repeat(${posList.length}, minmax(56px,1fr))`, gap: '2px', minWidth: (150 + posList.length * 62) + 'px' } });
@@ -5472,12 +5654,41 @@ function viewH2H() {
   bins.forEach(b => b.v /= r.n);
   wrap.appendChild(card('Margin, week ' + wk, A.name + ' to the right, ' + B.name + ' to the left — '
     + (isLive ? 'points already scored are banked; only the open slots are drawn' : 'both lineups set optimally for this week'),
-    h('div', histogram(bins, { h: 190, w: chartW(900, 360), stretch: true, rule: 0, aria: 'margin distribution' }),
+    h('div', histogram(bins, { h: 190, w: chartW(1040, 360), stretch: true, rule: 0, aria: 'margin distribution' }),
       h('div.tiny.muted', { style: { marginTop: '8px' } },
         `Middle 80% of outcomes run from ${(r.loMargin >= 0 ? A.short + ' by ' : B.short + ' by ')}${fmt(Math.abs(r.loMargin), 0)} to `
         + `${(r.hiMargin >= 0 ? A.short + ' by ' : B.short + ' by ')}${fmt(Math.abs(r.hiMargin), 0)}.`))));
 
   /* ---- slot by slot ---- */
+  // laid out as a mirror: each side's player on the outside, their number just
+  // inside it, and the slot itself down the middle. Reading across a row you get
+  // "this player, this many, at this spot, this many, that player".
+  function slotLadder(rows, A, B, CA, CB, isLive, wk) {
+    const cw = 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
+    const head = h('div.ladderrow.ladderhd', { style: { gridTemplateColumns: cw } },
+      h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
+      h('span.tiny.muted', { style: { textAlign: 'right' } }, isLive ? 'Pts' : 'Proj'),
+      h('span.tiny.muted', { style: { textAlign: 'center' } }, 'Slot'),
+      h('span.tiny.muted', isLive ? 'Pts' : 'Proj'),
+      h('b.tiny', { style: { color: CB } }, B.short));
+    const num = (v, won, col) => h('span.mono', {
+      style: { fontWeight: won ? 700 : 500, color: won ? col : 'var(--text-secondary)' }
+    }, fmt(v, 1));
+    // a fixed slot already names the position, so the pill only earns its place
+    // where the slot accepts more than one — flex and superflex
+    const flexy = (slot, pl) => pl && (SLOT_ELIG[slot] || [slot]).length > 1 ? posPill(pl.pos) : null;
+    return h('div', { style: { display: 'grid' } }, [head].concat(rows.map(r2 => h('div.ladderrow', { style: { gridTemplateColumns: cw } },
+      h('div.pl.l', r2.a
+        ? [isLive ? liveBadge(r2.a, wk) : null, flexy(r2.slot, r2.a), pname(r2.a, { mirror: true, style: { fontWeight: r2.d > 0 ? 640 : 500 } })]
+        : h('span.muted.tiny', 'empty')),
+      h('div', { style: { textAlign: 'right' } }, num(r2.va, r2.d > 0, CA)),
+      h('div', { style: { textAlign: 'center' } }, h('span.tag', { style: { minWidth: '46px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot)),
+      h('div', num(r2.vb, r2.d < 0, CB)),
+      h('div.pl.r', r2.b
+        ? [pname(r2.b, { style: { fontWeight: r2.d < 0 ? 640 : 500 } }), flexy(r2.slot, r2.b), isLive ? liveBadge(r2.b, wk) : null]
+        : h('span.muted.tiny', 'empty'))))));
+  }
+
   const la = isLive ? liveLineupSlots(A, wk) : optimalLineup(activePlayers(A), p => pw(p, wk));
   const lb = isLive ? liveLineupSlots(B, wk) : optimalLineup(activePlayers(B), p => pw(p, wk));
   const slotRows = la.map((sa, i) => {
@@ -5505,14 +5716,7 @@ function viewH2H() {
   wrap.appendChild(card('Slot by slot — week ' + wk,
     `${A.short} wins ${aWon} of ${slotRows.length} slots ${isLive ? 'so far' : 'on projection'} · totals ${fmt(sum(slotRows.map(x => x.va)), 1)} to ${fmt(sum(slotRows.map(x => x.vb)), 1)}`
     + (isLive ? ' · points already scored are shown as scored' : ''),
-    isNarrow() ? slotStack : table([
-      { k: 'slot', h: 'Slot', sortable: false, f: r2 => h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot) },
-      { k: 'a', h: A.short, sortable: false, f: r2 => r2.a ? h('div.row', { style: { gap: '6px' } }, posPill(r2.a.pos), pname(r2.a), isLive ? liveBadge(r2.a, wk) : null) : h('span.muted.tiny', 'empty') },
-      { k: 'va', h: isLive ? 'Pts' : 'Proj', num: true, sortable: false, f: r2 => h('span.mono', { class: r2.d > 0 ? 'up' : '' }, fmt(r2.va, 1)) },
-      { k: 'vb', h: isLive ? 'Pts' : 'Proj', num: true, sortable: false, f: r2 => h('span.mono', { class: r2.d < 0 ? 'up' : '' }, fmt(r2.vb, 1)) },
-      { k: 'b', h: B.short, sortable: false, f: r2 => r2.b ? h('div.row', { style: { gap: '6px' } }, posPill(r2.b.pos), pname(r2.b), isLive ? liveBadge(r2.b, wk) : null) : h('span.muted.tiny', 'empty') },
-      { k: 'd', prio: 2, h: 'Edge', num: true, sortable: false, f: r2 => deltaTag(r2.d, 1) }
-    ], slotRows, {})));
+    isNarrow() ? slotStack : slotLadder(slotRows, A, B, CA, CB, isLive, wk)));
 
   /* ---- the franchises, not just this week ---- */
   const metrics = [
@@ -5993,19 +6197,26 @@ function currentWeek() {
   return clamp(S.lastWeek + 1, 1, S.regEnd);
 }
 
-/** Actual where the game is over, projection where it is not. */
-function liveTeamLine(l, T, colour) {
-  return h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } },
-    h('div.row', { style: { justifyContent: 'space-between', gap: '8px' } },
-      teamCell(T, { sub: false }),
-      h('b.mono', { style: { fontSize: '18px' } }, fmt(l.total, 1))),
-    h('div.row', { style: { gap: '9px' } },
-      h('span.tiny.muted', l.banked > 0.05 ? h('span', h('b.sec', fmt(l.banked, 1)), ' scored') : h('span', 'nothing scored yet')),
-      l.projected > 0.05 ? h('span.tiny.muted', '+ ', h('b.sec', fmt(l.projected, 1)), ' projected') : null,
-      h('span', { style: { flex: 1 } }),
-      h('span.tiny.muted', l.doneN + ' done'
-        + (l.liveN ? ' · ' + l.liveN + ' playing' : '')
-        + (l.leftN ? ' · ' + l.leftN + ' to come' : ''))));
+/** A franchise's name, shortened to its abbreviation when the card is too
+ *  narrow to carry the whole thing without cutting it in half anyway. */
+function matchupName(T) {
+  const n = T.name || '';
+  const wide = !isNarrow();
+  return (n.length <= (wide ? 16 : 11)) ? n : T.short;
+}
+/** One half of a matchup card: badge, name, live total, and what is behind it. */
+function matchupSide(l, T, colour) {
+  return h('div.tmside',
+    T.avatar
+      ? h('img.mlogo', { src: T.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
+      : h('div.mlogo'),
+    h('div.nm', { title: T.name + ' — ' + T.owner }, matchupName(T)),
+    h('div.sc', { style: { color: colour } }, fmt(l.total, 1)),
+    h('div.dt', l.banked > 0.05 ? h('span', h('b.sec', fmt(l.banked, 1)), ' scored') : h('span', 'nothing yet'),
+      l.projected > 0.05 ? h('div', '+ ' + fmt(l.projected, 1) + ' proj') : null),
+    h('div.dt.cnt', l.doneN + ' done'
+      + (l.liveN ? ' · ' + l.liveN + ' live' : '')
+      + (l.leftN ? ' · ' + l.leftN + ' left' : '')));
 }
 
 function viewWeek() {
@@ -6087,20 +6298,24 @@ function viewWeek() {
     games.map(g => {
       const favA = g.pA >= g.pB;
       const body = h('div', { style: { display: 'grid', gap: '10px' } },
-        liveTeamLine(g.a, g.A, 'var(--s1)'),
-        h('div', { style: { display: 'grid', gap: '4px' } },
-          h('div', { style: { position: 'relative', height: '9px', background: 'var(--surface-3)', borderRadius: '3px', overflow: 'hidden' } },
-            h('div', { style: { position: 'absolute', inset: '0 auto 0 0', width: (g.pA * 100) + '%', background: 'var(--s1)' } })),
-          h('div.row', { style: { justifyContent: 'space-between' } },
-            h('b.mono.tiny', { style: { color: favA ? 'var(--s1)' : 'var(--text-muted)' } }, pct(g.pA, 0)),
-            h('span.tiny.muted', g.settled ? 'final' : 'win probability'),
-            h('b.mono.tiny', { style: { color: !favA ? 'var(--s2)' : 'var(--text-muted)' } }, pct(g.pB, 0)))),
-        liveTeamLine(g.b, g.B, 'var(--s2)'),
-        h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px' } },
+        // one team on each side with the odds between them: the bar reads left
+        // to right as "how much of this game belongs to the team on the left"
+        h('div.mvs',
+          matchupSide(g.a, g.A, 'var(--s1)'),
+          h('div.mid',
+            h('div.pcts',
+              h('span', { style: { color: favA ? 'var(--s1)' : 'var(--text-muted)' } }, pct(g.pA, 0)),
+              h('span', { style: { color: !favA ? 'var(--s2)' : 'var(--text-muted)' } }, pct(g.pB, 0))),
+            // the whole track is the two teams' colours meeting at the odds
+            h('div.bar', { style: { background: 'var(--s2)' } },
+              h('i', { style: { width: (g.pA * 100) + '%', background: 'var(--s1)' } })),
+            h('div.cap', g.settled ? 'final' : 'win prob')),
+          matchupSide(g.b, g.B, 'var(--s2)')),
+        h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px', textAlign: 'center' } },
           g.settled ? 'Everyone has played.'
             : `Typical result: ${(g.med >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.med), 1)} · middle 80% from `
             + `${(g.lo >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.lo), 0)} to ${(g.hi >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.hi), 0)}`),
-        h('div.row', h('button.btn.sm', {
+        h('div.row', { style: { justifyContent: 'center' } }, h('button.btn.sm', {
           onclick: () => { WeekUI.open = g.A.rosterId; render(); window.scrollTo(0, 0); }
         }, 'Win probability & players →')));
       const c = card(null, null, body);
@@ -6165,7 +6380,7 @@ function weekPlayerTable(g) {
     { k: 'side', h: 'Team', sort: r => r.side.name, f: r => h('span.tiny', r.side.short) },
     { k: 'pos', prio: 2, h: 'Pos', sortable: false, f: r => posPill(r.p.pos) },
     { k: 'name', h: 'Player', sort: r => r.p.name, f: r => isSimple()
-      ? h('div.row', { style: { gap: '7px', minWidth: 0 } }, playerFace(r.p), pname(r.p), r.p.team ? teamLogo(r.p.team) : null)
+      ? h('div.row', { style: { gap: '7px', minWidth: 0 } }, playerFace(r.p), pname(r.p, { face: false }), r.p.team ? teamLogo(r.p.team) : null)
       : pname(r.p) },
     { k: 'st', h: 'Status', sortable: false, f: r => badge(r.state) },
     { k: 'used', h: 'Counted', num: true, sort: r => r.used, f: r => h('b.mono', fmt(r.used, 1)) },
@@ -6182,23 +6397,18 @@ function weekDetail(wrap, g, wk, live) {
     h('span', { style: { flex: 1 } }),
     live ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null));
 
-  const side = (l, T, colour, p) => h('div', { style: { display: 'grid', gap: '3px', minWidth: 0 } },
-    h('div.row', { style: { gap: '8px', minWidth: 0 } },
-      h('b', { style: { fontSize: '16px', color: colour, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, T.name),
-      h('span', { style: { flex: 1 } }),
-      h('b.mono', { style: { fontSize: '22px' } }, fmt(l.total, 1))),
-    h('div.row', { style: { gap: '9px' } },
-      h('span.tiny.muted', h('b.sec', fmt(l.banked, 1)), ' scored'),
-      l.projected > 0.05 ? h('span.tiny.muted', '+ ', h('b.sec', fmt(l.projected, 1)), ' projected') : null,
-      h('span', { style: { flex: 1 } }),
-      h('b.mono.tiny', { style: { color: colour } }, pct(p, 0))));
-
+  const favA = g.pA >= g.pB;
   wrap.appendChild(card(null, null, h('div', { style: { display: 'grid', gap: '11px' } },
-    side(g.a, g.A, CA, g.pA),
-    h('div', { style: { position: 'relative', height: '10px', background: 'var(--surface-3)', borderRadius: '3px', overflow: 'hidden' } },
-      h('div', { style: { position: 'absolute', inset: '0 auto 0 0', width: (g.pA * 100) + '%', background: CA } })),
-    side(g.b, g.B, CB, g.pB),
-    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px' } },
+    h('div.mvs',
+      matchupSide(g.a, g.A, CA),
+      h('div.mid',
+        h('div.pcts',
+          h('span', { style: { color: favA ? CA : 'var(--text-muted)' } }, pct(g.pA, 0)),
+          h('span', { style: { color: !favA ? CB : 'var(--text-muted)' } }, pct(g.pB, 0))),
+        h('div.bar', { style: { background: CB } }, h('i', { style: { width: (g.pA * 100) + '%', background: CA } })),
+        h('div.cap', g.settled ? 'final' : 'win prob')),
+      matchupSide(g.b, g.B, CB)),
+    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px', textAlign: 'center' } },
       g.settled ? 'Everyone has played.'
         : `Typical result: ${(g.med >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.med), 1)} · middle 80% from `
         + `${(g.lo >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.lo), 0)} to ${(g.hi >= 0 ? g.A.short : g.B.short)} by ${fmt(Math.abs(g.hi), 0)}`))));
@@ -6289,6 +6499,112 @@ function matchupProbChart(wk, g) {
       h('div.tiny.muted', { style: { marginTop: '8px' } },
         'One column per kickoff window' + (slates.length ? ' (' + slates.map(sl => sl.label + ' ×' + Math.round(sl.n)).join(', ') + ')' : '')
         + '. The line is only as detailed as the times this page was open — it takes a reading on load, at most one every ten minutes.')));
+}
+/* ================= 14. HOME =================
+   The landing page: which league you are looking at, where the season stands,
+   and a way into every other page. It is the first thing a visit meets, so it
+   answers "what is this and where do I go" before it answers anything else. */
+
+/** One line each, so a tile says what the page is for rather than repeating its name. */
+const VIEW_BLURB = {
+  week: 'Live scores, win probability and the game that matters most',
+  roster: 'Any roster in full — value, projections and the starting lineup',
+  lineup: 'Who to start this week, with the calls actually worth thinking about',
+  trade: 'Price a trade and see what it does to the season',
+  finder: 'Trades that fit both rosters, scanned across the league',
+  trades: 'Every completed trade, graded at today’s market',
+  h2h: 'Two teams side by side, this week and as franchises',
+  power: 'The league ranked now and two to three years out',
+  standings: 'Wins, losses and points actually scored',
+  scout: 'Who needs what — every roster’s holes and surpluses',
+  sim: 'Playoff odds, seeds, and the games with most riding on them',
+  draft: 'The draft board, shaded by value against slot par',
+  stock: 'Value over time, for a player or a whole franchise'
+};
+/* The tiles, in the order someone would actually want them. */
+const HOME_TILES = ['week', 'lineup', 'roster', 'trade', 'finder', 'h2h', 'power', 'standings', 'sim', 'scout', 'trades', 'draft', 'stock'];
+
+function goView(k) { S.view = k; render(); window.scrollTo(0, 0); }
+
+function viewHome() {
+  const wrap = h('div.grid', { style: { gap: '20px' } });
+  const cfg = S.cfg;
+  const me = S.teamById[S.myRosterId];
+  const wk = S.liveWeek || clamp(S.lastWeek + 1, 1, S.regEnd);
+  const fmtStr = `${cfg.superflex ? 'Superflex' : '1QB'} · ${cfg.actualTeams} teams · `
+    + `${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'}`;
+  const state = S.liveWeek ? 'Week ' + S.liveWeek + ' in progress'
+    : S.lastWeek >= S.regEnd ? 'Regular season complete'
+      : S.lastWeek ? 'Through week ' + S.lastWeek : 'Preseason';
+
+  /* ---- who and what ---- */
+  wrap.appendChild(h('div.hero',
+    S.league.avatar
+      ? h('img.heroav', { src: 'https://sleepercdn.com/avatars/' + S.league.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
+      : h('div.heroav'),
+    h('div', { style: { minWidth: 0, flex: 1 } },
+      h('h1', S.league.name),
+      h('div.tiny.sec', { style: { marginTop: '3px' } }, fmtStr + ' · ' + S.season + ' season · ' + S.regEnd + '-week regular season'),
+      h('div.row', { style: { gap: '7px', marginTop: '9px' } },
+        h('span.tag', { style: S.liveWeek ? { borderColor: 'var(--s1)', color: 'var(--s1)' } : null }, (S.liveWeek ? '● ' : '') + state),
+        me ? h('span.tag', 'You: ' + me.name) : null,
+        S.league.status ? h('span.tag', String(S.league.status).replace(/_/g, ' ')) : null))));
+
+  /* ---- where you stand ---- */
+  if (me) {
+    const rec = `${me.wins}-${me.losses}${me.ties ? '-' + me.ties : ''}`;
+    const simBy = S.sim && S.sim.by ? S.sim.by[me.rosterId] : null;
+    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+      kpi('Your record', rec, S.gamesPlayed ? fmt(me.avgPts, 1) + ' per week' : 'no games yet'),
+      kpi('Power rank', '#' + me.powerRank, 'of ' + S.teams.length),
+      kpi('Future rank', '#' + me.futureRank, 'two to three years out'),
+      kpi('Dynasty capital', kfmt(Math.round(me.totalValue)), ord(me.valueRank) + ' in the league'),
+      simBy ? kpi('Playoff odds', pct(simBy.playoff, 0), pct(simBy.title, 1) + ' title')
+        : kpi('Playoff odds', '—', 'run the simulator')));
+  }
+
+  /* ---- the week, if there is one being played ---- */
+  if (S.liveWeek && me) {
+    const g = liveMatchups(S.liveWeek).find(x => x.A.rosterId === me.rosterId || x.B.rosterId === me.rosterId);
+    if (g) {
+      const mine = g.A.rosterId === me.rosterId;
+      const my = mine ? g.a : g.b, th = mine ? g.b : g.a;
+      const them = mine ? g.B : g.A, p = mine ? g.pA : g.pB;
+      wrap.appendChild(card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
+        h('div', { style: { display: 'grid', gap: '12px' } },
+          h('div.row', { style: { gap: '14px', flexWrap: 'wrap' } },
+            h('div.row', { style: { gap: '10px', minWidth: 0 } },
+              h('b', { style: { fontSize: '26px', color: 'var(--s1)' } }, fmt(my.total, 1)),
+              h('span.tiny.muted', 'v'),
+              h('b', { style: { fontSize: '26px', color: 'var(--s2)' } }, fmt(th.total, 1)),
+              h('span.tiny.sec', { style: { marginLeft: '4px' } }, 'against ', h('b', them.name))),
+            h('span', { style: { flex: 1 } }),
+            h('span.tag', { style: { borderColor: p >= 0.5 ? 'var(--good)' : 'var(--border-strong)' } }, pct(p, 0) + ' to win')),
+          h('div.row', { style: { gap: '10px' } },
+            h('button.btn.pri', { onclick: () => goView('week') }, 'This week →'),
+            h('button.btn', { onclick: () => goView('lineup') }, 'Check my lineup')))));
+    }
+  }
+
+  /* ---- everywhere else ---- */
+  wrap.appendChild(card('Everything else', 'thirteen pages, all reading the same league',
+    h('div.tilegrid', HOME_TILES.map(k => {
+      const v = VIEWS.find(x => x.k === k); if (!v) return null;
+      return h('button.tile', { onclick: () => goView(k) },
+        h('span.ic', v.ic),
+        h('span', { style: { minWidth: 0 } },
+          h('b', v.label),
+          h('span.tiny.muted', { style: { display: 'block', lineHeight: '1.35', marginTop: '2px' } }, VIEW_BLURB[k] || '')));
+    }))));
+
+  /* ---- where the numbers come from ---- */
+  wrap.appendChild(card('Where this comes from', null,
+    h('div.tiny.sec', { style: { lineHeight: '1.55' } },
+      'Rosters, matchups, drafts and trades are read live from ', h('b', 'Sleeper'),
+      '; weekly projections are Sleeper’s own lines re-scored through this league’s settings; player and pick values are ',
+      h('b', 'FantasyCalc'), ' dynasty prices for a ', cfg.superflex ? 'superflex' : '1QB', ' ', String(cfg.numTeams),
+      '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league. Everything is computed in this browser — nothing is stored anywhere else.')));
+  return wrap;
 }
 /* ================= hypothetical roster sandbox =================
    Release, sign and swap players and picks, then look at any page as if those
@@ -6721,8 +7037,9 @@ async function boot(leagueId, onStep) {
     if (me) { const t = S.teams.find(t => t.ownerId === me); if (t) S.myRosterId = t.rosterId; }
     if (!S.myRosterId) S.myRosterId = S.teams[0].rosterId;
     RosterUI.team = S.myRosterId; TradeUI.a = S.myRosterId; FinderUI.team = S.myRosterId;
-    // if a week is being played right now, that is what you opened the app for
-    if (S.liveWeek && S.view === 'roster') S.view = 'week';
+    // a league that has just loaded lands on the front page; the live week is one
+    // click from there, and is called out at the top of it when there is one
+    if (S.view === 'roster') S.view = 'home';
     S.busy = false;
     S.sim = null;
     render();
@@ -6742,6 +7059,7 @@ async function boot(leagueId, onStep) {
 }
 setTheme(currentTheme());
 setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer view
+setNameMode(LS.get('names', 'user')); // people know each other by handle, not by team name
 watchViewport();
 const _last = LS.get('last', null);
 render();
