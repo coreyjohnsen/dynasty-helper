@@ -310,9 +310,136 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .ladderrow .pl .plink{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ---- home ---- */
-.hero{display:flex;align-items:center;gap:18px;padding:4px 2px}
+.hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;padding:20px 22px;
+  border:1px solid var(--border);border-radius:var(--r);
+  background:linear-gradient(115deg, color-mix(in srgb, var(--s1) 11%, var(--surface-1)) 0%, var(--surface-1) 58%)}
+.hero > *{position:relative;z-index:1}
 .hero h1{font-size:28px;letter-spacing:-.025em;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
 .heroav{width:60px;height:60px;border-radius:16px;object-fit:cover;flex:none;background:linear-gradient(140deg,var(--s1),var(--s7))}
+/* the league's own badges, running off the right edge and fading out before
+   they reach the name; decoration only, so it never carries a number */
+.heroband{position:absolute;z-index:0;top:0;right:0;bottom:0;width:min(62%,560px);
+  display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-right:20px;pointer-events:none;
+  opacity:.42;
+  -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 62%,#000 100%);
+  mask-image:linear-gradient(to right,transparent 0%,#000 62%,#000 100%)}
+.heroband img{width:52px;height:52px;border-radius:15px;object-fit:cover;flex:none;filter:saturate(.8)}
+:root[data-theme="dark"] .heroband{opacity:.3}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .heroband{opacity:.3} }
+@media (max-width:820px){ .heroband{display:none} }
+
+/* ---- the headliners: your best players, lined up ----
+   Decoration, so it is Default-mode only. The faces lift on hover one at a
+   time, which is the whole trick: a row of portraits that reacts. */
+.lineup{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:4px 0 2px}
+.lup{display:grid;gap:6px;justify-items:center;width:104px;cursor:pointer;padding:6px 4px;border-radius:var(--r-sm);
+  border:1px solid transparent;transition:transform .16s ease,background .16s,border-color .16s}
+.lup:hover{transform:translateY(-4px);background:var(--surface-2);border-color:var(--border)}
+.lup:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.lupface{position:relative;line-height:0}
+.lupface .face.lg{width:66px;height:66px;border-radius:50%;border:3px solid var(--surface-1);
+  box-shadow:0 2px 12px rgba(11,11,11,.16);background:linear-gradient(160deg,var(--surface-3),var(--surface-2))}
+.lup:hover .lupface .face.lg{border-color:var(--s1)}
+.luppos{position:absolute;right:-2px;bottom:0;padding:1px 6px;border-radius:99px;font-size:9.5px;font-weight:700;
+  letter-spacing:.02em;border:2px solid var(--surface-1);line-height:1.35}
+.lupnm{font-weight:620;font-size:11.5px;line-height:1.2;text-align:center;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){
+  .lineup{gap:8px}
+  .lup{width:78px}
+  .lupface .face.lg{width:54px;height:54px}
+  .lupnm{font-size:11px}
+}
+
+/* ---- your matchup, badge either side of the score ---- */
+.mvside{display:flex;align-items:center;gap:10px;min-width:0}
+.mvside.r{flex-direction:row-reverse;text-align:right}
+.mvav{width:42px;height:42px;border-radius:12px;object-fit:cover;background:var(--surface-3);flex:none}
+
+/* ---- the podium: the top of the table, on blocks ---- */
+.podwrap{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(190px,1fr);gap:18px;align-items:end}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.pod{display:grid;gap:8px;justify-items:center;cursor:pointer;border-radius:var(--r-sm);padding:6px 4px 0;
+  border:1px solid transparent;transition:background .12s,border-color .12s,transform .12s}
+.pod:hover{background:var(--surface-2);border-color:var(--border);transform:translateY(-2px)}
+.pod:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.pod .podtop{display:grid;gap:5px;justify-items:center;text-align:center;min-width:0;width:100%}
+.pod .podav{width:46px;height:46px;border-radius:13px;object-fit:cover;background:var(--surface-3);
+  box-shadow:0 2px 10px rgba(11,11,11,.14)}
+.pod.p1 .podav{width:58px;height:58px;border-radius:16px}
+.pod .nm{font-weight:660;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.pod .pododds{font-size:11.5px;color:var(--text-secondary)}
+.pod .pododds b{color:var(--s1)}
+.pod.mine .podtop .nm{color:var(--s1)}
+.pod .form{justify-content:center}
+.pod.p1 .nm{font-size:14.5px}
+.pod .block{width:100%;border-radius:8px 8px 0 0;display:grid;place-items:end center;padding-bottom:7px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.pod.p1 .block{height:74px}
+.pod.p2 .block{height:54px}
+.pod.p3 .block{height:40px}
+.pod .place{font-size:20px;font-weight:800;color:rgba(255,255,255,.92);text-shadow:0 1px 2px rgba(0,0,0,.28);line-height:1}
+.pod.p2 .place,.pod.p3 .place{font-size:17px}
+.block.gold{background:linear-gradient(180deg,#e8c35a,#c99a1e)}
+.block.silver{background:linear-gradient(180deg,#d3d9e0,#a4adb8)}
+.block.bronze{background:linear-gradient(180deg,#d8a273,#b0743f)}
+:root[data-theme="dark"] .block.silver{background:linear-gradient(180deg,#aab2bd,#79818c)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .block.silver{background:linear-gradient(180deg,#aab2bd,#79818c)} }
+.hunt{display:grid;gap:5px;align-content:end;padding-bottom:4px}
+.hunt .lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px}
+.huntrow{display:grid;grid-template-columns:20px 26px minmax(0,1fr) auto;gap:8px;align-items:center;cursor:pointer;
+  padding:6px 7px;border-radius:var(--r-sm);border:1px dashed var(--border)}
+.huntrow:hover{background:var(--surface-2);border-style:solid}
+.huntrow:focus-visible{outline:2px solid var(--s1);outline-offset:-2px}
+.huntrow .rk{font-size:11.5px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
+.huntrow .avatar{width:26px;height:26px;border-radius:8px}
+.huntrow .nm{font-weight:600;font-size:12.5px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:780px){
+  .podwrap{grid-template-columns:minmax(0,1fr);gap:14px}
+  .hunt{align-content:start}
+}
+@media (max-width:420px){
+  .pod .podav{width:38px;height:38px;border-radius:11px}
+  .pod.p1 .podav{width:46px;height:46px}
+  .pod .nm{font-size:11.5px}
+  .pod.p1 .nm{font-size:12.5px}
+}
+
+/* ---- the league, one row per team ---- */
+/* capped so the columns stay together: a name column free to take a whole wide
+   card leaves a lake of white between the team and its record */
+.lgstrip{display:grid;max-width:880px}
+.lgrow.lghd{cursor:default;padding:0 8px 6px;border-bottom:1px solid var(--border);border-radius:0}
+.lgrow.lghd:hover{background:none;border-color:transparent;border-bottom-color:var(--border)}
+.lgrow.lghd .who{padding-left:44px}
+.lgrow{display:grid;grid-template-columns:30px minmax(0,1fr) 58px 58px 78px 58px;gap:14px;align-items:center;
+  padding:9px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid transparent}
+.lgrow:hover{background:var(--surface-2);border-color:var(--border)}
+.lgrow:focus-visible{outline:2px solid var(--s1);outline-offset:-2px}
+.lgrow.mine{background:color-mix(in srgb, var(--s1) 7%, transparent)}
+.lgrow.mine:hover{background:color-mix(in srgb, var(--s1) 12%, transparent)}
+.lgrow .rk{font-size:13px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
+.lgrow .who{display:flex;align-items:center;gap:10px;min-width:0}
+.lgrow .who .avatar{width:34px;height:34px;border-radius:10px}
+.lgrow .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.lgrow .num{text-align:right;font-size:12.5px;color:var(--text-secondary)}
+.lgrow .odds{text-align:right;font-size:13px;color:var(--text-secondary)}
+.lgrow .odds.up{color:var(--good-text)}
+.lgrow .odds.down{color:var(--text-muted)}
+/* a pick that has changed hands */
+.tag.traded{border-color:var(--s4);color:var(--s4);font-weight:660}
+/* the last five results, oldest first — a league table's form guide */
+.form{display:flex;gap:3px;align-items:center}
+.form i{width:12px;height:12px;border-radius:3px;display:block;cursor:default;background:var(--surface-3)}
+.form i.W{background:var(--good)}
+.form i.L{background:var(--s8)}
+.form i.T{background:var(--text-muted);opacity:.6}
+.huntrow .form i{width:9px;height:9px;border-radius:2px}
+@media (max-width:700px){
+  .lgrow{grid-template-columns:24px minmax(0,1fr) 52px;gap:9px;padding:8px 4px}
+  .lgrow .form{display:none}
+  .lgrow .who .avatar{width:30px;height:30px;border-radius:9px}
+}
 .tilegrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
 .tile{display:flex;align-items:flex-start;gap:11px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;min-width:0;transition:border-color .12s,background .12s,transform .12s}
 .tile:hover{border-color:var(--s1);background:var(--surface-2);transform:translateY(-1px)}
@@ -320,7 +447,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tile .ic{font-size:15px;color:var(--s1);flex:none;line-height:1.45}
 .tile b{font-size:13.5px;font-weight:640;display:block}
 @media (max-width:560px){
-  .hero{gap:13px}
+  .hero{gap:13px;padding:15px 16px}
   .hero h1{font-size:21px}
   .heroav{width:46px;height:46px;border-radius:13px}
   .tilegrid{grid-template-columns:minmax(0,1fr)}
@@ -1662,6 +1789,8 @@ function simulate(nSims, opts) {
     fieldAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // in the field after week w
     aliveAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // can still reach the cut
     knockedBy: new Float64Array(n * n),    // [loser*n + winner] in the bracket
+    draftSum: new Float64Array(n),         // next draft: summed slot across runs
+    draftDist: Array.from({ length: n }, () => new Float64Array(n + 1)),
     finalVs: new Float64Array(n * n),      // met in the title game
     poWins: new Float64Array(n),           // playoff games won
     // leverage: for each game in the next week, each side's odds when they win vs lose
@@ -1752,6 +1881,10 @@ function simulate(nSims, opts) {
     }
     const field = order.slice(0, playoffTeams);
     field.forEach(i => acc.playoff[i]++);
+    // how far each playoff team got, which is what orders the back half of the
+    // draft: -1 never made it, then 1 for a first-round exit upward
+    const exit = new Int16Array(n).fill(-1);
+    let roundNo = 0;
     let round = field.slice();
     const byes = (1 << Math.ceil(Math.log2(Math.max(2, playoffTeams)))) - playoffTeams;
     if (byes > 0) round.slice(0, byes).forEach(i => acc.bye[i]++);
@@ -1759,12 +1892,14 @@ function simulate(nSims, opts) {
     const play = (list, wk) => {
       const nx = [];
       const arr = list.slice();
+      roundNo++;
       if (arr.length % 2 === 1) nx.push(arr.shift());
       for (let i = 0; i < arr.length / 2; i++) {
         const a = arr[i], b = arr[arr.length - 1 - i];
         const aWins = score(a, wk) >= score(b, wk);
         const win = aWins ? a : b, lose = aWins ? b : a;
         acc.knockedBy[lose * n + win]++; acc.poWins[win]++;
+        exit[lose] = roundNo;
         nx.push(win);
       }
       return nx.sort((x, y) => field.indexOf(x) - field.indexOf(y));
@@ -1781,7 +1916,20 @@ function simulate(nSims, opts) {
     if (round.length === 2) { acc.finalVs[round[0] * n + round[1]]++; acc.finalVs[round[1] * n + round[0]]++; }
     while (round.length > 1) { round = play(round, pwk); pwk++; }
     const champ = round[0];
-    if (champ !== undefined) acc.title[champ]++;
+    if (champ !== undefined) { acc.title[champ]++; exit[champ] = roundNo + 1; }
+
+    /* Next year's draft order, the way most leagues run it: everyone who missed
+       the playoffs picks first, worst scoring first, and the playoff teams follow
+       in the order they went out — champion last. Points break every tie, which
+       is what the standings already do. */
+    {
+      const miss = [], made = [];
+      for (let i = 0; i < n; i++) (exit[i] >= 0 ? made : miss).push(i);
+      miss.sort((a, b) => p[a] - p[b]);
+      made.sort((a, b) => (exit[a] - exit[b]) || (p[a] - p[b]));
+      const dOrder = miss.concat(made);
+      for (let sl = 0; sl < n; sl++) { acc.draftSum[dOrder[sl]] += sl + 1; acc.draftDist[dOrder[sl]][sl + 1]++; }
+    }
 
     /* Leverage. One pass of the same simulation answers "what does this week's
        game actually do to my season": condition the final outcome on who won
@@ -1822,6 +1970,8 @@ function simulate(nSims, opts) {
       fieldAt: Array.from(acc.fieldAt[i]).map(v => v / nSims),
       aliveAt: Array.from(acc.aliveAt[i]).map(v => v / nSims),
       poWins: acc.poWins[i] / nSims,
+      draftSlot: acc.draftSum[i] / nSims,
+      draftDist: Array.from(acc.draftDist[i]).map(v => v / nSims),
       knockedBy: teams.map((o, j) => ({ rosterId: o.rosterId, p: acc.knockedBy[i * n + j] / nSims })).filter(x => x.p > 0).sort((a, b) => b.p - a.p),
       finalVs: teams.map((o, j) => ({ rosterId: o.rosterId, p: acc.finalVs[i * n + j] / nSims })).filter(x => x.p > 0).sort((a, b) => b.p - a.p)
     };
@@ -4203,6 +4353,9 @@ function simSeasonView(res) {
         `Most likely: ${bins.reduce((a, b) => b.v > a.v ? b : a).x} wins · average ${fmt(sel.wins, 1)} · playoffs ${pct(sel.playoff, 0)} · title ${pct(sel.title, 1)}`)),
     h('select', { onchange: e => { SimUI.team = +e.target.value; render(); } }, teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === SimUI.team }, t.name)))));
 
+  const draft = simDraftCard(res);
+  if (draft) wrap.appendChild(draft);
+
   // the deep-dive half of the simulator; simple mode stops after the outcomes
   const traj = proOnly(simTrajectoryCard(res));
   if (traj) wrap.appendChild(traj);
@@ -5972,6 +6125,105 @@ function viewH2H() {
       : h('div.empty', 'Neither team is deep where the other is thin — a trade here would have to be about value, not need.')));
   return wrap;
 }
+
+/* ================= next year's draft order ================= */
+/** The soonest draft any roster still holds a pick in. */
+function nextDraftSeason() {
+  let best = null;
+  S.teams.forEach(t => (t.pickAssets || []).forEach(pk => { if (best === null || pk.season < best) best = pk.season; }));
+  return best;
+}
+/** Who actually holds the pick a given team originally owned. */
+function pickHolder(origRosterId, season, round) {
+  for (const t of S.teams) {
+    const hit = (t.pickAssets || []).find(pk => pk.origRosterId === origRosterId && pk.season === season && pk.round === round);
+    if (hit) return t;
+  }
+  return null;   // not held by anyone in this league — already used, or outside the window
+}
+
+/** Where each team is heading in the next draft, and who will actually be making
+ *  the pick. The order comes out of the same simulation as everything else. */
+function simDraftCard(res) {
+  const rows = S.teams.map(t => ({ t, s: res.by[t.rosterId] }))
+    .filter(r => r.s && r.s.draftSlot > 0);
+  if (!rows.length) return null;
+  rows.sort((a, b) => a.s.draftSlot - b.s.draftSlot);
+  const season = nextDraftSeason();
+  // the rounds this league actually drafts, as far as anyone still holds picks
+  const rounds = [];
+  if (season !== null) {
+    S.teams.forEach(t => (t.pickAssets || []).forEach(pk => {
+      if (pk.season === season && !rounds.includes(pk.round)) rounds.push(pk.round);
+    }));
+    rounds.sort((a, b) => a - b);
+  }
+  const slotLabel = (v) => Math.round(v * 10) / 10;
+  const modal = (d) => { let b = 1; for (let i = 1; i < d.length; i++) if (d[i] > d[b]) b = i; return b; };
+  // the slots holding the middle 80% of the outcomes
+  const band = (d) => {
+    const cum = []; let run = 0;
+    for (let i = 1; i < d.length; i++) { run += d[i]; cum[i] = run; }
+    let lo = 1, hi = d.length - 1;
+    for (let i = 1; i < d.length; i++) if (cum[i] >= 0.1) { lo = i; break; }
+    for (let i = 1; i < d.length; i++) if (cum[i] >= 0.9) { hi = i; break; }
+    return { lo, hi };
+  };
+
+  const heldCell = (r) => {
+    if (!isDynasty() || season === null) return h('span.muted.tiny', '—');
+    const away = [];
+    rounds.forEach(rd => {
+      const holder = pickHolder(r.t.rosterId, season, rd);
+      if (holder && holder.rosterId !== r.t.rosterId) away.push({ rd, holder });
+    });
+    if (!away.length) return h('span.tiny.muted', 'all their own');
+    return h('div.row', { style: { gap: '4px' } }, away.map(x =>
+      bindTT(h('span.tag.traded', (ROUND_WORD[x.rd] || x.rd + 'th') + ' → ' + x.holder.short),
+        `<div class="k">${season} ${ROUND_WORD[x.rd] || x.rd + 'th'} round</div>`
+        + `Originally <b>${r.t.name}</b>’s<br>Now held by <b>${x.holder.name}</b>`)));
+  };
+
+  const anyTraded = isDynasty() && season !== null && S.teams.some(t =>
+    (t.pickAssets || []).some(pk => pk.origRosterId !== t.rosterId && pk.season === season));
+
+  const tbl = table([
+    { k: 'slot', h: 'Proj. slot', num: true, sort: r => r.s.draftSlot, f: r => h('b.mono', slotLabel(r.s.draftSlot)) },
+    { k: 'name', h: 'Original owner', sort: r => r.t.name, f: r => teamCell(r.t) },
+    {
+      k: 'likely', prio: 2, h: 'Most likely', num: true, sortable: false,
+      f: r => { const m = modal(r.s.draftDist); return h('span', h('b.mono', '1.' + String(m).padStart(2, '0')), h('span.tiny.muted', ' ' + pct(r.s.draftDist[m], 0))); }
+    },
+    { k: 'range', prio: 2, h: 'Middle 80%', sortable: false, f: r => { const b = band(r.s.draftDist); return h('span.tiny.mono.muted', b.lo === b.hi ? String(b.lo) : b.lo + '–' + b.hi); } },
+    {
+      k: 'first', h: isNarrow() ? '1.01' : 'The 1.01', num: true, sort: r => r.s.draftDist[1],
+      f: r => h('div.meter', { style: { justifyContent: 'flex-end' } },
+        isNarrow() ? null : h('div.bar-track', { style: { width: '44px' } }, h('div.bar-fill', { style: { width: (r.s.draftDist[1] * 100) + '%', background: 'var(--s4)' } })),
+        h('span.mono', pct(r.s.draftDist[1], 0)))
+    },
+    {
+      k: 'top3', prio: 2, h: 'Top 3', num: true,
+      sort: r => r.s.draftDist[1] + r.s.draftDist[2] + r.s.draftDist[3],
+      f: r => h('span.mono', pct(r.s.draftDist[1] + r.s.draftDist[2] + r.s.draftDist[3], 0))
+    },
+    { k: 'playoff', prio: 2, h: 'Playoffs', num: true, sort: r => r.s.playoff, f: r => h('span.mono.muted', pct(r.s.playoff, 0)) },
+    isDynasty() ? { k: 'held', h: season !== null ? season + ' picks' : 'Picks', sortable: false, f: heldCell } : null
+  ], rows, { sortKey: 'slot', sortDir: 1 });
+
+  return card('Next year’s draft order' + (season !== null ? ' — ' + season : ''),
+    'from the same ' + kfmt(res.n) + ' seasons: everyone who misses the playoffs picks first, fewest points first, then the playoff teams in the order they went out',
+    h('div', { style: { display: 'grid', gap: '11px' } },
+      tbl,
+      h('div.tiny.muted',
+        anyTraded
+          ? h('span', h('b', 'Some of these picks have already moved.'), ' A tag like ', h('span.tag.traded', '1st → ABC'),
+            ' means that team’s own first-rounder belongs to somebody else now — the slot on the left is where the pick lands, not who gets to use it.')
+          : (isDynasty()
+            ? 'Every team still holds its own picks in this draft, so the slot and the owner are the same thing.'
+            : 'A redraft league does not carry picks between seasons, so this is the order the next draft would run in, not a set of assets anyone holds.')),
+      h('div.tiny.muted',
+        'Ties are broken on points, the way the standings break them. Leagues that use a lottery, or order the back half by regular-season finish rather than playoff exit, will differ — this is the common default, not a reading of your league’s bylaws.')));
+}
 /* ==================================================================
    Live week — actual points where the games are finished, projections
    where they are not.
@@ -6688,8 +6940,19 @@ function viewHome() {
     : S.lastWeek >= S.regEnd ? 'Regular season complete'
       : S.lastWeek ? 'Through week ' + S.lastWeek : 'Preseason';
 
-  /* ---- who and what ---- */
+  /* ---- who and what ----
+     The badges of the league's own teams run across the back of the banner,
+     masked so they fade out before they reach the name. They are decoration, so
+     they only appear in the Default view, and a badge that fails to load simply
+     takes itself out — if none of them arrive the gradient is still there. */
+  const band = !isSimple() ? null : (() => {
+    const badges = S.teams.filter(t => t.avatar).slice(0, 9);
+    if (!badges.length) return null;
+    return h('div.heroband', { 'aria-hidden': 'true' }, badges.map(t =>
+      h('img', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.remove() })));
+  })();
   wrap.appendChild(h('div.hero',
+    band,
     S.league.avatar
       ? h('img.heroav', { src: 'https://sleepercdn.com/avatars/' + S.league.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
       : h('div.heroav'),
@@ -6721,14 +6984,20 @@ function viewHome() {
       const mine = g.A.rosterId === me.rosterId;
       const my = mine ? g.a : g.b, th = mine ? g.b : g.a;
       const them = mine ? g.B : g.A, p = mine ? g.pA : g.pB;
+      // both badges either side of the score, so the card says who at a glance
+      const face = (T, colour, total, right) => h('div.mvside' + (right ? '.r' : ''),
+        T.avatar
+          ? h('img.mvav', { src: T.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
+          : h('div.mvav'),
+        h('div', { style: { minWidth: 0 } },
+          h('div.tiny.muted', { style: { lineHeight: '1.2' } }, T.rosterId === me.rosterId ? 'You' : T.name),
+          h('b', { style: { fontSize: '26px', color: colour, lineHeight: '1.1', display: 'block' } }, fmt(total, 1))));
       wrap.appendChild(card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
         h('div', { style: { display: 'grid', gap: '12px' } },
-          h('div.row', { style: { gap: '14px', flexWrap: 'wrap' } },
-            h('div.row', { style: { gap: '10px', minWidth: 0 } },
-              h('b', { style: { fontSize: '26px', color: 'var(--s1)' } }, fmt(my.total, 1)),
-              h('span.tiny.muted', 'v'),
-              h('b', { style: { fontSize: '26px', color: 'var(--s2)' } }, fmt(th.total, 1)),
-              h('span.tiny.sec', { style: { marginLeft: '4px' } }, 'against ', h('b', them.name))),
+          h('div.row', { style: { gap: '16px', flexWrap: 'wrap' } },
+            face(me, 'var(--s1)', my.total, false),
+            h('span.tiny.muted', 'v'),
+            face(them, 'var(--s2)', th.total, true),
             h('span', { style: { flex: 1 } }),
             h('span.tag', { style: { borderColor: p >= 0.5 ? 'var(--good)' : 'var(--border-strong)' } }, pct(p, 0) + ' to win')),
           h('div.row', { style: { gap: '10px' } },
@@ -6736,6 +7005,14 @@ function viewHome() {
             h('button.btn', { onclick: () => goView('lineup') }, 'Check my lineup')))));
     }
   }
+
+  /* ---- the faces on your roster ---- */
+  const faces = myHeadliners(me);
+  if (faces) wrap.appendChild(faces);
+
+  /* ---- the top of the table ---- */
+  const strip = leagueStrip();
+  if (strip) wrap.appendChild(strip);
 
   /* ---- everywhere else ---- */
   wrap.appendChild(card('Everything else', 'thirteen pages, all reading the same league',
@@ -6759,6 +7036,149 @@ function viewHome() {
       isDynasty() ? null : h('span', ' Because this is a redraft league, nothing carries to next season: no long-range projections, no ageing curve, and next year’s draft is a fresh start rather than an asset to hold.'),
       ' Everything is computed in this browser — nothing is stored anywhere else.')));
   return wrap;
+}
+
+
+/** The last few results, oldest first. Read from the matchup feed rather than
+ *  from the running record, so a bye or a missing week cannot slide the run out
+ *  of alignment with the weeks it is meant to describe. */
+function recentForm(t, n) {
+  const out = [];
+  for (let w = 1; w <= S.lastWeek; w++) {
+    const ms = S.matchups[w]; if (!ms) continue;
+    const mine = ms.find(m => m.roster_id === t.rosterId);
+    if (!mine || !mine.matchup_id) continue;
+    const opp = ms.find(m => m.matchup_id === mine.matchup_id && m.roster_id !== t.rosterId);
+    if (!opp) continue;
+    const a = mine.points || 0, b = opp.points || 0;
+    out.push({ week: w, r: a > b ? 'W' : b > a ? 'L' : 'T', pf: a, pa: b, opp: S.teamById[opp.roster_id] });
+  }
+  return out.slice(-(n || 5));
+}
+
+/** The top of the table, on blocks. Ordered exactly the way Active Rankings
+ *  orders it — wins, then points — because that is the table people argue about.
+ *  Before a ball is kicked there is nothing to stand on, so it falls back to the
+ *  projection and says so rather than inventing a leader. */
+function leaguePodium(ranked, live) {
+  const top = ranked.slice(0, 3);
+  if (top.length < 3) return null;
+  const hunt = ranked.slice(3, 5);
+  const MEDALS = ['gold', 'silver', 'bronze'];
+  // second, first, third — a podium reads from the middle outward
+  const orderOnStage = [1, 0, 2];
+
+  const formStrip = (r) => r.form.length
+    ? h('div.form', r.form.map(f => bindTT(h('i.' + f.r), `<div class="k">Week ${f.week}</div>`
+      + `${f.r === 'W' ? 'Beat' : f.r === 'L' ? 'Lost to' : 'Tied'} <b>${f.opp ? f.opp.short : '?'}</b><br>`
+      + `${fmt(f.pf, 1)} – ${fmt(f.pa, 1)}`)))
+    : null;
+
+  const step = (idx) => {
+    const r = top[idx], t = r.t;
+    return h('div.pod.p' + (idx + 1) + (t.rosterId === S.myRosterId ? '.mine' : ''), {
+      tabindex: 0, role: 'button', title: t.name + ' — ' + t.owner,
+      onclick: () => { RosterUI.team = t.rosterId; goView('roster'); },
+      onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RosterUI.team = t.rosterId; goView('roster'); } }
+    },
+      h('div.podtop',
+        t.avatar
+          ? h('img.podav', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
+          : h('div.podav'),
+        h('div.nm', t.name),
+        h('div.tiny.muted', live ? `${t.wins}-${t.losses}${t.ties ? '-' + t.ties : ''} · ${fmt(t.fpts, 0)} PF` : fmt(t.power, 1) + ' rating'),
+        formStrip(r),
+        r.s ? h('div.pododds', h('b', pct(r.s.title, 1)), ' to win it') : null),
+      h('div.block.' + MEDALS[idx], h('span.place', idx + 1)));
+  };
+
+  const huntRow = (r, i) => {
+    const t = r.t, gap = top[2].t.wins - t.wins, pts = top[2].t.fpts - t.fpts;
+    return h('div.huntrow', {
+      tabindex: 0, role: 'button',
+      onclick: () => { RosterUI.team = t.rosterId; goView('roster'); },
+      onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RosterUI.team = t.rosterId; goView('roster'); } }
+    },
+      h('div.rk', ranked.indexOf(r) + 1),
+      t.avatar ? h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.avatar'),
+      h('div', { style: { minWidth: 0 } },
+        h('div.nm', t.name),
+        h('div.tiny.muted', live
+          ? (gap > 0 ? gap + (gap === 1 ? ' win' : ' wins') + ' back'
+            : pts > 0 ? fmt(pts, 0) + ' points back' : 'level on the cut')
+          : fmt(top[2].t.power - t.power, 1) + ' rating back')),
+      formStrip(r) || h('span'));
+  };
+
+  return h('div.podwrap',
+    h('div.podium', orderOnStage.map(step)),
+    hunt.length ? h('div.hunt',
+      h('div.lbl', 'In the hunt'),
+      hunt.map(huntRow)) : null);
+}
+
+/** Every team in the league in one ranked strip: badge, record, scoring, recent
+ *  form and how the season is likely to end. */
+function leagueStrip() {
+  const sim = S.sim && S.sim.by ? S.sim : null;
+  const live = S.gamesPlayed > 0;
+  // the Active Rankings order: wins first, then points. Before week 1 there is
+  // nothing to rank on results, so it falls back to the projection.
+  const rows = S.teams.slice()
+    .sort(live ? ((a, b) => (b.wins - a.wins) || (b.fpts - a.fpts)) : ((a, b) => a.powerRank - b.powerRank))
+    .map(t => ({ t, s: sim ? sim.by[t.rosterId] : null, form: recentForm(t, 5) }));
+
+  const podium = leaguePodium(rows, live);
+  if (!podium) return null;
+  return card('The league',
+    (live ? 'the table as it stands — wins, then points' : 'nothing played yet, so this is the projection')
+    + (sim ? ' · and what the simulator makes of it' : ''),
+    podium,
+    sim ? null : h('button.btn.sm', {
+      onclick: () => { S.sim = simulate(S.simN); SimUI.res = S.sim; render(); }
+    }, 'Run ' + kfmt(S.simN) + ' seasons'));
+}
+
+
+/** A team photo, essentially: the biggest names on your roster, lined up. It is
+ *  decoration first — the numbers it shows are on four other pages — so it only
+ *  appears in the Default view, and it says nothing a missing headshot would
+ *  make a lie of. Every face is a way into that player's page. */
+function myHeadliners(me) {
+  if (!isSimple() || !me) return null;
+  const pool = activePlayers(me).filter(p => p.pos !== 'PICK' && (p.dv || 0) > 0);
+  if (pool.length < 3) return null;
+  // six either way: on a phone that wraps to two rows of three, which reads as a
+  // lineup card. Four would leave a stranded fourth on its own line.
+  const best = pool.slice().sort((a, b) => (b.dv || 0) - (a.dv || 0)).slice(0, 6);
+  const live = S.liveWeek;
+
+  // "J. Allen" rather than a truncated "Josh Allen ..." — six portraits across
+  // do not have room for a full name, and this is how a lineup card reads anyway
+  const shortName = (p) => {
+    if (p.pos === 'DEF') return p.name;
+    const w = String(p.name || '').trim().split(/\s+/);
+    return w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : p.name;
+  };
+
+  const one = (p, i) => {
+    const l = live ? liveValue(p, S.liveWeek) : null;
+    return h('div.lup', {
+      style: { '--i': String(i) },
+      tabindex: 0, role: 'button', title: p.name + ' — ' + p.pos + (p.team ? ' · ' + p.team : ''),
+      onclick: () => openPlayer(p.id, 'home'),
+      onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(p.id, 'home'); } }
+    },
+      h('div.lupface', playerFace(p, { lg: true }), h('span.luppos.pos-' + p.pos, p.pos)),
+      h('div.lupnm', shortName(p)),
+      h('div.tiny.muted', { style: { lineHeight: '1.2' } },
+        l && l.state === 'bye' ? 'on bye'
+          : l ? h('span', h('b.sec', fmt(l.used, 1)), ' pts')
+            : h('span', h('b.sec', fmt(p.ppg || 0, 1)), ' proj')));
+  };
+
+  return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any face for the full page',
+    h('div.lineup', best.map(one)));
 }
 /* ================= hypothetical roster sandbox =================
    Release, sign and swap players and picks, then look at any page as if those
