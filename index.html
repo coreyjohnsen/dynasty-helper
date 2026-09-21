@@ -308,6 +308,12 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .ladderrow .pl{display:flex;align-items:center;gap:7px;min-width:0}
 .ladderrow .pl.l{justify-content:flex-end;text-align:right;flex-direction:row}
 .ladderrow .pl .plink{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ladderstack{border-bottom:1px solid var(--grid);padding:7px 0}
+/* a counted score with where the game is underneath it */
+.lcell{display:inline-grid;gap:1px;line-height:1.15}
+.lstat{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:600}
+.lstat .up{color:var(--good-text)}
+.lstat .down{color:var(--bad-text)}
 
 /* ---- home ---- */
 .hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;padding:20px 22px;
@@ -350,6 +356,30 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .lupface .face.lg{width:54px;height:54px}
   .lupnm{font-size:11px}
 }
+
+/* ---- players page ---- */
+tr.pickline td{background:color-mix(in srgb, #eda100 7%, transparent)}
+tr.pickline td:first-child{box-shadow:inset 3px 0 0 #eda100}
+tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
+.mine-own{color:var(--s1);font-weight:700}
+.tag.fa{border-color:var(--good);color:var(--good-text);font-weight:660}
+.wirebest{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-sm);
+  border:1px solid color-mix(in srgb, var(--good) 40%, var(--border));background:color-mix(in srgb, var(--good) 6%, transparent)}
+
+/* ---- a real score against its projection ---- */
+.score.up{color:var(--good-text)}
+.score.down{color:var(--bad-text)}
+
+/* ---- what the sandbox changed on a roster ---- */
+.hypline{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--border);min-width:0}
+.hypline.in{background:color-mix(in srgb, var(--good) 7%, transparent);border-color:color-mix(in srgb, var(--good) 35%, var(--border))}
+.hypline.out{background:color-mix(in srgb, var(--critical) 6%, transparent);border-color:color-mix(in srgb, var(--critical) 30%, var(--border))}
+.hypline.out .hypnm{text-decoration:line-through;text-decoration-color:color-mix(in srgb, var(--critical) 60%, transparent);opacity:.8}
+.hypdir{font-size:10px;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:5px;flex:none}
+.hypline.in .hypdir{background:var(--good);color:#fff}
+.hypline.out .hypdir{background:var(--critical);color:#fff}
+.hypnm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard.hypin{border-color:var(--good);box-shadow:inset 3px 0 0 var(--good)}
 
 /* ---- your matchup, badge either side of the score ---- */
 .mvside{display:flex;align-items:center;gap:10px;min-width:0}
@@ -2234,15 +2264,29 @@ function simulateOneSeason(opts) {
 }
 
 /* actual weekly scoring for one player, straight out of Sleeper's matchup rows */
+/** Every week this player has a real number for. That includes the week being
+ *  played: once his own NFL game is over his score is a result like any other,
+ *  and while it is on the score so far is real too — just not final. Weeks where
+ *  his game has not kicked off are left out, so the caller's projections fill them. */
 function playerGameLog(id) {
   const out = [];
-  for (let w = 1; w <= S.lastWeek; w++) {
+  const entry = (w, state) => {
     const ms = S.matchups[w] || [];
     const row = ms.find(m => (m.players || []).map(String).includes(String(id)));
-    if (!row) { out.push({ week: w, pts: null, started: false, rostered: false }); continue; }
+    if (!row) return { week: w, pts: null, started: false, rostered: false, state };
     const pp = row.players_points || {};
     const pts = pp[id] === undefined ? null : pp[id];
-    out.push({ week: w, pts, started: (row.starters || []).map(String).includes(String(id)), rostered: true, rosterId: row.roster_id });
+    return { week: w, pts, started: (row.starters || []).map(String).includes(String(id)), rostered: true, rosterId: row.roster_id, state };
+  };
+  for (let w = 1; w <= S.lastWeek; w++) out.push(entry(w, 'final'));
+  if (S.liveWeek) {
+    const p = S.index[String(id)];
+    const st = p ? livePlayerState(p, S.liveWeek) : 'upcoming';
+    if (st === 'done' || st === 'live') {
+      const e = entry(S.liveWeek, st === 'done' ? 'final' : 'live');
+      if (p) { e.proj = pw(p, S.liveWeek); const sg = weekScoreGame(p.team, S.liveWeek); e.quarter = sg ? sg.quarter : null; }
+      out.push(e);
+    }
   }
   return out;
 }
@@ -2428,7 +2472,10 @@ function table(allCols, rows, opts) {
         title: c.tip || '',
         onclick: c.sortable === false ? null : () => { st.dir = st.key === c.k ? -st.dir : (c.num === true ? -1 : 1); st.key = c.k; render(); }
       }, c.h, st.key === c.k ? (st.dir < 0 ? ' ↓' : ' ↑') : '')))),
-      h('tbody', data.map((r, i) => h('tr', { onclick: opts.onRow ? () => opts.onRow(r) : null, style: opts.onRow ? { cursor: 'pointer' } : null },
+      h('tbody', data.map((r, i) => h('tr', {
+        onclick: opts.onRow ? () => opts.onRow(r) : null, style: opts.onRow ? { cursor: 'pointer' } : null,
+        class: opts.rowClass ? (opts.rowClass(r) || null) : null
+      },
         cols.map(c => h('td', { class: c.num ? 'num' : '' }, c.f ? c.f(r, i) : r[c.k]))))));
     wrap.appendChild(tb);
     if (outer._syncScroll) outer._syncScroll();
@@ -2737,11 +2784,11 @@ function weeklyBars(items, opts) {
       const hgt = Math.max(1.5, (it.v / max) * ih);
       g.appendChild(svg('rect', {
         x: x + 2, y: m.t + ih - hgt, width: Math.max(1, bw - 4), height: hgt, rx: Math.min(4, (bw - 4) / 2),
-        fill: it.kind === 'proj' ? 'var(--seq-200)' : 'var(--s1)'
+        fill: it.kind === 'proj' ? 'var(--seq-200)' : it.kind === 'live' ? 'var(--s4)' : 'var(--s1)'
       }));
     }
     const hit = svg('rect', { x, y: m.t, width: bw, height: ih, fill: 'transparent' });
-    hit.addEventListener('mousemove', e => ttShow(e, `<div class="k">Week ${it.x}${it.kind === 'proj' ? ' · projected' : ''}</div>` +
+    hit.addEventListener('mousemove', e => ttShow(e, `<div class="k">Week ${it.x}${it.kind === 'proj' ? ' · projected' : it.kind === 'live' ? ' · in progress' : ''}</div>` +
       (it.v === null || it.v === undefined
         ? '<b>' + (it.note || 'Did not play') + '</b>'
         : `<b>${fmt(it.v, 1)}</b> pts` + (it.note ? '<br>' + it.note : ''))));
@@ -2815,6 +2862,7 @@ const VIEWS = [
   { k: 'home', ic: '⌂', label: 'Home' },
   { k: 'week', ic: '◉', label: 'This Week' },
   { k: 'roster', ic: '▤', label: 'Rosters' },
+  { k: 'players', ic: '★', label: 'Players' },
   { k: 'lineup', ic: '⚖', label: 'Start / Sit' },
   { k: 'trade', ic: '⇄', label: 'Trade Calculator' },
   { k: 'finder', ic: '⌕', label: 'Trade Finder' },
@@ -2829,7 +2877,7 @@ const VIEWS = [
 ];
 /* The tabs simple mode leads with. The rest are still there, one tap behind
    "More" — hiding them outright would be a different app, not a calmer one. */
-const CORE_VIEWS = ['home', 'week', 'roster', 'lineup', 'trade', 'finder', 'power', 'sim'];
+const CORE_VIEWS = ['home', 'week', 'roster', 'players', 'lineup', 'trade', 'finder', 'power', 'sim'];
 let navExpanded = false;
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
@@ -2927,7 +2975,7 @@ function render() {
   );
   const content = h('div.content');
   const V = {
-    home: viewHome, week: viewWeek, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
+    home: viewHome, week: viewWeek, players: viewPlayers, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
     h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
     draft: viewDraft, stock: viewStock, player: viewPlayer
   }[S.view];
@@ -3066,6 +3114,10 @@ function viewRoster() {
     card('Projected starting lineup', fmt(t.now, 1) + ' pts/week', lineupTable(t))
   ));
 
+  // what the sandbox has changed on this roster, spelled out
+  const changes = hypRosterChanges(t);
+  if (changes) wrap.appendChild(changes);
+
   // full roster
   wrap.appendChild(card('Full roster', `${t.players.length} players` + (isDynasty() ? ` · ${t.pickAssets.length} picks` : ''), rosterTable(t),
     isSimple() ? null : segmented([{ k: true, label: 'By position' }, { k: false, label: 'Flat' }], RosterUI.group, v => { RosterUI.group = v; render(); })));
@@ -3092,16 +3144,10 @@ function rosterTable(t) {
     _slot: 'PICK', ppg: null, age: null, trend30: 0,
     _hyp: HYP.on && S.base && S.base.pickOwn[pickKey(p)] !== t.rosterId ? 'in' : null
   })));
-  if (HYP.on && S.base) {
-    // players this team held in the real league but has moved on in the what-if
-    Object.keys(S.base.own).forEach(id => {
-      if (S.base.own[id] !== t.rosterId) return;
-      const to = HYP.moves[id];
-      if (to === undefined || to === t.rosterId) return;
-      const p = S.index[id] || ensurePlayer(id);
-      assets.push(Object.assign({}, p, { _slot: 'OUT', _hyp: 'out' }));
-    });
-  }
+  // Players this team has moved on in the what-if are NOT listed here. They used
+  // to be, tagged OUT and sitting in their position group, which counted them in
+  // that group's size and value and made a roster that had changed look as if it
+  // had not. hypRosterChanges() shows what went and what came, above the roster.
   const cols = [
     { k: 'pos', h: 'Pos', f: r => posPill(r.pos), sort: r => ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'PICK'].indexOf(r.pos) },
     {
@@ -3135,7 +3181,7 @@ function rosterTable(t) {
       ? h('div.pcard', h('div.face', { style: { display: 'grid', placeItems: 'center' } }, posPill('PICK')),
         h('div.meta', h('div.nm', r.name || r.label), h('div.sub', badge(r) || h('span', 'draft pick'))),
         h('div.val', h('b.mono', kfmt(Math.round(r.dv || 0)))))
-      : h('div.pcard', playerFace(r),
+      : h('div.pcard' + (r._hyp === 'in' ? '.hypin' : ''), playerFace(r),
         h('div.meta', h('div.nm', pname(r, { face: false, style: { fontWeight: r._slot === 'START' ? 650 : 560 } })),
           h('div.sub', posPill(r.pos), r.team ? teamLogo(r.team) : null,
             r.age ? h('span', fmt(r.age, 0) + 'y') : null, badge(r), injuryTag(r.injury))),
@@ -3446,6 +3492,58 @@ function viewStandings() {
       })), { labelW: '150px', dec: 0 }))
   ));
   return wrap;
+}
+
+
+/** In the what-if, the roster page shows the roster as it would be — and this
+ *  says, in one place, what is different from the real one: who arrived, who
+ *  left and where they went, each with an undo. */
+function hypRosterChanges(t) {
+  if (!HYP.on || !S.base) return null;
+  // the sandbox bar at the top of the page already lists your own moves, with
+  // undo, whether or not the editor is open — repeating them underneath adds
+  // nothing. Where this earns its place is on the OTHER side of a deal: open
+  // their roster and it says what they gave up and what they got.
+  if (t.rosterId === hypTeamId()) return null;
+  const into = [], outOf = [];
+  Object.keys(HYP.moves).forEach(id => {
+    const from = S.base.own[id], to = HYP.moves[id];
+    if (to === t.rosterId && from !== t.rosterId) into.push({ id, from, kind: 'player' });
+    if (from === t.rosterId && to !== t.rosterId) outOf.push({ id, to, kind: 'player' });
+  });
+  Object.keys(HYP.picks || {}).forEach(k => {
+    const from = S.base.pickOwn[k], to = HYP.picks[k];
+    if (to === t.rosterId && from !== t.rosterId) into.push({ id: k, from, kind: 'pick' });
+    if (from === t.rosterId && to !== t.rosterId) outOf.push({ id: k, to, kind: 'pick' });
+  });
+  if (!into.length && !outOf.length) return null;
+
+  const who = (rid) => rid === null || rid === undefined ? 'free agency' : ((S.teamById[rid] || {}).name || '?');
+  const label = (x) => {
+    if (x.kind === 'pick') { const [yr, rd, orig] = x.id.split('|'); return yr + ' ' + (ROUND_WORD[+rd] || rd + 'th') + ' (' + ((S.teamById[+orig] || {}).short || '?') + ')'; }
+    const p = S.index[x.id] || ensurePlayer(x.id);
+    return p.name;
+  };
+  const undo = (x) => h('button.btn.sm', {
+    title: 'Put it back where it was',
+    onclick: () => {
+      if (x.kind === 'pick') delete HYP.picks[x.id]; else delete HYP.moves[x.id];
+      HYP.after = null; hypSync(); render();
+    }
+  }, 'Undo');
+  const line = (x, dir) => {
+    const p = x.kind === 'player' ? (S.index[x.id] || ensurePlayer(x.id)) : null;
+    return h('div.hypline.' + dir,
+      h('span.hypdir', dir === 'in' ? 'IN' : 'OUT'),
+      p ? (isSimple() ? playerFace(p, { sm: true }) : posPill(p.pos)) : posPill('PICK'),
+      h('span.hypnm', p ? pname(p, { face: false }) : label(x)),
+      h('span.tiny.muted', dir === 'in' ? 'from ' + who(x.from) : 'to ' + who(x.to)),
+      p ? h('span.mono.tiny', { style: { marginLeft: 'auto' } }, kfmt(Math.round(p.dv || 0))) : h('span', { style: { marginLeft: 'auto' } }),
+      undo(x));
+  };
+  return card('What-if changes to this roster', into.length + ' in · ' + outOf.length + ' out — the roster below is shown as it would be',
+    h('div', { style: { display: 'grid', gap: '6px' } },
+      into.map(x => line(x, 'in')), outOf.map(x => line(x, 'out'))));
 }
 /* ================= trade evaluation engine ================= */
 function assetsOf(t) {
@@ -4665,8 +4763,10 @@ function viewPlayer() {
   if (!p) return wrap.appendChild(card('Player', null, h('div.empty', 'That player is no longer in the index.'))), wrap;
   const owner = ownerOfPlayer(p.id);
   const log = playerGameLog(p.id);
-  const played = log.filter(g => g.pts !== null && g.rostered);
-  const startedGames = log.filter(g => g.started && g.pts !== null);
+  // a game still being played is real but not a result, so it stays out of the
+  // season averages until it is over
+  const played = log.filter(g => g.pts !== null && g.rostered && g.state === 'final');
+  const startedGames = played.filter(g => g.started);
   const posPeers = Object.values(S.index).filter(x => x.pos === p.pos && (x.dv || 0) > 0).sort((a, b) => b.dv - a.dv);
   const myIdx = posPeers.findIndex(x => x.id === p.id);
   const backLabel = (VIEWS.find(v => v.k === PlayerUI.back) || {}).label || 'Back';
@@ -4721,11 +4821,18 @@ function viewPlayer() {
 
   // ---- weekly production ----
   const bars = [];
-  log.forEach(g => bars.push({
-    x: g.week, v: g.rostered ? g.pts : null, kind: 'actual',
-    note: g.rostered ? (g.started ? 'Started' : 'On the bench') : 'Not rostered in this league'
-  }));
+  log.forEach(g => {
+    const vsProj = g.proj !== undefined && g.pts !== null ? ` · projected ${fmt(g.proj, 1)}` : '';
+    bars.push({
+      x: g.week, v: g.rostered ? g.pts : null, kind: g.state === 'live' ? 'live' : 'actual',
+      note: !g.rostered ? 'Not rostered in this league — Sleeper only scores rostered players'
+        : g.state === 'live' ? `In progress${g.quarter ? ' (' + g.quarter + ')' : ''} — ${fmt(g.pts || 0, 1)} so far${vsProj}`
+          : (g.started ? 'Started' : 'On the bench') + (g.week === S.liveWeek ? ' · final' + vsProj : '')
+    });
+  });
+  const logged = new Set(log.map(g => g.week));
   for (let w = S.lastWeek + 1; w <= S.regEnd; w++) {
+    if (logged.has(w)) continue;
     if (p.wk) {
       const r = p.wk[w];
       bars.push(r
@@ -4737,7 +4844,11 @@ function viewPlayer() {
   }
   const logTable = table([
     { k: 'week', h: 'Week', num: true, f: r => r.x },
-    { k: 'kind', h: 'Type', f: r => r.kind === 'proj' ? h('span.tag', 'projected') : h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'actual') },
+    {
+      k: 'kind', h: 'Type', f: r => r.kind === 'proj' ? h('span.tag', 'projected')
+        : r.kind === 'live' ? h('span.tag', { style: { borderColor: 'var(--s4)', color: 'var(--s4)' } }, 'in progress')
+          : h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'actual')
+    },
     { k: 'v', h: 'Points', num: true, f: r => r.v === null ? '—' : h('b.mono', fmt(r.v, 1)) },
     { k: 'note', h: 'Note', f: r => h('span.tiny.muted', r.note || '') }
   ], bars, {});
@@ -4745,6 +4856,7 @@ function viewPlayer() {
   const wt = withTable(h('div', weeklyBars(bars, { aria: 'weekly points, actual then projected' }),
     h('div.legend', { style: { marginTop: '9px' } },
       h('span', h('i', { style: { background: 'var(--s1)' } }), 'Actual'),
+      bars.some(b => b.kind === 'live') ? h('span', h('i', { style: { background: 'var(--s4)' } }), 'In progress') : null,
       h('span', h('i', { style: { background: 'var(--seq-200)' } }), 'Projected'),
       played.length ? h('span.tiny.muted', `${fmt(mean(played.map(g => g.pts)), 1)} avg · ${fmt(Math.max(...played.map(g => g.pts)), 1)} best`
         + (startedGames.length ? ` · started ${startedGames.length} of ${played.length}` : '')) : h('span.tiny.muted', 'No games played yet this season'))), logTable);
@@ -5210,7 +5322,7 @@ function viewLineup() {
     h('span', { style: { flex: 1 } }),
     isLive ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } },
       '● Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
-      : played ? h('span.tag', 'This week has already been played — projections are shown for reference') : null)));
+      : played ? h('span.tag', 'Already played — real scores, green where they beat the projection') : null)));
 
   // ---- the optimal lineup ----
   const byes = act.filter(p => p.wk && !p.wk[wk]);
@@ -5244,9 +5356,18 @@ function viewLineup() {
     { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o && r.o.opp ? h('span.tiny', r.o.opp) : r.o && r.o.bye ? h('span.tag', 'BYE') : h('span.muted.tiny', '—') },
     isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => r.p ? liveBadge(r.p, wk) : null } : null,
     // on a phone the range rides under the projection instead of taking a column
-    { k: 'proj', h: isLive ? 'Points' : 'Projected', num: true, sortable: false, f: r => !r.o ? '—' : h('div',
-      h('b.mono', { class: r.o.final ? 'up' : null }, fmt(r.o.mean, 1)),
-      isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
+    {
+      // a player who has played shows what he scored, green if it beat his
+      // projection and red if it did not; everyone else shows the projection
+      k: 'proj', h: isLive ? 'Points' : played ? 'Scored' : 'Projected', num: true, sortable: false, f: r => {
+        if (!r.o) return '—';
+        const ps = playedScore(r.p, wk);
+        if (ps) return scoreVsProj(ps);
+        return h('div',
+          h('b.mono', fmt(r.o.mean, 1)),
+          isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null);
+      }
+    },
     { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sortable: false, f: r => r.o && !r.o.bye && !r.o.final ? h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : h('span.muted', '—') },
     {
       // once a starter's game has begun there is no next-best decision to make
@@ -5319,9 +5440,15 @@ function viewLineup() {
       isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null) },
     { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE') : h('span.tiny', r.o.opp || '—') },
     isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => liveBadge(r.p, wk) } : null,
-    { k: 'proj', h: isLive ? 'Points' : 'Projected', num: true, sort: r => r.o.mean, f: r => h('div',
-      h('b.mono', fmt(r.o.mean, 1)),
-      isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null) },
+    {
+      k: 'proj', h: isLive ? 'Points' : played ? 'Scored' : 'Projected', num: true, sort: r => r.o.mean, f: r => {
+        const ps = playedScore(r.p, wk);
+        if (ps) return scoreVsProj(ps);
+        return h('div',
+          h('b.mono', fmt(r.o.mean, 1)),
+          isNarrow() && !r.o.bye && !r.o.final ? h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } }, fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) : null);
+      }
+    },
     { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sort: r => r.o.ceil, f: r => r.o.bye || r.o.final ? h('span.muted', '—') : h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) },
     { k: 'behind', prio: 2, h: 'Behind starter', num: true, sort: r => r.behind === null ? 999 : r.behind, f: r => r.behind === null ? '—' : h('span.mono', { class: r.behind < 2.5 ? 'down' : 'muted' }, '−' + fmt(r.behind, 1)) },
     { k: 'cmp', h: '', sortable: false, f: r => h('button.btn.sm', { onclick: () => { toggleCompare(r.p.id); render(); } }, LineupUI.compare.includes(r.p.id) ? '✓' : '+') }
@@ -5956,31 +6083,6 @@ function viewH2H() {
   // laid out as a mirror: each side's player on the outside, their number just
   // inside it, and the slot itself down the middle. Reading across a row you get
   // "this player, this many, at this spot, this many, that player".
-  function slotLadder(rows, A, B, CA, CB, isLive, wk) {
-    const cw = 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
-    const head = h('div.ladderrow.ladderhd', { style: { gridTemplateColumns: cw } },
-      h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
-      h('span.tiny.muted', { style: { textAlign: 'right' } }, isLive ? 'Pts' : 'Proj'),
-      h('span.tiny.muted', { style: { textAlign: 'center' } }, 'Slot'),
-      h('span.tiny.muted', isLive ? 'Pts' : 'Proj'),
-      h('b.tiny', { style: { color: CB } }, B.short));
-    const num = (v, won, col) => h('span.mono', {
-      style: { fontWeight: won ? 700 : 500, color: won ? col : 'var(--text-secondary)' }
-    }, fmt(v, 1));
-    // a fixed slot already names the position, so the pill only earns its place
-    // where the slot accepts more than one — flex and superflex
-    const flexy = (slot, pl) => pl && (SLOT_ELIG[slot] || [slot]).length > 1 ? posPill(pl.pos) : null;
-    return h('div', { style: { display: 'grid' } }, [head].concat(rows.map(r2 => h('div.ladderrow', { style: { gridTemplateColumns: cw } },
-      h('div.pl.l', r2.a
-        ? [isLive ? liveBadge(r2.a, wk) : null, flexy(r2.slot, r2.a), pname(r2.a, { mirror: true, style: { fontWeight: r2.d > 0 ? 640 : 500 } })]
-        : h('span.muted.tiny', 'empty')),
-      h('div', { style: { textAlign: 'right' } }, num(r2.va, r2.d > 0, CA)),
-      h('div', { style: { textAlign: 'center' } }, h('span.tag', { style: { minWidth: '46px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot)),
-      h('div', num(r2.vb, r2.d < 0, CB)),
-      h('div.pl.r', r2.b
-        ? [pname(r2.b, { style: { fontWeight: r2.d < 0 ? 640 : 500 } }), flexy(r2.slot, r2.b), isLive ? liveBadge(r2.b, wk) : null]
-        : h('span.muted.tiny', 'empty'))))));
-  }
 
   const la = isLive ? liveLineupSlots(A, wk) : optimalLineup(activePlayers(A), p => pw(p, wk));
   const lb = isLive ? liveLineupSlots(B, wk) : optimalLineup(activePlayers(B), p => pw(p, wk));
@@ -5990,26 +6092,10 @@ function viewH2H() {
     return { slot: sa.slot, a: sa.player, b: sb.player, va, vb, d: va - vb };
   });
   const aWon = slotRows.filter(x => x.d > 0).length;
-  // a five-column table with two player names in it does not fit a phone, so on
-  // narrow screens each slot becomes two stacked lines instead
-  const slotStack = h('div', { style: { display: 'grid', gap: '2px' } }, slotRows.map(r2 => {
-    const line = (pl, v, won, col) => h('div.row', { style: { gap: '6px', minWidth: 0 } },
-      pl ? posPill(pl.pos) : h('span.pill.pos-NA', '—'),
-      pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
-      pl && isLive ? liveBadge(pl, wk) : null,
-      h('span', { style: { flex: 1 } }),
-      h('span.mono.tiny', { style: { fontWeight: won ? 700 : 500, color: won ? col : 'var(--text-muted)' } }, fmt(v, 1)));
-    return h('div', { style: { borderBottom: '1px solid var(--grid)', padding: '7px 0' } },
-      h('div.row', { style: { gap: '7px', marginBottom: '3px' } },
-        h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot),
-        h('span', { style: { flex: 1 } }),
-        h('span.tiny.mono', { class: r2.d > 0 ? 'up' : r2.d < 0 ? 'down' : 'flat' }, sgn(r2.d, 1))),
-      line(r2.a, r2.va, r2.d > 0, CA), line(r2.b, r2.vb, r2.d < 0, CB));
-  }));
   wrap.appendChild(card('Slot by slot — week ' + wk,
     `${A.short} wins ${aWon} of ${slotRows.length} slots ${isLive ? 'so far' : 'on projection'} · totals ${fmt(sum(slotRows.map(x => x.va)), 1)} to ${fmt(sum(slotRows.map(x => x.vb)), 1)}`
     + (isLive ? ' · points already scored are shown as scored' : ''),
-    isNarrow() ? slotStack : slotLadder(slotRows, A, B, CA, CB, isLive, wk)));
+    slotLadder(slotRows, A, B, CA, CB, { wk, live: isLive })));
 
   /* ---- the franchises, not just this week ---- */
   const metrics = [
@@ -6223,6 +6309,67 @@ function simDraftCard(res) {
             : 'A redraft league does not carry picks between seasons, so this is the order the next draft would run in, not a set of assets anyone holds.')),
       h('div.tiny.muted',
         'Ties are broken on points, the way the standings break them. Leagues that use a lottery, or order the back half by regular-season finish rather than playoff exit, will differ — this is the common default, not a reading of your league’s bylaws.')));
+}
+
+
+/* ================= slot by slot, as a mirror =================
+   Two lineups side by side, one row per slot: each side's player on the outside,
+   their number just inside it, and the slot itself down the middle. Head to Head
+   and the This Week matchup page both draw it, so a slot comparison reads the
+   same way wherever it turns up.
+
+   rows: [{ slot, a, b, va, vb }] — a/b are players (or null), va/vb the number
+   each is counted at. opts.live adds each player's game status; opts.cell, when
+   given, draws the number cell instead of the default (it gets the player, the
+   value, whether that side wins the slot, and the side's colour). On a phone the
+   five columns do not fit, so each slot becomes a header and two stacked lines. */
+function slotLadder(rows, A, B, CA, CB, opts) {
+  opts = opts || {};
+  const wk = opts.wk, live = !!opts.live;
+  rows = rows.map(r => Object.assign({ d: (r.va || 0) - (r.vb || 0) }, r));
+  const num = opts.cell || ((pl, v, won, col) => h('span.mono', {
+    style: { fontWeight: won ? 700 : 500, color: won ? col : 'var(--text-secondary)' }
+  }, fmt(v, 1)));
+  // a fixed slot already names the position, so the pill only earns its place
+  // where the slot accepts more than one — flex and superflex
+  const flexy = (slot, pl) => pl && (SLOT_ELIG[slot] || [slot]).length > 1 ? posPill(pl.pos) : null;
+  const badge = (pl) => live && pl && !opts.cell ? liveBadge(pl, wk) : null;
+
+  if (isNarrow()) {
+    return h('div', { style: { display: 'grid', gap: '2px' } }, rows.map(r2 => {
+      const line = (pl, v, won, col) => h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } },
+        pl ? posPill(pl.pos) : h('span.pill.pos-NA', '—'),
+        pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
+        badge(pl),
+        h('span', { style: { flex: 1 } }),
+        h('div', { style: { textAlign: 'right' } }, num(pl, v, won, col)));
+      return h('div.ladderstack',
+        h('div.row', { style: { gap: '7px', marginBottom: '3px' } },
+          h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot),
+          h('span', { style: { flex: 1 } }),
+          h('span.tiny.mono', { class: r2.d > 0 ? 'up' : r2.d < 0 ? 'down' : 'flat' }, sgn(r2.d, 1))),
+        line(r2.a, r2.va, r2.d > 0, CA), line(r2.b, r2.vb, r2.d < 0, CB));
+    }));
+  }
+
+  const cw = opts.cell ? 'minmax(0,1fr) 84px 74px 84px minmax(0,1fr)' : 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
+  const word = opts.head || (live ? 'Pts' : 'Proj');
+  const head = h('div.ladderrow.ladderhd', { style: { gridTemplateColumns: cw } },
+    h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
+    h('span.tiny.muted', { style: { textAlign: 'right' } }, word),
+    h('span.tiny.muted', { style: { textAlign: 'center' } }, 'Slot'),
+    h('span.tiny.muted', word),
+    h('b.tiny', { style: { color: CB } }, B.short));
+  return h('div', { style: { display: 'grid' } }, [head].concat(rows.map(r2 => h('div.ladderrow', { style: { gridTemplateColumns: cw } },
+    h('div.pl.l', r2.a
+      ? [badge(r2.a), flexy(r2.slot, r2.a), pname(r2.a, { mirror: true, style: { fontWeight: r2.d > 0 ? 640 : 500 } })]
+      : h('span.muted.tiny', 'empty')),
+    h('div', { style: { textAlign: 'right' } }, num(r2.a, r2.va, r2.d > 0, CA)),
+    h('div', { style: { textAlign: 'center' } }, h('span.tag', { style: { minWidth: '46px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot)),
+    h('div', num(r2.b, r2.vb, r2.d < 0, CB)),
+    h('div.pl.r', r2.b
+      ? [pname(r2.b, { style: { fontWeight: r2.d < 0 ? 640 : 500 } }), flexy(r2.slot, r2.b), badge(r2.b)]
+      : h('span.muted.tiny', 'empty'))))));
 }
 /* ==================================================================
    Live week — actual points where the games are finished, projections
@@ -6582,6 +6729,46 @@ function preWeekOdds(wk) {
   });
   return out;
 }
+
+/* ---------- a real score, against the projection ----------
+   Once a player has actually played, the number worth showing is what he scored,
+   and the thing worth knowing about it is whether it beat what he was expected
+   to do. This is the one place that decides both, so Start/Sit, the matchup page
+   and anything else that shows a score agree on it. */
+/** What `p` actually scored in week `wk`, if he has played, and his projection.
+ *  null when there is nothing real yet — he has not kicked off, or is on bye.
+ *  `final` is false for a game still in progress: a real number, not a result. */
+function playedScore(p, wk) {
+  if (!p) return null;
+  if (wk === S.liveWeek) {
+    const lv = liveValue(p, wk);
+    if (lv.actual === null || lv.actual === undefined) return null;
+    if (lv.state === 'done') return { final: true, actual: lv.actual, proj: lv.proj };
+    if (lv.state === 'live') return { final: false, actual: lv.actual, proj: lv.proj, quarter: lv.quarter };
+    return null;
+  }
+  if (wk <= S.lastWeek) {
+    const m = (S.matchups[wk] || []).find(x => x.players_points && x.players_points[p.id] !== undefined);
+    if (!m) return null;
+    return { final: true, actual: m.players_points[p.id], proj: pw(p, wk) };
+  }
+  return null;
+}
+/** The score as a number, green above projection and red below — but only once
+ *  the game is over. Half a game against a whole-game projection would read as
+ *  a miss every time, so a game in progress stays neutral. */
+function scoreVsProj(ps, opts) {
+  opts = opts || {};
+  const beat = ps.actual >= ps.proj;
+  const cls = !ps.final ? '' : beat ? 'up' : 'down';
+  const tip = ps.final
+    ? `<div class="k">${beat ? 'Beat' : 'Missed'} his projection</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected — ${beat ? '+' : '−'}${fmt(Math.abs(ps.actual - ps.proj), 1)}`
+    : `<div class="k">Still playing${ps.quarter ? ' — ' + ps.quarter : ''}</div><b>${fmt(ps.actual, 1)}</b> so far, projected <b>${fmt(ps.proj, 1)}</b> for the game`;
+  return bindTT(h('div', { tabindex: 0 },
+    h('b.mono.score' + (cls ? '.' + cls : ''), fmt(ps.actual, 1)),
+    opts.sub === false ? null : h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } },
+      (ps.final ? 'proj ' : 'so far · proj ') + fmt(ps.proj, 1))), tip);
+}
 /* ================= 13. THIS WEEK ================= */
 const WeekUI = { week: null, open: null, prob: null };
 
@@ -6809,8 +6996,9 @@ function weekDetail(wrap, g, wk, live) {
   const chart = matchupProbChart(wk, g);
   if (chart) wrap.appendChild(chart);
 
-  wrap.appendChild(card('Every starter', '"counted" is the number the live total uses — actual points once a game is over, projection until then',
-    weekPlayerTable(g)));
+  wrap.appendChild(card('Every starter, slot by slot',
+    'each number is what counts toward the total — the real score once a game is over, the projection until then, and both while it is being played',
+    matchupLadder(g, wk)));
 }
 
 /** ESPN-style win-probability trace for one matchup, cut into the week's slates. */
@@ -6893,6 +7081,45 @@ function matchupProbChart(wk, g) {
         'One column per kickoff window' + (slates.length ? ' (' + slates.map(sl => sl.label + ' ×' + Math.round(sl.n)).join(', ') + ')' : '')
         + '. The line is only as detailed as the times this page was open — it takes a reading on load, at most one every ten minutes.')));
 }
+
+
+/** The two lineups of one matchup set against each other slot by slot, the way
+ *  Head to Head draws them. Under each number is where that player's game is:
+ *  final with how he did against his projection, the quarter and his points so
+ *  far, still to play, or on bye. The number itself takes the team's colour when
+ *  it wins its slot, so the colours never have to mean two things at once. */
+function matchupLadder(g, wk) {
+  const CA = 'var(--s1)', CB = 'var(--s2)';
+  const la = liveLineupSlots(g.A, wk), lb = liveLineupSlots(g.B, wk);
+  const counted = (p) => p ? liveValue(p, wk).used : 0;
+  const rows = la.map((sa, i) => {
+    const sb = lb[i] || {};
+    return { slot: sa.slot, a: sa.player, b: sb.player || null, va: counted(sa.player), vb: counted(sb.player) };
+  });
+  const cell = (p, v, won, col) => {
+    if (!p) return h('span.muted.tiny', '—');
+    const lv = liveValue(p, wk);
+    const ps = playedScore(p, wk);
+    const status = lv.state === 'bye' ? h('span', 'bye')
+      : lv.state === 'upcoming' ? h('span', 'to play')
+        : ps && ps.final
+          ? h('span', { class: ps.actual >= ps.proj ? 'up' : 'down' },
+            (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1))
+          : h('span', lv.quarter ? String(lv.quarter) : 'live');
+    const tip = lv.state === 'bye' ? `<div class="k">${p.name}</div>On bye this week`
+      : lv.state === 'upcoming' ? `<div class="k">${p.name}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
+        : ps && ps.final ? `<div class="k">${p.name} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
+          : `<div class="k">${p.name} · playing${lv.quarter ? ', ' + lv.quarter : ''}</div><b>${fmt(lv.banked, 1)}</b> so far, plus <b>${fmt(lv.open, 1)}</b> expected from the rest of the game`;
+    return bindTT(h('div.lcell', { tabindex: 0 },
+      h('b.mono', { style: { color: won ? col : 'var(--text-primary)', fontWeight: won ? 720 : 560 } }, fmt(v, 1)),
+      h('div.lstat', status)), tip);
+  };
+  const aWon = rows.filter(r => r.va > r.vb).length;
+  return h('div', { style: { display: 'grid', gap: '10px' } },
+    slotLadder(rows, g.A, g.B, CA, CB, { wk, live: true, cell, head: 'Pts' }),
+    h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots. `
+      + 'Under each score: ▲ or ▼ is how a finished game went against its projection; a quarter means the game is still on.'));
+}
 /* ================= 14. HOME =================
    The landing page: which league you are looking at, where the season stands,
    and a way into every other page. It is the first thing a visit meets, so it
@@ -6906,12 +7133,14 @@ function blurbFor(k) {
     if (k === 'scout') return 'Who needs what — every roster’s holes and surpluses right now';
     if (k === 'stock') return 'Redraft value over time, for a player or a whole franchise';
     if (k === 'trade') return 'Price a trade at redraft value and see what it does to the season';
+    if (k === 'players') return 'Every player ranked on this season, and the waiver wire';
   }
   return VIEW_BLURB[k] || '';
 }
 const VIEW_BLURB = {
   week: 'Live scores, win probability and the game that matters most',
   roster: 'Any roster in full — value, projections and the starting lineup',
+  players: 'Every player ranked, the waiver wire, and where the picks fall',
   lineup: 'Who to start this week, with the calls actually worth thinking about',
   trade: 'Price a trade and see what it does to the season',
   finder: 'Trades that fit both rosters, scanned across the league',
@@ -6925,7 +7154,7 @@ const VIEW_BLURB = {
   stock: 'Value over time, for a player or a whole franchise'
 };
 /* The tiles, in the order someone would actually want them. */
-const HOME_TILES = ['week', 'lineup', 'roster', 'trade', 'finder', 'h2h', 'power', 'standings', 'sim', 'scout', 'trades', 'draft', 'stock'];
+const HOME_TILES = ['week', 'lineup', 'roster', 'players', 'trade', 'finder', 'h2h', 'power', 'standings', 'sim', 'scout', 'trades', 'draft', 'stock'];
 
 function goView(k) { S.view = k; render(); window.scrollTo(0, 0); }
 
@@ -7015,7 +7244,7 @@ function viewHome() {
   if (strip) wrap.appendChild(strip);
 
   /* ---- everywhere else ---- */
-  wrap.appendChild(card('Everything else', 'thirteen pages, all reading the same league',
+  wrap.appendChild(card('Everything else', 'fourteen pages, all reading the same league',
     h('div.tilegrid', HOME_TILES.map(k => {
       const v = VIEWS.find(x => x.k === k); if (!v) return null;
       return h('button.tile', { onclick: () => goView(k) },
@@ -7179,6 +7408,200 @@ function myHeadliners(me) {
 
   return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any face for the full page',
     h('div.lineup', best.map(one)));
+}
+/* ================= 15. PLAYERS =================
+   Everyone the market prices, ranked, and the best of what nobody in the league
+   has picked up. Two lists on one page because they answer the two questions
+   people actually bring to a rankings page: where does this player sit, and who
+   could I go and get for nothing. */
+const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15 };
+const RANK_POS = ['QB', 'RB', 'WR', 'TE'];
+
+function viewPlayers() {
+  const wrap = h('div.grid');
+  const ownerOf = {};
+  S.teams.forEach(t => t.players.forEach(p => { ownerOf[p.id] = t; }));
+  const me = S.teamById[S.myRosterId];
+
+  /* ---- the rankings ----
+     Kickers and defences are left out: the market does not price them, so a
+     value ranking has nothing to say about them — they are in the waiver list,
+     ranked on projection, where they belong. */
+  const priced = Object.values(S.index).filter(p => RANK_POS.includes(p.pos) && ((p.dv || 0) > 0 || ownerOf[p.id]));
+  priced.sort((a, b) => ((b.dv || 0) - (a.dv || 0)) || ((b.ppg || 0) - (a.ppg || 0)));
+  // the rank is the player's place in the whole market, fixed, so filtering to
+  // one position still says where he sits overall
+  const overall = {}, posRank = {}, posCount = {};
+  priced.forEach((p, i) => {
+    overall[p.id] = i + 1;
+    posCount[p.pos] = (posCount[p.pos] || 0) + 1;
+    posRank[p.id] = posCount[p.pos];
+  });
+
+  const posOn = PlayersUI.pos.length ? PlayersUI.pos : RANK_POS;
+  let players = priced.filter(p => posOn.includes(p.pos));
+  if (PlayersUI.owner === 'mine') players = players.filter(p => ownerOf[p.id] && ownerOf[p.id].rosterId === S.myRosterId);
+  else if (PlayersUI.owner === 'rostered') players = players.filter(p => ownerOf[p.id]);
+  else if (PlayersUI.owner === 'fa') players = players.filter(p => !ownerOf[p.id]);
+
+  // where the league's own draft picks fall among them — the real picks, held by
+  // whoever holds them, priced where they are projected to land
+  const showPicks = isDynasty() && PlayersUI.picks && PlayersUI.owner !== 'fa';
+  let picks = [];
+  if (showPicks) {
+    S.teams.forEach(t => (t.pickAssets || []).forEach(pk => {
+      if (PlayersUI.owner === 'mine' && t.rosterId !== S.myRosterId) return;
+      picks.push({ _pick: true, pk, holder: t, orig: S.teamById[pk.origRosterId], dv: pk.value || 0 });
+    }));
+  }
+
+  // merge by value, players first on a tie so a pick never pushes a player down
+  const merged = players.map(p => ({ _pick: false, p, dv: p.dv || 0 })).concat(picks)
+    .sort((a, b) => (b.dv - a.dv) || (a._pick - b._pick));
+  // the limit counts players; picks that fall inside the shown range come along
+  let shownPlayers = 0; const shown = [];
+  for (const r of merged) {
+    if (!r._pick) { if (shownPlayers >= PlayersUI.limit) break; shownPlayers++; }
+    shown.push(r);
+  }
+
+  const chips = (list, on, set) => h('div.chipwrap', [
+    h('button.chip' + (!on.length ? '.on' : ''), { onclick: () => { set([]); render(); } }, 'All')
+  ].concat(list.map(p => h('button.chip' + (on.includes(p) ? '.on' : ''), {
+    onclick: () => { set(on.includes(p) ? on.filter(x => x !== p) : on.concat([p])); render(); }
+  }, p))));
+
+  const ownerTag = (t) => !t ? h('span.tag.fa', 'FA')
+    : h('span.tiny', { class: t.rosterId === S.myRosterId ? 'mine-own' : '' }, t.rosterId === S.myRosterId ? 'You' : t.short);
+
+  const cols = [
+    { k: 'rk', h: '#', num: true, sort: r => r._pick ? 9999 : overall[r.p.id], f: r => r._pick ? h('span.tiny.muted', '—') : h('b.mono', overall[r.p.id]) },
+    {
+      k: 'name', h: 'Player', sort: r => r._pick ? r.pk.label : r.p.name,
+      f: r => r._pick
+        ? h('div.row.pickrow', { style: { gap: '7px', minWidth: 0 } },
+          h('b', r.pk.season + ' ' + (r.pk.slotLabel || ((ROUND_WORD[r.pk.round] || r.pk.round + 'th')))),
+          r.orig && r.orig.rosterId !== r.holder.rosterId ? h('span.tiny.muted', 'via ' + r.orig.short) : null,
+          h('span.tiny.muted', r.pk.tier ? '· ' + r.pk.tier : ''))
+        : isNarrow()
+          // on a phone the position rides under the name instead of taking a column
+          ? h('div', { style: { minWidth: 0 } },
+            h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury)),
+            h('div.tiny.muted', { style: { marginTop: '1px' } }, r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')))
+          : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
+            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury))
+    },
+    {
+      k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 'ZZ' : r.p.pos + String(posRank[r.p.id]).padStart(4, '0'),
+      f: r => r._pick ? posPill('PICK') : h('div.row', { style: { gap: '5px', flexWrap: 'nowrap' } }, posPill(r.p.pos), h('span.tiny.mono.muted', r.p.pos + posRank[r.p.id]))
+    },
+    { k: 'team', prio: 2, h: 'NFL', sort: r => r._pick ? '' : (r.p.team || ''), f: r => r._pick ? '' : (isSimple() && r.p.team ? h('span.row', { style: { gap: '5px' } }, teamLogo(r.p.team), h('span.tiny', r.p.team)) : h('span.tiny', r.p.team || 'FA')) },
+    { k: 'age', prio: 2, h: 'Age', num: true, sort: r => r._pick ? 0 : (r.p.age || 0), f: r => r._pick ? '' : (r.p.age ? fmt(r.p.age, 1) : '—') },
+    { k: 'dv', h: 'Value', num: true, sort: r => r.dv, f: r => h('b.mono', kfmt(Math.round(r.dv))) },
+    { k: 'ppg', h: 'Proj/wk', num: true, prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 0 : (r.p.ppg || 0), f: r => r._pick ? '' : fmt(r.p.ppg || 0, 1) },
+    { k: 'trend', prio: 2, h: '30d', num: true, sort: r => r._pick ? 0 : (r.p.trend30 || 0), f: r => r._pick ? '' : (r.p.trend30 ? deltaTag(r.p.trend30, 0) : h('span.flat.tiny', '–')) },
+    { k: 'own', h: 'Roster', sort: r => r._pick ? r.holder.name : (ownerOf[r.p.id] || { name: 'zz' }).name, f: r => r._pick ? ownerTag(r.holder) : ownerTag(ownerOf[r.p.id]) }
+  ];
+
+  const total = players.length;
+  const controls = h('div', { style: { display: 'grid', gap: '10px' } },
+    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+      h('label.fld', 'Position', chips(RANK_POS, PlayersUI.pos, v => { PlayersUI.pos = v; PlayersUI.limit = 50; })),
+      h('label.fld', 'Rostered',
+        segmented(isNarrow()
+          ? [{ k: 'all', label: 'All' }, { k: 'mine', label: 'Mine' }, { k: 'rostered', label: 'Taken' }, { k: 'fa', label: 'FA' }]
+          : [{ k: 'all', label: 'Everyone' }, { k: 'mine', label: 'Mine' }, { k: 'rostered', label: 'Rostered' }, { k: 'fa', label: 'Free agents' }],
+          PlayersUI.owner, v => { PlayersUI.owner = v; PlayersUI.limit = 50; render(); })),
+      isDynasty() ? h('label.fld', 'Draft picks',
+        segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null));
+
+  const more = shownPlayers < total
+    ? h('div.row', { style: { justifyContent: 'center', gap: '10px', marginTop: '6px' } },
+      h('button.btn', { onclick: () => { PlayersUI.limit += 50; render(); } }, 'Show ' + Math.min(50, total - shownPlayers) + ' more'),
+      total - shownPlayers > 50 ? h('button.btn', { onclick: () => { PlayersUI.limit = total; render(); } }, 'Show all ' + total) : null)
+    : null;
+
+  wrap.appendChild(card('Player rankings',
+    (isDynasty() ? 'dynasty' : 'redraft') + ' market value for this league’s format'
+    + (showPicks ? ' · this league’s own draft picks sit where their value puts them' : '')
+    + ' · showing ' + shownPlayers + ' of ' + total,
+    h('div', { style: { display: 'grid', gap: '12px' } },
+      controls,
+      table(cols, shown, { sortKey: 'dv', sortDir: -1, rowClass: r => r._pick ? 'pickline' : (ownerOf[r.p.id] && ownerOf[r.p.id].rosterId === S.myRosterId ? 'mineline' : '') }),
+      more)));
+
+  wrap.appendChild(waiverCard(ownerOf, me));
+  return wrap;
+}
+
+/** The best of what nobody in the league has rostered. Ranked on market value by
+ *  default, because that is what "most valuable" means — but the column worth
+ *  sorting on for a waiver claim is the last one: how much a player would add
+ *  to your own best lineup this week, which is zero for anyone who would sit. */
+function waiverCard(ownerOf, me) {
+  const fa = freeAgents().filter(p => (p.dv || 0) > 0 || (p.ppg || 0) > 0);
+  const present = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].filter(pos => fa.some(p => p.pos === pos));
+  const on = PlayersUI.faPos.length ? PlayersUI.faPos : present;
+  const pool = fa.filter(p => on.includes(p.pos))
+    .sort((a, b) => ((b.dv || 0) - (a.dv || 0)) || ((b.ppg || 0) - (a.ppg || 0)));
+  const shown = pool.slice(0, PlayersUI.faLimit);
+  // what each would add to your own optimal lineup, only for the rows on screen
+  const adds = {};
+  if (me) shown.forEach(p => { adds[p.id] = marginalAdd(me.players, me.taxi, me.ir, p, 'ppg'); });
+
+  const chips = h('div.chipwrap', [
+    h('button.chip' + (!PlayersUI.faPos.length ? '.on' : ''), { onclick: () => { PlayersUI.faPos = []; PlayersUI.faLimit = 15; render(); } }, 'All')
+  ].concat(present.map(pos => h('button.chip' + (PlayersUI.faPos.includes(pos) ? '.on' : ''), {
+    onclick: () => {
+      PlayersUI.faPos = PlayersUI.faPos.includes(pos) ? PlayersUI.faPos.filter(x => x !== pos) : PlayersUI.faPos.concat([pos]);
+      PlayersUI.faLimit = 15; render();
+    }
+  }, pos))));
+
+  if (!pool.length) return card('On the waiver wire', null, h('div', { style: { display: 'grid', gap: '10px' } }, chips,
+    h('div.empty', 'Nobody the market prices is unrostered in this league at ' + (PlayersUI.faPos.join(', ') || 'any position') + '.')));
+
+  const best = me ? shown.slice().sort((a, b) => (adds[b.id] || 0) - (adds[a.id] || 0))[0] : null;
+  const tbl = table([
+    {
+      k: 'name', h: 'Player', sort: r => r.name, f: r => isNarrow()
+        ? h('div', { style: { minWidth: 0 } },
+          h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury)),
+          h('div.tiny.muted', { style: { marginTop: '1px' } }, r.pos + (r.team ? ' · ' + r.team : '') + ' · ' + fmt(r.ppg || 0, 1) + '/wk'))
+        : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury))
+    },
+    { k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r.pos, f: r => posPill(r.pos) },
+    { k: 'team', prio: 2, h: 'NFL', sort: r => r.team || '', f: r => isSimple() && r.team ? h('span.row', { style: { gap: '5px' } }, teamLogo(r.team), h('span.tiny', r.team)) : h('span.tiny', r.team || '—') },
+    { k: 'age', prio: 2, h: 'Age', num: true, sort: r => r.age || 0, f: r => r.age ? fmt(r.age, 1) : '—' },
+    { k: 'dv', h: 'Value', num: true, sort: r => r.dv || 0, f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
+    { k: 'ppg', h: 'Proj/wk', num: true, prio: isNarrow() ? 2 : 0, sort: r => r.ppg || 0, f: r => h('span.mono', fmt(r.ppg || 0, 1)) },
+    {
+      k: 'add', h: me ? (isNarrow() ? 'Adds' : 'Adds to you') : 'Adds', num: true, sort: r => adds[r.id] || 0,
+      tip: 'Points per week this player would add to your own best starting lineup, right now. Zero means he would sit on your bench.',
+      f: r => (adds[r.id] || 0) > 0.05 ? h('b.mono.up', '+' + fmt(adds[r.id], 1)) : h('span.tiny.muted', 'bench')
+    },
+    { k: 'trend', prio: 2, h: '30d', num: true, sort: r => r.trend30 || 0, f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') }
+  ], shown, { sortKey: 'dv', sortDir: -1 });
+
+  // Sleeper's weekly lines are only fetched for rostered players, so a free
+  // agent's projection is the league-scoring estimate from his market rank
+  return card('On the waiver wire',
+    'the most valuable players nobody in this league has rostered · ' + pool.length + ' available · projections are estimated from market rank',
+    h('div', { style: { display: 'grid', gap: '12px' } },
+      chips,
+      best && (adds[best.id] || 0) > 0.05
+        ? h('div.wirebest',
+          isSimple() ? playerFace(best, { lg: true }) : posPill(best.pos),
+          h('div', { style: { minWidth: 0 } },
+            h('div.tiny.muted', 'The one that helps you most'),
+            h('div', h('b', pname(best, { face: false })), h('span.tiny.muted', ' · ' + best.pos + (best.team ? ' · ' + best.team : ''))),
+            h('div.tiny.sec', '+' + fmt(adds[best.id], 1) + ' pts/wk to your best lineup, worth ' + kfmt(Math.round(best.dv || 0)))))
+        : null,
+      tbl,
+      pool.length > shown.length
+        ? h('div.row', { style: { justifyContent: 'center' } },
+          h('button.btn', { onclick: () => { PlayersUI.faLimit += 15; render(); } }, 'Show ' + Math.min(15, pool.length - shown.length) + ' more'))
+        : null));
 }
 /* ================= hypothetical roster sandbox =================
    Release, sign and swap players and picks, then look at any page as if those
