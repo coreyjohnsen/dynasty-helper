@@ -357,6 +357,40 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .lupnm{font-size:11px}
 }
 
+/* ---- start/sit comparison cards ---- */
+.cgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(248px,1fr))}
+.ccard{position:relative;border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;background:var(--surface-1);
+  display:grid;gap:10px;min-width:0;align-content:start}
+.ccard.lead{border-color:var(--s1);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--s1) 35%, transparent)}
+.ccard .cx{position:absolute;top:8px;right:8px;padding:2px 8px;line-height:1.3;opacity:.55}
+.ccard .cx:hover{opacity:1}
+.chead{display:flex;align-items:center;gap:11px;min-width:0;padding-right:26px}
+.chead .face.lg{width:52px;height:52px;border-radius:50%;background:var(--surface-3)}
+.cnm{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag.leadtag{border-color:var(--s1);color:var(--s1);font-weight:660}
+/* floor → ceiling, every card on one scale */
+.crange{position:relative;height:10px;background:var(--surface-3);border-radius:5px}
+.crange i{position:absolute;top:0;bottom:0;border-radius:5px;background:var(--seq-200)}
+.crange u{position:absolute;top:-3px;bottom:-3px;width:2.5px;border-radius:2px;background:var(--s1);text-decoration:none}
+.cstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-top:1px solid var(--grid);padding-top:9px}
+.cstat{text-align:center;min-width:0;cursor:default}
+.cstat b{display:block;font-size:13.5px;font-variant-numeric:tabular-nums;line-height:1.2}
+.cstat span{display:block;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* one bar per pairing */
+.cpair{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,1.5fr) minmax(0,1fr);gap:10px;align-items:center}
+.cpn{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cbar{position:relative;height:18px;border-radius:5px;background:var(--seq-150);overflow:hidden}
+.cbar i{position:absolute;inset:0 auto 0 0;background:var(--s1);display:block}
+.cpct{position:absolute;top:0;bottom:0;display:flex;align-items:center;font-size:10.5px;font-weight:700;
+  font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.cpct.l{left:7px}
+.cpct.r{right:7px;color:var(--text-secondary);text-shadow:none}
+@media (max-width:620px){
+  .cstats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:9px}
+  .cpair{grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);gap:7px}
+  .cpn{font-size:11.5px}
+}
+
 /* ---- players page ---- */
 tr.pickline td{background:color-mix(in srgb, #eda100 7%, transparent)}
 tr.pickline td:first-child{box-shadow:inset 3px 0 0 #eda100}
@@ -492,7 +526,9 @@ td .pnf,.asset .pnf{vertical-align:middle}
 .pcard .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pcard .sub{font-size:11.5px;color:var(--text-muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .pcard .val{text-align:right;flex:none;font-variant-numeric:tabular-nums}
-.rankrow{display:grid;grid-template-columns:34px 1fr minmax(120px,1.1fr) auto;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--grid)}
+.rankrow{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(110px,.9fr) auto auto;gap:16px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--grid)}
+.rankstats{display:flex;gap:18px;text-align:right}
+.rankstats b{font-size:14px;display:block;line-height:1.15}
 .rankrow:last-child{border-bottom:0}
 /* ---- this-week matchup card: team, odds, team ---- */
 .mvs{display:grid;grid-template-columns:minmax(0,1fr) minmax(86px,1.05fr) minmax(0,1fr);gap:10px;align-items:start}
@@ -1015,7 +1051,12 @@ function buildIndex() {
     if (!POS4.includes(p.pos)) { p.ppg = REPL[p.pos] || 3; p.fppg = p.ppg; p.vol = volFor(p.pos, p.ppg); continue; }
     const nowRank = p.rv > 0 ? p.rvRank : (p.dvRank + 24);
     p.ppg = scoringAdjust(p.pos, curveLookup(p.pos, nowRank), nowRank, cfg);
-    if (p.injury === 'IR' || p.injury === 'Out' || p.injury === 'PUP' || p.injury === 'Sus') p.ppg *= 0.05;
+    // A player the NFL has ruled out is not "a twentieth of himself" — he is not
+    // playing, and five per cent of a baseline is just a number small enough to
+    // look like a rounding error while still being wrong. This only reaches
+    // players with no Sleeper weekly line of their own; anyone with one is
+    // projected from that.
+    if (OUT_TAGS.includes(p.injury)) p.ppg = 0;
     else if (p.injury === 'Doubtful') p.ppg *= 0.35;
     else if (p.injury === 'Questionable') p.ppg *= 0.9;
     p.vol = volFor(p.pos, p.ppg);
@@ -1049,7 +1090,7 @@ function ensurePlayer(id) {
     trend30: 0, injury: m ? m.i : null, unranked: true
   };
   o.ppg = REPL[pos] !== undefined ? REPL[pos] * (pos === 'DEF' || pos === 'K' ? 1 : 0.8) : 1.5;
-  if (o.injury && ['IR', 'Out', 'PUP', 'Sus'].includes(o.injury)) o.ppg *= 0.05;
+  if (OUT_TAGS.includes(o.injury)) o.ppg = 0;
   o.fppgDyn = o.ppg * 0.85;
   o.fppg = isDynasty() ? o.fppgDyn : o.ppg;
   o.vol = volFor(pos, o.ppg);
@@ -1106,6 +1147,8 @@ function drawScore(mu, sd) {
    starting lineup lands near the 0.22 team-level CV measured from real leagues */
 const POS_CV = { QB: 0.36, RB: 0.53, WR: 0.58, TE: 0.61, K: 0.39, DEF: 0.53 };
 const BUST_RATE = 0.012;               // starter unexpectedly inactive / knocked out early
+/* Tags that mean "will not play". Sleeper reports the NFL's own designation. */
+const OUT_TAGS = ['IR', 'Out', 'PUP', 'Sus', 'DNR', 'COV'];
 function volFromMean(pos, mu) { return (POS_CV[pos] || 0.65) * mu + 1.15; }
 
 /* ================= Sleeper weekly projections =================
@@ -1567,8 +1610,10 @@ function applyProjections() {
     if (!isDynasty()) p.fppg = p.ppg;
     p.vol = volFromMean(p.pos, p.ppg);
     p.projSource = 'sleeper';
+    // a week with no line is a bye only if his team is genuinely off; a player
+    // who is not expected to play has no line either
     p.byeWeeks = [];
-    for (let k = 1; k <= 18; k++) if (!w[k]) p.byeWeeks.push(k);
+    for (let k = 1; k <= 18; k++) if (onBye(p, k)) p.byeWeeks.push(k);
   }
   S.projCoverage = { covered: covered, total: total };
 }
@@ -2448,7 +2493,13 @@ function table(allCols, rows, opts) {
   // a null in the list is a column a view decided not to draw at all — a live-only
   // status, a dynasty-only projection — so it is dropped before anything else
   const kept = allCols.filter(Boolean);
-  const cols = (isNarrow() || isSimple()) ? kept.filter(c => !(c.prio >= 2)) : kept;
+  /* `prio: 2` marks a secondary column: worth having on a desktop, not worth
+     pushing the first three off a phone. The calmer Default view reuses those
+     marks — but a handful of those columns are the whole reason someone opens
+     the page, so `keepSimple` holds them there while a phone still drops them. */
+  const cols = isNarrow() ? kept.filter(c => !(c.prio >= 2))
+    : isSimple() ? kept.filter(c => !(c.prio >= 2) || c.keepSimple)
+      : kept;
   const st = { key: opts.sortKey || null, dir: opts.sortDir || -1 };
   if (st.key && !cols.some(c => c.k === st.key)) {
     const kept = cols.find(c => c.num) || cols[cols.length - 1];
@@ -2786,6 +2837,13 @@ function weeklyBars(items, opts) {
         x: x + 2, y: m.t + ih - hgt, width: Math.max(1, bw - 4), height: hgt, rx: Math.min(4, (bw - 4) / 2),
         fill: it.kind === 'proj' ? 'var(--seq-200)' : it.kind === 'live' ? 'var(--s4)' : 'var(--s1)'
       }));
+      // a genuine zero is a one-pixel sliver, which reads as no data at all —
+      // the mark is what tells you it is a zero somebody meant
+      if (it.mark) {
+        const t = svg('text', { class: 'ax', x: x + bw / 2, y: m.t + ih - 5, 'text-anchor': 'middle', 'font-size': '8', opacity: .75 });
+        t.textContent = it.mark;
+        g.appendChild(t);
+      }
     }
     const hit = svg('rect', { x, y: m.t, width: bw, height: ih, fill: 'transparent' });
     hit.addEventListener('mousemove', e => ttShow(e, `<div class="k">Week ${it.x}${it.kind === 'proj' ? ' · projected' : it.kind === 'live' ? ' · in progress' : ''}</div>` +
@@ -3303,6 +3361,14 @@ function viewPower() {
         h('div.bar-track', { style: { height: '9px' } },
           h('div.bar-fill', { style: { width: clamp((r.rating - 20) / 60 * 100, 4, 100) + '%', background: r.i <= 3 ? 'var(--s1)' : 'var(--seq-300)' } })),
         h('div.tiny.muted', { style: { marginTop: '3px' } }, fmt(r.rating, 1) + ' rating')),
+      // the two numbers the dense table shows that this view was dropping
+      h('div.rankstats.hidenarrow',
+        bindTT(h('div', h('b.mono', fmt(future ? t.future : t.now, 1)), h('div.tiny.muted', 'proj pts/wk')),
+          `<div class="k">Projected lineup</div>Points per week from the best legal lineup on this roster.`),
+        bindTT(h('div', h('b.mono', kfmt(Math.round(t.totalValue))), h('div.tiny.muted', isDynasty() ? 'capital' : 'value')),
+          `<div class="k">${capitalLabel()}</div>` + (isDynasty()
+            ? `Players <b>${kfmt(Math.round(t.rosterValue))}</b> plus picks <b>${kfmt(Math.round(t.pickCapital))}</b>`
+            : 'Every rostered player at today’s redraft market.'))),
       h('div', { style: { textAlign: 'right' } },
         h('b.mono', { style: { fontSize: '16px' } }, r.s ? pct(r.s.playoff, 0) : fmt(r.rating, 1)),
         h('div.tiny.muted', r.s ? 'playoffs · ' + pct(r.s.title, 1) + ' title' : 'rating')));
@@ -3442,13 +3508,13 @@ function viewStandings() {
     { k: 'losses', h: 'L', num: true },
     { k: 'winPct', prio: 2, h: 'Pct', num: true, f: r => r.winPct === null ? '—' : r.winPct.toFixed(3).replace(/^0/, '') },
     { k: 'fpts', h: 'PF', num: true, f: r => fmt(r.fpts, 1) },
-    { k: 'fptsAgainst', prio: 2, h: 'PA', num: true, f: r => fmt(r.fptsAgainst, 1) },
+    { k: 'fptsAgainst', prio: 2, keepSimple: true, h: 'PA', num: true, f: r => fmt(r.fptsAgainst, 1) },
     { k: 'diff', prio: 2, h: 'Diff', num: true, sort: r => r.fpts - r.fptsAgainst, f: r => h('span', { class: r.fpts - r.fptsAgainst >= 0 ? 'up mono' : 'down mono' }, sgn(r.fpts - r.fptsAgainst, 1)) },
     { k: 'avgPts', h: 'PPG', num: true, f: r => fmt(r.avgPts, 1) },
     { k: 'ptsSd', prio: 2, h: 'Volatility', num: true, tip: 'Standard deviation of weekly scores — high means boom/bust', f: r => fmt(r.ptsSd, 1) },
     { k: 'allPlay', prio: 2, h: 'All-play', num: true, tip: 'Record if every team played every other team each week', f: r => r.allPlay === null ? '—' : h('span', h('b.mono', pct(r.allPlay, 1)), h('span.tiny.muted', ` ${r.apW}-${r.apL}`)) },
-    { k: 'luck', prio: 2, h: 'Luck', num: true, tip: 'Wins above or below what the all-play record predicts', f: r => r.luck === null ? '—' : deltaTag(r.luck, 1, ' W') },
-    { k: 'maxPts', prio: 2, h: 'Efficiency', num: true, tip: 'Points scored as a share of the best possible lineup each week', sort: r => r.maxPts ? r.fpts / r.maxPts : 0, f: r => r.maxPts ? pct(r.fpts / r.maxPts, 1) : '—' },
+    { k: 'luck', prio: 2, keepSimple: true, h: 'Luck', num: true, tip: 'Wins above or below what the all-play record predicts', f: r => r.luck === null ? '—' : deltaTag(r.luck, 1, ' W') },
+    { k: 'maxPts', prio: 2, keepSimple: true, h: 'Efficiency', num: true, tip: 'Points scored as a share of the best possible lineup each week', sort: r => r.maxPts ? r.fpts / r.maxPts : 0, f: r => r.maxPts ? pct(r.fpts / r.maxPts, 1) : '—' },
     { k: 'spark', prio: 2, h: 'Form', sortable: false, f: r => sparkline(r.weekly.filter(v => v !== null && v > 0).map(v => ({ v })), { w: 74, h: 22 }) }
   ];
   wrap.appendChild(card('Active rankings',
@@ -4835,9 +4901,15 @@ function viewPlayer() {
     if (logged.has(w)) continue;
     if (p.wk) {
       const r = p.wk[w];
-      bars.push(r
-        ? { x: w, v: Math.round(r.p * 10) / 10, kind: 'proj', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') }
-        : { x: w, v: null, kind: 'proj', bye: true, note: 'Bye week' });
+      // No line for a week is two different things. If his team is off, it is a
+      // bye. If his team is playing, nobody expects him on the field — which is
+      // nothing projected, not a bye, and the chart has to say so.
+      if (r) bars.push({ x: w, v: Math.round(r.p * 10) / 10, kind: 'proj', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') });
+      else if (onBye(p, w)) bars.push({ x: w, v: null, kind: 'proj', bye: true, note: 'Bye week' });
+      else bars.push({
+        x: w, v: 0, kind: 'proj', mark: 'OUT',
+        note: 'Nothing projected — not expected to play' + (p.injury ? ' (' + p.injury + ')' : '')
+      });
     } else {
       bars.push({ x: w, v: Math.round((p.ppg || 0) * 10) / 10, kind: 'proj', note: 'Projection, not a result' });
     }
@@ -5257,10 +5329,16 @@ function weekOutlook(p, wk) {
   }
   const banked = lv ? lv.banked : 0;
   const m = lv ? lv.open : pw(p, wk);
-  if (!(m > 0.05)) return {
-    mean: banked, floor: banked, median: banked, ceil: banked, bye: !lv || lv.state === 'bye',
-    opp: lv ? lv.opp : null, state: lv ? lv.state : 'bye', final: !!lv && lv.state !== 'upcoming'
-  };
+  if (!(m > 0.05)) {
+    // nothing projected. That is a bye only if his team really is off this week;
+    // otherwise he is expected not to play, which is a different sentence.
+    const bye = lv ? lv.state === 'bye' : onBye(p, wk);
+    return {
+      mean: banked, floor: banked, median: banked, ceil: banked, bye: bye,
+      opp: lv ? lv.opp : pwOpp(p, wk), zero: !bye,
+      state: lv ? lv.state : (bye ? 'bye' : 'out'), final: !!lv && lv.state !== 'upcoming'
+    };
+  }
   const sd = volFromMean(p.pos, m), n = 3000;
   seedRng(hashStr(p.id + '|' + wk));
   const s = new Array(n);
@@ -5325,7 +5403,7 @@ function viewLineup() {
       : played ? h('span.tag', 'Already played — real scores, green where they beat the projection') : null)));
 
   // ---- the optimal lineup ----
-  const byes = act.filter(p => p.wk && !p.wk[wk]);
+  const byes = act.filter(p => onBye(p, wk));
   const rows = lineup.map(s => {
     const p = s.player;
     const o = p ? weekOutlook(p, wk) : null;
@@ -5353,7 +5431,12 @@ function viewLineup() {
           isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null)
         : h('span.muted.tiny', 'nobody eligible')
     },
-    { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o && r.o.opp ? h('span.tiny', r.o.opp) : r.o && r.o.bye ? h('span.tag', 'BYE') : h('span.muted.tiny', '—') },
+    {
+      k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => !r.o ? h('span.muted.tiny', '—')
+        : r.o.bye ? h('span.tag', 'BYE')
+          : r.o.zero ? h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--bad-text)' } }, r.p && r.p.injury ? String(r.p.injury).toUpperCase() : 'OUT')
+            : r.o.opp ? h('span.tiny', r.o.opp) : h('span.muted.tiny', '—')
+    },
     isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => r.p ? liveBadge(r.p, wk) : null } : null,
     // on a phone the range rides under the projection instead of taking a column
     {
@@ -5438,7 +5521,11 @@ function viewLineup() {
     { k: 'pos', h: 'Pos', f: r => posPill(r.p.pos), sort: r => r.p.pos },
     { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p, { face: false }), injuryTag(r.p.injury)),
       isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null) },
-    { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE') : h('span.tiny', r.o.opp || '—') },
+    {
+      k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE')
+        : r.o.zero ? h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--bad-text)' } }, r.p.injury ? String(r.p.injury).toUpperCase() : 'OUT')
+          : h('span.tiny', r.o.opp || '—')
+    },
     isLive && !isNarrow() ? { k: 'st', h: 'Status', sortable: false, f: r => liveBadge(r.p, wk) } : null,
     {
       k: 'proj', h: isLive ? 'Points' : played ? 'Scored' : 'Projected', num: true, sort: r => r.o.mean, f: r => {
@@ -5463,34 +5550,77 @@ function toggleCompare(id) {
 function compareGrid(players, wk) {
   const outs = players.map(p => ({ p, o: weekOutlook(p, wk) }));
   const max = Math.max(...outs.map(x => x.o.ceil), 1);
-  const cards = outs.map(({ p, o }) => h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '11px 12px', background: 'var(--surface-1)', display: 'grid', gap: '7px', minWidth: 0 } },
-    h('div.row', { style: { gap: '6px', minWidth: 0 } }, posPill(p.pos), pname(p, { style: { fontWeight: 640 } }),
-      h('span', { style: { flex: 1 } }),
-      h('button.btn.sm', { onclick: () => { toggleCompare(p.id); render(); } }, '×')),
-    h('div.tiny.muted', o.bye ? 'On bye in week ' + wk : (o.opp ? 'vs ' + o.opp : 'no opponent listed')),
-    h('div.row', { style: { alignItems: 'baseline', gap: '7px' } }, h('b', { style: { fontSize: '21px' } }, fmt(o.mean, 1)), h('span.tiny.muted', 'projected')),
-    // floor → ceiling range bar, on a shared scale so the cards compare directly
-    h('div', { style: { position: 'relative', height: '9px', background: 'var(--surface-3)', borderRadius: '3px' } },
-      h('div', { style: { position: 'absolute', top: 0, bottom: 0, borderRadius: '3px', background: 'var(--seq-200)', left: (o.floor / max * 100) + '%', width: (Math.max(0, o.ceil - o.floor) / max * 100) + '%' } }),
-      h('div', { style: { position: 'absolute', top: '-2px', bottom: '-2px', width: '2px', background: 'var(--s1)', left: (o.mean / max * 100) + '%' } })),
-    h('div.row', { style: { justifyContent: 'space-between' } },
-      h('span.tiny.muted.mono', fmt(o.floor, 0)),
-      h('span.tiny.muted', 'floor · ceiling'),
-      h('span.tiny.muted.mono', fmt(o.ceil, 0))),
-    o.bye ? null : h('div.tiny.muted', pct(o.boom, 0) + ' chance of a big week · ' + pct(o.bust, 0) + ' chance of a dud')));
+  const best = outs.slice().sort((a, b) => b.o.mean - a.o.mean)[0];
+  const isLive = wk === S.liveWeek;
 
+  const card1 = ({ p, o }) => {
+    const ps = playedScore(p, wk);
+    const log = playerGameLog(p.id).filter(g => g.pts !== null && g.rostered && g.state === 'final');
+    const avg = log.length ? mean(log.map(g => g.pts)) : null;
+    const top = log.length ? Math.max(...log.map(g => g.pts)) : null;
+    const lead = best && p.id === best.p.id && outs.length > 1 && !o.bye;
+    const pctOf = (v) => clamp(v / max, 0, 1) * 100;
+    const stat = (label, value, tip) => bindTT(h('div.cstat', { tabindex: 0 },
+      h('b', value), h('span.tiny.muted', label)), tip);
+
+    return h('div.ccard' + (lead ? '.lead' : ''),
+      h('button.btn.sm.cx', { title: 'Remove from the comparison', onclick: () => { toggleCompare(p.id); render(); } }, '×'),
+      h('div.chead',
+        playerFace(p, { lg: true }),
+        h('div', { style: { minWidth: 0 } },
+          h('div.cnm', pname(p, { face: false, style: { fontWeight: 660 } })),
+          h('div.row', { style: { gap: '6px', flexWrap: 'wrap', marginTop: '2px' } },
+            posPill(p.pos), p.team ? teamLogo(p.team) : null,
+            // the live badge already says BYE, so the meta line does not repeat it
+            h('span.tiny.muted', o.bye ? (isLive ? '' : 'on bye this week')
+              : o.zero ? 'not expected to play'
+                : o.opp ? (isLive ? '' : 'vs ') + o.opp : 'no opponent listed'),
+            injuryTag(p.injury), isLive ? liveBadge(p, wk) : null))),
+      // the headline number: what he actually scored once he has played, else the projection
+      h('div.row', { style: { alignItems: 'baseline', gap: '8px' } },
+        ps && ps.final
+          ? h('b.score.' + (ps.actual >= ps.proj ? 'up' : 'down'), { style: { fontSize: '27px' } }, fmt(ps.actual, 1))
+          : h('b', { style: { fontSize: '27px' } }, fmt(o.mean, 1)),
+        h('span.tiny.muted', ps && ps.final ? 'scored · ' + fmt(ps.proj, 1) + ' projected'
+          : ps ? 'so far · ' + fmt(ps.proj, 1) + ' projected'
+            : o.bye ? 'on bye' : o.zero ? 'projected nothing' : 'projected'),
+        lead ? h('span.tag.leadtag', { style: { marginLeft: 'auto' } }, 'highest') : null),
+      // floor → ceiling on a scale shared by every card, so they compare by eye
+      o.bye || o.zero ? null : h('div',
+        h('div.crange',
+          h('i', { style: { left: pctOf(o.floor) + '%', width: Math.max(2, pctOf(o.ceil) - pctOf(o.floor)) + '%' } }),
+          h('u', { style: { left: pctOf(o.mean) + '%' } })),
+        h('div.row', { style: { justifyContent: 'space-between', marginTop: '3px' } },
+          h('span.tiny.muted.mono', fmt(o.floor, 0)),
+          h('span.tiny.muted', 'floor → ceiling'),
+          h('span.tiny.muted.mono', fmt(o.ceil, 0)))),
+      o.bye || o.zero ? null : h('div.cstats',
+        stat('big week', pct(o.boom, 0), '<div class="k">Chance of a big week</div>Half again his projection or better, from the same distribution the simulator draws from.'),
+        stat('dud', pct(o.bust, 0), '<div class="k">Chance of a dud</div>Half his projection or less.'),
+        stat('avg so far', avg === null ? '—' : fmt(avg, 1), '<div class="k">This season</div>' + (log.length ? `Average of his <b>${log.length}</b> finished games.` : 'No finished games yet.')),
+        stat('best', top === null ? '—' : fmt(top, 1), '<div class="k">Best week</div>His highest finished score this season.')));
+  };
+
+  // every pairing, as a single bar each: who wins the week between these two
   const pairs = [];
   for (let i = 0; i < players.length; i++) for (let j = i + 1; j < players.length; j++) {
-    const pr = pBeats(players[i], players[j], wk);
-    pairs.push(h('div.row', { style: { gap: '8px', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--grid)' } },
-      h('span.tiny', h('b', players[i].name), ' over ', h('b', players[j].name)),
-      h('div.row', { style: { gap: '8px', minWidth: '160px' } },
-        h('div.bar-track', { style: { width: '80px' } }, h('div.bar-fill', { style: { width: (pr * 100) + '%', background: pr >= .5 ? 'var(--s1)' : 'var(--seq-200)' } })),
-        h('b.mono.tiny', pct(pr, 0)))));
+    const a = players[i], b = players[j];
+    const pr = pBeats(a, b, wk);
+    pairs.push(h('div.cpair',
+      h('span.cpn', { style: { textAlign: 'right', fontWeight: pr >= 0.5 ? 660 : 500 } }, a.name),
+      h('div.cbar',
+        h('i', { style: { width: (pr * 100) + '%' } }),
+        h('span.cpct.l', pct(pr, 0)), h('span.cpct.r', pct(1 - pr, 0))),
+      h('span.cpn', { style: { fontWeight: pr < 0.5 ? 660 : 500 } }, b.name)));
   }
-  return h('div', { style: { display: 'grid', gap: '12px' } },
-    h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))' } }, cards),
-    pairs.length ? h('div', h('div.lbl', { style: { fontSize: '10px', marginBottom: '4px' } }, 'Head to head'), pairs) : null);
+
+  return h('div', { style: { display: 'grid', gap: '14px' } },
+    h('div.cgrid', outs.map(card1)),
+    pairs.length ? h('div',
+      h('div.lbl', { style: { fontSize: '10px', marginBottom: '6px' } }, 'Who outscores whom'),
+      h('div', { style: { display: 'grid', gap: '5px' } }, pairs),
+      h('div.tiny.muted', { style: { marginTop: '7px' } },
+        'From 12,000 paired draws of the same week. A tie counts as half to each side.')) : null);
 }
 
 /* ================= 11. GM SCOUT ================= */
@@ -6478,6 +6608,17 @@ function liveRemaining(p, wk, state) {
 /* What one player is worth to a live week: the points they have banked, plus the
    share of their projection still to come. A finished game is all points and no
    projection; a game that has not kicked off is all projection. */
+/* A bye is his NFL team having no game that week. The absence of a projection
+   looks exactly the same and is not the same thing — a player nobody expects to
+   suit up has no line either, and calling that a bye tells the reader his team
+   is off when it is the player who is out. The schedule is authoritative, so it
+   decides; without it we fall back to the weaker signal we used to use alone. */
+function onBye(p, wk) {
+  if (!p) return false;
+  if (S.nflSched && p.team) return !nflGame(p.team, wk);
+  return !!(p.wk && !p.wk[wk]);
+}
+
 function liveValue(p, wk) {
   const state = livePlayerState(p, wk);
   const m = (S.matchups[wk] || []).find(x => x.players_points && x.players_points[p.id] !== undefined);
