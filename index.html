@@ -730,7 +730,7 @@ function applyLeagueType() {
   if (was === S.dynasty) return false;
   // the currency, the projections and every roster metric all move together
   applyValueMode();
-  S._fa = null; S._slotDemand = null; S._live = null; S.sim = null; S._short = {};
+  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {};
   // rosters are rebuilt because pick ownership changes, then every metric is
   // recomputed because the currency under all of them just changed
   if (S.teams && S.teams.length) { buildTeams(); computeStrength(); recordSnapshot(); }
@@ -1540,7 +1540,7 @@ function applyOwnership(moves, pickMoves) {
       .map(pk => Object.assign({}, pk, { rosterId: t.rosterId }));
   });
   computeStrength();
-  S._fa = null;
+  S._fa = null; S._depth = null;
   S.sim = null; SimUI.res = null; SimUI.replay = null; FinderUI.results = null; TradeUI.result = null;
 }
 function draftRounds() {
@@ -2052,9 +2052,16 @@ function simulate(nSims, opts) {
     };
   });
   const byRoster = {}; res.forEach(r => byRoster[r.rosterId] = r);
+  /* A branch of a leverage split is only worth reading if enough seasons went
+     that way. A game that is already lost — or a mismatch a fair sampler almost
+     never flips — leaves one branch with a handful of runs or none at all, and
+     a rate off three runs is not a number, it is an accident. Those branches are
+     reported as unmeasured rather than as 0%, and the game carries no swing, so
+     it cannot be ranked above a game that is genuinely in the balance. */
+  const LEV_MIN = Math.max(30, Math.round(nSims * 0.01));
   const leverage = levGames.map((g, gi) => {
     const L = acc.lev[gi], A = S.teamById[g.a], B = S.teamById[g.b];
-    const rate = (num, den) => den > 0 ? num / den : null;
+    const rate = (num, den) => den >= LEV_MIN ? num / den : null;
     const mk = (T, poW, poL, tiW, tiL, nw, nl) => ({
       team: T,
       poWin: rate(poW, nw), poLose: rate(poL, nl), tiWin: rate(tiW, nw), tiLose: rate(tiL, nl),
@@ -2063,7 +2070,12 @@ function simulate(nSims, opts) {
     });
     const a = mk(A, L.poAw, L.poAl, L.tiAw, L.tiAl, L.nA, L.nB);
     const b = mk(B, L.poBw, L.poBl, L.tiBw, L.tiBl, L.nB, L.nA);
-    return { week: g.week, a, b, runs: L.nA + L.nB, swing: Math.max(Math.abs(a.swing), Math.abs(b.swing)) };
+    return {
+      week: g.week, a, b, runs: L.nA + L.nB, nA: L.nA, nB: L.nB,
+      // one side of the split is too rare to read, so neither side has a swing
+      thin: L.nA < LEV_MIN || L.nB < LEV_MIN, minRuns: LEV_MIN,
+      swing: Math.max(Math.abs(a.swing), Math.abs(b.swing))
+    };
   }).sort((x, y) => y.swing - x.swing || x.week - y.week);
   return {
     n: nSims, list: res, by: byRoster, onlyWeek, playoffTeams,
@@ -2597,6 +2609,11 @@ function lineChart(series, opts) {
   const Y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
   const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', role: 'img', 'aria-label': opts.aria || 'line chart' });
   g.style.height = H + 'px';
+  /* The drawing stretches to fill its container, which is right when the
+     container is narrower than the layout and wrong when it is wider: a 760-wide
+     chart pulled across a 2000px monitor stretches every tick label with it. A
+     chart may name the widest it is willing to be drawn. */
+  if (opts.maxW) { g.style.maxWidth = opts.maxW + 'px'; g.style.display = 'block'; g.style.marginInline = 'auto'; }
   const ticks = opts.yTicks || (narrow ? 3 : 4);
   for (let i = 0; i <= ticks; i++) {
     const v = y0 + (y1 - y0) * i / ticks, y = Y(v);
@@ -2914,6 +2931,48 @@ function bracketView(sim) {
         h('div.tiny.muted', ord(sim.champion.seed) + ' seed · ' + sim.champion.w + '-' + sim.champion.l))));
   }
   return scrollBox(h('div', { style: { display: 'flex', gap: '16px', padding: '4px 2px 8px', minWidth: 'min-content' } }, cols));
+}
+
+/* ---------- a position group, drawn as its shape ----------
+   One bar per player in the group, tallest first, with the starters filled and
+   the bench hollow and a cut between them. Two rules run across it: what the
+   league's starters at this position are worth, and what the wire is worth. In
+   one glance that says whether a group is two stars and a cliff, four of the
+   same player, or genuinely deep — which is the question a total cannot answer. */
+function depthBars(e, opts) {
+  opts = opts || {};
+  const show = clamp(e.n + 2, 4, 6);
+  const W = opts.w || 236, H = opts.h || 98, m = { t: 9, r: 6, b: 15, l: 6 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const max = Math.max(e.top, e.lgStart, e.base, 1) * 1.14;
+  const bw = iw / show;
+  const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': e.pos + ' starters and depth' });
+  g.style.height = H + 'px'; g.style.maxWidth = W + 'px'; g.style.display = 'block';
+  const Y = v => m.t + ih - clamp(v / max, 0, 1) * ih;
+  const rule = (v, cls, dash, op) => g.appendChild(svg('line', { class: cls, x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), 'stroke-dasharray': dash, opacity: op }));
+  rule(e.base, 'gl', '2 3', .9);                 // the wire
+  rule(e.lgStart, 'axline', '4 3', .85);         // the league's starters here
+  for (let i = 0; i < show; i++) {
+    const p = e.group[i] || null, v = p ? (p.ppg || 0) : 0;
+    const x = m.l + i * bw, starter = i < e.n;
+    g.appendChild(svg('rect', {
+      x: x + 2.5, y: Y(v), width: Math.max(2, bw - 5), height: Math.max(1, (m.t + ih) - Y(v)), rx: 2,
+      fill: starter ? (opts.colour || 'var(--s1)') : 'var(--surface-3)',
+      stroke: starter ? 'none' : 'var(--border)', 'shape-rendering': 'crispEdges'
+    }));
+    const lb = svg('text', { class: 'ax', x: x + bw / 2, y: H - 4, 'text-anchor': 'middle', 'font-size': '8.5' });
+    lb.textContent = p ? fmt(v, 1) : '—';
+    g.appendChild(lb);
+    const hit = svg('rect', { x: x, y: m.t, width: bw, height: ih, fill: 'transparent' });
+    bindTT(hit, p
+      ? `<div class="k">${starter ? 'Starter' : 'Bench'} ${i + 1}</div><b>${p.name}</b><br>${fmt(v, 1)} pts/wk`
+      : `<div class="k">Slot ${i + 1}</div>Nobody — the wire is worth ${fmt(e.base, 1)}`);
+    g.appendChild(hit);
+  }
+  // the line between who starts and who waits
+  const cx = m.l + e.n * bw;
+  g.appendChild(svg('line', { x1: cx, x2: cx, y1: m.t - 3, y2: m.t + ih + 3, stroke: 'var(--text-muted)', 'stroke-dasharray': '2 2', opacity: .85 }));
+  return g;
 }
 /* ================= app shell ================= */
 const VIEWS = [
@@ -5136,6 +5195,159 @@ function scoutTeam(t) {
   return { team: t, pos, holes, surplus, strengths, weaknesses, young, old, demand };
 }
 
+/* ---------- starters and depth ----------
+   A position is not one number. Two teams can produce the same points from
+   their receivers and want opposite trades. One has two stars and nothing
+   behind them: an injury or a bye turns a strength into a hole, so depth is
+   cheap for them to buy and worth more than it looks. The other has four of the
+   same receiver and nobody to build a week around: they have bodies to spare
+   and would happily send two for one better one. On output alone both read as
+   "covered", which is exactly the read that loses you the trade.
+
+   What separates them is the shape of the group: how much of it is in the
+   starters, what stands behind them, and whether anyone is a difference-maker.
+   All three come out of the same numbers the rest of the app already has. */
+const DEPTH_SHAPES = {
+  thin: { tag: 'THIN', label: 'Thin', want: 'a starter', colour: 'var(--s8)' },
+  topHeavy: { tag: 'TOP', label: 'Top-heavy', want: 'depth', colour: 'var(--s4)' },
+  committee: { tag: 'FLAT', label: 'Committee', want: 'a difference-maker', colour: 'var(--s7)' },
+  deep: { tag: 'DEEP', label: 'Strong and deep', want: null, colour: 'var(--s1)' },
+  covered: { tag: 'OK', label: 'Covered', want: null, colour: 'var(--text-muted)' }
+};
+
+/** One team's group at one position, as a shape rather than a total. */
+function posShape(t, pos, need) {
+  const base = STREAM[pos] !== undefined ? STREAM[pos] : 5;
+  const group = activePlayers(t).filter(x => x.pos === pos).sort((a, b) => (b.ppg || 0) - (a.ppg || 0));
+  /* What a slot is worth, not what the player in it projects. An empty slot is
+     not zero points — it is whatever the wire gives you — and neither is a slot
+     held by somebody projecting nothing, because nobody starts him either. This
+     is the same assumption the lineup solver already makes, and without it a
+     roster with a zero on it reads as worse than a roster with a gap. */
+  const at = i => Math.max(group[i] ? (group[i].ppg || 0) : 0, base);
+  const n = Math.max(1, Math.round(need || 1));
+  let sum = 0; for (let i = 0; i < n; i++) sum += at(i);
+  const bodies = group.filter(startable).length;
+  return {
+    pos: pos, need: need || 0, n: n, group: group, team: t,
+    top: at(0), last: at(n - 1), startAvg: sum / n,
+    nextUp: at(n), next2: at(n + 1), depthAvg: (at(n) + at(n + 1)) / 2,
+    cliff: at(n - 1) - at(n), spread: at(0) - at(n - 1),
+    bodies: bodies, spare: bodies - Math.ceil(need || 1),
+    spareBest: group[n] || null, best: group[0] || null, base: base
+  };
+}
+
+/** The whole league's shapes, with the baselines each is judged against. */
+function depthLeague() {
+  if (S._depth) return S._depth;
+  const demand = slotDemand();
+  const positions = POS4.filter(p => (demand[p] || 0) > 0);
+  const byTeam = {};
+  S.teams.forEach(t => {
+    byTeam[t.rosterId] = {};
+    positions.forEach(p => { byTeam[t.rosterId][p] = posShape(t, p, demand[p]); });
+  });
+  const base = {};
+  positions.forEach(p => {
+    const st = S.teams.map(t => byTeam[t.rosterId][p].startAvg);
+    const dp = S.teams.map(t => byTeam[t.rosterId][p].nextUp);
+    /* A difference-maker is not "good", it is scarce. Judging him against the
+       league's *best players* at that position rather than against its starters
+       is what keeps the bar in the right place whatever the position's shape: a
+       superflex QB1 and a WR1 are both roughly a top-quarter best player. */
+    const tops = S.teams.map(t => byTeam[t.rosterId][p].top);
+    base[p] = {
+      start: mean(st), startSd: sd_(st) || 1, depth: mean(dp), depthSd: sd_(dp) || 1,
+      elite: mean(tops) + 0.85 * (sd_(tops) || 0), need: demand[p] || 0
+    };
+  });
+  S.teams.forEach(t => positions.forEach(p => shapeVerdict(byTeam[t.rosterId][p], base[p])));
+  S._depth = { positions: positions, base: base, byTeam: byTeam };
+  return S._depth;
+}
+/** Which of the five shapes a group is, and what that means for a trade. */
+function shapeVerdict(e, b) {
+  e.lgStart = b.start; e.lgDepth = b.depth; e.elite = b.elite;
+  e.zStart = (e.startAvg - b.start) / b.startSd;
+  e.zDepth = (e.nextUp - b.depth) / b.depthSd;
+  e.hasStar = e.top >= b.elite && b.elite > 0;
+  const nm = (p) => p ? p.name : 'nobody';
+  if (e.bodies < Math.ceil(e.need) - 0.001 || e.zStart <= -0.85) {
+    e.shape = 'thin';
+    // not enough bodies and enough bodies who are not good enough are both thin,
+    // and a manager hears them as different problems
+    e.note = e.bodies < Math.ceil(e.need) - 0.001
+      ? `${e.bodies} startable for ${fmt(e.need, 1)} slot${e.need === 1 ? '' : 's'} — they have to buy one.`
+      : `${e.bodies} bodies but only ${fmt(e.startAvg, 1)} a slot against a league ${fmt(b.start, 1)} — the quantity is there, the quality is not.`;
+  } else if (e.zStart >= 0.2 && (e.zDepth <= -0.45 || e.cliff >= Math.max(3, 0.45 * e.last))) {
+    e.shape = 'topHeavy';
+    e.note = `${nm(e.best)} carries it and the next man up is ${fmt(e.nextUp, 1)} a week — a bye or a knock costs them ${fmt(Math.max(0, e.cliff), 1)}.`;
+  } else if (!e.hasStar && e.bodies >= e.n + 1 && e.spread <= 0.22 * e.startAvg) {
+    e.shape = 'committee';
+    e.note = `${e.bodies} of much the same player and nobody above ${fmt(e.elite, 1)} — they would send two for one better one.`;
+  } else if (e.zStart >= 0.4 && e.zDepth >= 0.35) {
+    e.shape = 'deep';
+    e.note = `${fmt(e.startAvg, 1)} from the starters and ${fmt(e.nextUp, 1)} still on the bench — they can sell from it.`;
+  } else {
+    e.shape = 'covered';
+    e.note = `${fmt(e.startAvg, 1)} a week from the starters against a league ${fmt(e.lgStart, 1)}, with ${fmt(e.nextUp, 1)} behind them.`;
+  }
+  e.verdict = DEPTH_SHAPES[e.shape];
+  return e;
+}
+/** One team's shapes, in league order. */
+function depthProfile(t) {
+  const L = depthLeague();
+  return L.positions.map(p => L.byTeam[t.rosterId][p]);
+}
+
+/* Where one roster's shape fits another's. A group that wants depth and a group
+   with a spare startable body are a trade; so are a committee and somebody
+   else's second star. This is the half of scouting the value-based finder
+   cannot see, because both sides of these deals look even on price. */
+function depthOpenings(me) {
+  const L = depthLeague();
+  const mine = L.byTeam[me.rosterId];
+  if (!mine) return [];
+  const out = [];
+  S.teams.forEach(t => {
+    if (t.rosterId === me.rosterId) return;
+    L.positions.forEach(p => {
+      const th = L.byTeam[t.rosterId][p], my = mine[p];
+      if (!th || !my) return;
+      if ((th.shape === 'topHeavy' || th.shape === 'thin') && my.spare >= 1 && my.spareBest) {
+        out.push({
+          team: t, pos: p, kind: th.shape === 'thin' ? 'starter' : 'depth', them: th, me: my,
+          offer: my.spareBest, ask: th.shape === 'thin' ? 'a real price' : 'a modest price',
+          why: th.shape === 'thin'
+            ? `They are ${th.bodies} startable for ${fmt(th.need, 1)} slots. You can spare ${my.spareBest.name}.`
+            : `${th.best ? th.best.name : 'Their starter'} is carrying it with ${fmt(th.nextUp, 1)} behind him. ${my.spareBest.name} is your ${ord(my.n + 1)} ${p} and would start for them in a pinch.`,
+          score: (th.shape === 'thin' ? 0.2 : 1.0) + Math.max(0, -th.zDepth) * 0.6 + Math.max(0, my.spare) * 0.3
+        });
+      } else if (th.shape === 'committee' && my.hasStar && my.bodies >= my.n + 1 && my.best) {
+        out.push({
+          team: t, pos: p, kind: 'consolidate', them: th, me: my,
+          offer: my.best, ask: 'two of theirs',
+          why: `They have ${th.bodies} similar ${p}s and nobody above ${fmt(th.elite, 1)}. ${my.best.name} is the player that breaks the tie, and you have ${my.bodies} bodies to fall back on.`,
+          score: 1.2 + (my.bodies - my.n) * 0.25 + Math.max(0, my.zStart) * 0.3
+        });
+      }
+    });
+  });
+  /* One player can only be sent once and one manager will not take four calls
+     about four positions, so the list is the best idea per piece and per team
+     rather than every pairing the numbers allow. */
+  const usedPlayer = {}, perTeam = {};
+  return out.sort((a, b) => b.score - a.score).filter(o => {
+    const id = o.offer.id, tid = o.team.rosterId;
+    if (usedPlayer[id]) return false;
+    if ((perTeam[tid] || 0) >= 2) return false;
+    usedPlayer[id] = 1; perTeam[tid] = (perTeam[tid] || 0) + 1;
+    return true;
+  });
+}
+
 /* ---------- trade history ---------- */
 /** Turn Sleeper's transaction feed into two-sided trades with assets per team. */
 function parseTrades() {
@@ -5624,7 +5836,7 @@ function compareGrid(players, wk) {
 }
 
 /* ================= 11. GM SCOUT ================= */
-const ScoutUI = { team: null };
+const ScoutUI = { team: null, mode: 'starters' };
 function viewScout() {
   const wrap = h('div.grid');
   const stats = traderStats();
@@ -5645,6 +5857,17 @@ function viewScout() {
   const posList = POS4.filter(p => (slotDemand()[p] || 0) > 0)
     .filter(p => scouts.some(sc => { const e = sc.pos.find(x => x.pos === p); return e && e.output > 0.05; }));
   const ordered = scouts.slice().sort((a, b) => a.team.powerRank - b.team.powerRank);
+  /* The same grid answers three different questions, and only the first of them
+     used to be on the page. Output says who is strong; depth says who is one
+     knock away from a hole; shape says which trade they would actually take. */
+  const DEPTH = depthLeague();
+  const MODES = [
+    { k: 'starters', label: 'Starters', blurb: 'what each position produces now — red is a hole worth exploiting, blue is a surplus they can sell from' },
+    { k: 'depth', label: 'Depth', blurb: 'what the first man off the bench is worth — red means a bye or a knock turns that position into a hole' },
+    { k: 'shape', label: 'Shape', blurb: 'what the group looks like, and so what they would trade for: THIN needs a starter, TOP wants depth, FLAT wants a difference-maker, DEEP can sell' }
+  ];
+  if (!MODES.some(m => m.k === ScoutUI.mode)) ScoutUI.mode = 'starters';
+  const mode = ScoutUI.mode;
   const grid = h('div', { style: { display: 'grid', gridTemplateColumns: `minmax(130px,1.5fr) repeat(${posList.length}, minmax(56px,1fr))`, gap: '2px', minWidth: (150 + posList.length * 62) + 'px' } });
   grid.appendChild(h('div'));
   posList.forEach(p => grid.appendChild(h('div.tiny.muted', { style: { textAlign: 'center', fontWeight: 660, paddingBottom: '2px' } }, p)));
@@ -5652,28 +5875,48 @@ function viewScout() {
     grid.appendChild(h('div.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', alignSelf: 'center', fontWeight: 540, cursor: 'pointer' }, onclick: () => { ScoutUI.team = sc.team.rosterId; render(); } }, sc.team.name));
     posList.forEach(p => {
       const e = sc.pos.find(x => x.pos === p) || { z: 0, startable: 0, need: 0, output: 0 };
-      const t = clamp((e.z + 2) / 4, 0, 1);
-      const bg = e.z >= 0
-        ? `color-mix(in srgb, var(--s1) ${Math.round(clamp(e.z / 2, 0, 1) * 62)}%, var(--surface-1))`
-        : `color-mix(in srgb, var(--s8) ${Math.round(clamp(-e.z / 2, 0, 1) * 62)}%, var(--surface-1))`;
+      const d = DEPTH.byTeam[sc.team.rosterId] ? DEPTH.byTeam[sc.team.rosterId][p] : null;
+      const z = mode === 'depth' && d ? d.zDepth : e.z;
+      const shade = (zz, on) => zz >= 0
+        ? `color-mix(in srgb, var(--s1) ${Math.round(clamp(zz / 2, 0, 1) * 62)}%, var(--surface-1))`
+        : `color-mix(in srgb, var(--s8) ${Math.round(clamp(-zz / 2, 0, 1) * 62)}%, var(--surface-1))`;
+      const bg = mode === 'shape' && d
+        ? (d.shape === 'covered' ? 'var(--surface-1)' : `color-mix(in srgb, ${d.verdict.colour} 34%, var(--surface-1))`)
+        : shade(z);
+      const text = mode === 'shape' ? (d ? d.verdict.tag : '—')
+        : mode === 'depth' ? (d ? fmt(d.nextUp, 1) : '—')
+          : fmt(e.output, 1);
       const cell = h('div.mono', {
         tabindex: 0,
-        style: { background: bg, textAlign: 'center', padding: '7px 4px', borderRadius: '5px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', color: Math.abs(e.z) > 1.4 ? '#fff' : 'var(--text-primary)' },
+        style: {
+          background: bg, textAlign: 'center', padding: '7px 4px', borderRadius: '5px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer',
+          color: mode !== 'shape' && Math.abs(z) > 1.4 ? '#fff' : 'var(--text-primary)',
+          border: mode === 'shape' && d && d.shape !== 'covered' ? '1px solid ' + d.verdict.colour : '1px solid transparent'
+        },
         onclick: () => { ScoutUI.team = sc.team.rosterId; render(); }
-      }, fmt(e.output, 1));
+      }, text);
       bindTT(cell, `<div class="k">${sc.team.name} · ${p}</div>` +
         `Starters produce <b>${fmt(e.output, 1)}</b> pts/wk (${e.rank ? ord(e.rank) : '—'} of ${S.teams.length})<br>` +
+        (d ? `Next man up <b>${fmt(d.nextUp, 1)}</b> against a league ${fmt(d.lgDepth, 1)}<br>` : '') +
         `${e.startable} startable for ${e.need} slot${e.need === 1 ? '' : 's'}<br>` +
-        (e.hole ? '<b style="color:var(--bad-text)">A hole they should be shopping for</b>' : e.surplus ? '<b style="color:var(--good-text)">Surplus they can afford to sell from</b>' : 'Adequately covered'));
+        (d ? `<b style="color:${d.verdict.colour}">${d.verdict.label}</b>${d.verdict.want ? ' — they want ' + d.verdict.want : ''}<br>${d.note}`
+          : (e.hole ? '<b style="color:var(--bad-text)">A hole they should be shopping for</b>' : e.surplus ? '<b style="color:var(--good-text)">Surplus they can afford to sell from</b>' : 'Adequately covered')));
       grid.appendChild(cell);
     });
   });
-  wrap.appendChild(card('Who needs what', 'starting output per position — red is a hole worth exploiting, blue is a surplus they can sell from. Click a team for the full report.',
-    h('div', scrollBox(grid),
+  const modeRow = h('div.row', { style: { gap: '6px', marginBottom: '10px', flexWrap: 'wrap' } },
+    MODES.map(m => h('button.chip' + (m.k === mode ? '.on' : ''), { onclick: () => { ScoutUI.mode = m.k; render(); } }, m.label)));
+  wrap.appendChild(card('Who needs what',
+    (MODES.find(m => m.k === mode) || MODES[0]).blurb + '. Click a team for the full report.',
+    h('div', modeRow, scrollBox(grid),
       h('div.legend', { style: { marginTop: '11px' } },
-        h('span', h('i', { style: { background: 'var(--s8)' } }), 'Weak — they need help here'),
-        h('span', h('i', { style: { background: 'var(--surface-3)' } }), 'Covered'),
-        h('span', h('i', { style: { background: 'var(--s1)' } }), 'Strong — they can trade from it')))));
+        mode === 'shape'
+          ? Object.keys(DEPTH_SHAPES).filter(k => k !== 'covered').map(k => h('span',
+            h('i', { style: { background: DEPTH_SHAPES[k].colour } }),
+            DEPTH_SHAPES[k].tag + ' ' + DEPTH_SHAPES[k].label.toLowerCase() + (DEPTH_SHAPES[k].want ? ' — wants ' + DEPTH_SHAPES[k].want : '')))
+          : [h('span', h('i', { style: { background: 'var(--s8)' } }), mode === 'depth' ? 'Nothing behind the starters' : 'Weak — they need help here'),
+          h('span', h('i', { style: { background: 'var(--surface-3)' } }), 'Covered'),
+          h('span', h('i', { style: { background: 'var(--s1)' } }), mode === 'depth' ? 'Real players on the bench' : 'Strong — they can trade from it')]))));
 
   // ---- summary table ----
   wrap.appendChild(card('Every team at a glance', 'strategy is inferred from the roster and from the trades they have actually made',
@@ -5696,6 +5939,7 @@ function viewScout() {
   // ---- selected team dossier ----
   const sc = scouts.find(x => x.team.rosterId === ScoutUI.team) || scouts[0];
   const t = sc.team;
+  const dpOf = (pos) => (DEPTH.byTeam[t.rosterId] || {})[pos] || null;
   wrap.appendChild(card('Scouting report — ' + t.name, t.owner,
     h('div', { style: { display: 'grid', gap: '14px' } },
       h('div.row', { style: { gap: '9px' } },
@@ -5716,18 +5960,87 @@ function viewScout() {
         { k: 'output', h: 'Starters produce', num: true, f: r => h('b.mono', fmt(r.output, 1)) },
         { k: 'rank', prio: 2, h: 'Rank', num: true, f: r => r.rank ? ord(r.rank) : '—' },
         { k: 'depth', h: 'Startable / slots', sortable: false, f: r => h('span.mono', r.startable + ' / ' + r.need) },
+        {
+          k: 'next', h: 'Next man up', num: true, prio: 2,
+          sort: r => (dpOf(r.pos) || {}).nextUp || 0,
+          f: r => { const d = dpOf(r.pos); return d ? h('span', h('span.mono', fmt(d.nextUp, 1)), h('span.muted.tiny', ' vs ' + fmt(d.lgDepth, 1))) : h('span.muted.tiny', '—'); }
+        },
         { k: 'best', prio: 2, h: 'Best', sortable: false, f: r => r.best ? pname(r.best) : h('span.muted.tiny', 'nobody') },
         {
-          k: 'verdict', h: 'Verdict', sort: r => r.z, f: r => r.hole
-            ? h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--bad-text)' } }, 'hole')
-            : r.surplus ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'surplus')
-              : h('span.tag', 'covered')
-        }
-      ], sc.pos, { sortKey: 'verdict', sortDir: 1 }),
+          k: 'shape', h: 'Shape', keepSimple: true, sort: r => (dpOf(r.pos) || {}).shape || '',
+          f: r => { const d = dpOf(r.pos); return d ? h('span.tag', { style: { borderColor: d.verdict.colour, color: d.verdict.colour }, title: d.note }, d.verdict.label) : h('span.muted.tiny', '—'); }
+        },
+        /* The old hole/surplus verdict used to sit here. Shape says everything it
+           said and more, and two columns grading the same group on two slightly
+           different thresholds only ever disagree in public. */
+      ], sc.pos, { sortKey: 'shape', sortDir: 1 }),
       h('div.tiny.muted',
         sc.holes.length
           ? 'Approach: offer them ' + sc.holes.map(x => x.pos).join(' or ') + ' help, and ask for ' + (sc.surplus.length ? sc.surplus.map(x => x.pos).join(' or ') : 'picks') + ' back.'
           : 'No obvious hole to exploit — they are covered everywhere that matters.'))));
+
+  /* ---- the same roster as shapes rather than totals ---- */
+  const prof = depthProfile(t);
+  const depthCard = proOnly(card('Starters and depth — ' + t.name,
+    'each group tallest first: filled bars start, hollow bars wait. The dashed rule is what the league gets from its starters at that position, the dotted one is what the wire is worth',
+    h('div',
+      h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(236px,1fr))', gap: '12px' } },
+        prof.map(e => h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '10px 11px', background: 'var(--surface-1)', minWidth: 0 } },
+          h('div.row', { style: { gap: '7px', marginBottom: '7px' } },
+            posPill(e.pos),
+            h('span.tag', { style: { borderColor: e.verdict.colour, color: e.verdict.colour } }, e.verdict.label),
+            h('span', { style: { flex: 1 } }),
+            e.verdict.want ? h('span.tiny.muted', 'wants ' + e.verdict.want) : null),
+          depthBars(e, { colour: e.verdict.colour === 'var(--text-muted)' ? 'var(--s1)' : e.verdict.colour }),
+          h('div.tiny', { style: { marginTop: '7px' } },
+            h('b.mono', fmt(e.startAvg, 1)), h('span.muted', ' a slot from ' + e.n + ' starter' + (e.n === 1 ? '' : 's') + ' (lg ' + fmt(e.lgStart, 1) + ') · '),
+            h('b.mono', fmt(e.nextUp, 1)), h('span.muted', ' next up (lg ' + fmt(e.lgDepth, 1) + ')')),
+          h('div.tiny.muted', { style: { marginTop: '4px' } }, e.note)))),
+      h('div.tiny.muted', { style: { marginTop: '10px' } },
+        'A group is judged on three things rather than its total: what the starters produce against the rest of the league, '
+        + 'what stands behind them, and whether anyone in it is a difference-maker — a best player a clear step above the best the rest of the league has, '
+        + fmt((depthLeague().base[prof[0] ? prof[0].pos : 'QB'] || {}).elite || 0, 1) + ' a week at ' + (prof[0] ? prof[0].pos : '') + '. '
+        + 'Two stars and a cliff and four of the same player both read as "covered" on output alone, and they want opposite trades. '
+        + 'A slot is never counted below the dotted line, because nobody starts a player projecting nothing when the wire is there — '
+        + 'so a bar under that line is a body, not a starter.'))));
+  if (depthCard) wrap.appendChild(depthCard);
+
+  /* ---- what that shape is worth at the table ---- */
+  const meTeam = S.teamById[S.myRosterId] || S.teams[0];
+  const mine = sc.team.rosterId === meTeam.rosterId;
+  const openings = depthOpenings(meTeam);
+  const rel = (mine ? openings : openings.filter(o => o.team.rosterId === sc.team.rosterId)).slice(0, mine ? 8 : 6);
+  const kindTag = { depth: 'wants depth', starter: 'needs a starter', consolidate: 'wants a difference-maker' };
+  wrap.appendChild(card(mine ? 'Where your shape fits the league' : 'How to trade with ' + t.name,
+    mine ? 'positions where somebody else\'s shape and yours point at the same deal — priced evenly, these are the trades both sides want'
+      : 'read off their shape against your roster, not off the price of the pieces',
+    rel.length
+      ? h('div', { style: { display: 'grid', gap: '9px' } },
+        rel.map(o => h('div', {
+          style: {
+            display: 'grid', gridTemplateColumns: isNarrow() ? '1fr' : 'minmax(0,1fr) auto', gap: '9px', alignItems: 'center',
+            border: '1px solid var(--border)', borderLeft: '3px solid ' + o.them.verdict.colour,
+            borderRadius: 'var(--r-sm)', padding: '9px 11px', background: 'var(--surface-1)'
+          }
+        },
+          h('div', { style: { minWidth: 0 } },
+            h('div.row', { style: { gap: '7px', flexWrap: 'wrap' } },
+              posPill(o.pos),
+              mine ? h('b.tiny', o.team.name) : null,
+              h('span.tag', { style: { borderColor: o.them.verdict.colour, color: o.them.verdict.colour } }, kindTag[o.kind]),
+              h('span.tiny.muted', 'you send'), pname(o.offer)),
+            h('div.tiny.muted', { style: { marginTop: '5px' } }, o.why)),
+          h('button.btn.sm', {
+            onclick: () => {
+              FinderUI.team = meTeam.rosterId; FinderUI.partners = [o.team.rosterId];
+              FinderUI.focus = o.offer.id; FinderUI.positions = [];
+              FinderUI.shape = o.kind === 'consolidate' ? 'consolidate' : 'any';
+              FinderUI.results = null; S.view = 'finder'; render(); window.scrollTo(0, 0);
+            }
+          }, 'Build it'))))
+      : h('div.empty', mine
+        ? 'Nobody in the league is shaped the opposite way to you right now — no position where their gap is your spare.'
+        : 'Their groups are the same shape as yours, so there is no depth-for-star deal here. The value finder is the way in.')));
   return wrap;
 }
 
@@ -5842,19 +6155,23 @@ function simLeverageCard(res) {
     const A = g.a.team, B = g.b.team;
     // the two worlds this game leaves behind. Exactly one of them happens, so
     // "if A wins" is A's win-branch and B's lose-branch, and vice versa.
+    const total = (g.nA || 0) + (g.nB || 0);
     const worlds = [
-      { win: A, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] },
-      { win: B, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] }
+      { win: A, runs: g.nA || 0, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] },
+      { win: B, runs: g.nB || 0, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] }
     ];
+    // a branch the run barely visited has no odds in it — say so rather than 0%
     const worldBox = (wd) => h('div', {
       style: {
         minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
-        padding: '9px 11px', background: 'var(--surface-1)'
+        padding: '9px 11px', background: 'var(--surface-1)',
+        opacity: wd.rows.some(x => x.po === null || x.po === undefined) ? .72 : 1
       }
     },
       h('div.tiny', { style: { fontWeight: 700, marginBottom: '7px', color: 'var(--text-primary)' } },
         'If ', h('span', { style: { color: 'var(--s1)' } }, wd.win.name), ' wins'),
-      h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r2 => h('div', {
+      wd.rows.some(x => x.po === null || x.po === undefined) ? levUnmeasured(wd.win.name, wd.runs, total) : null,
+      wd.rows.some(x => x.po === null || x.po === undefined) ? null : h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r2 => h('div', {
         style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: '8px', alignItems: 'center' }
       },
         h('span.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: r2.won ? 640 : 500, color: r2.won ? 'var(--text-primary)' : 'var(--text-secondary)' } }, r2.t.short),
@@ -5863,9 +6180,13 @@ function simLeverageCard(res) {
         h('span.mono.tiny', { style: { minWidth: '92px', textAlign: 'right' } },
           h('b', pct(r2.po, 0)), h('span.muted', ' playoffs · '), h('b', pct(r2.ti, 1)), h('span.muted', ' title'))))));
 
-    const tag = g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
+    const tag = g.thin ? ['too lopsided to weigh', 'var(--text-muted)']
+      : g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
     const lead = Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b;
-    const sentence = `${lead.team.name} ${lead.swing >= 0.005 ? 'go from ' + pct(lead.poLose, 0) + ' to ' + pct(lead.poWin, 0) + ' to make the playoffs' : 'barely move either way'}`
+    const heavy = (g.nA || 0) >= (g.nB || 0) ? A : B;
+    const sentence = g.thin
+      ? `${heavy.name} win this in ${pct(Math.max(g.nA || 0, g.nB || 0) / Math.max(1, total), 0)} of simulated seasons, so there is no second world to compare the first one against.`
+      : `${lead.team.name} ${lead.swing >= 0.005 ? 'go from ' + pct(lead.poLose, 0) + ' to ' + pct(lead.poWin, 0) + ' to make the playoffs' : 'barely move either way'}`
       + (Math.abs(lead.titleSwing) > 0.004 ? `, and from ${pct(lead.tiLose, 1)} to ${pct(lead.tiWin, 1)} to win it` : '')
       + '.';
 
@@ -5891,10 +6212,12 @@ function simLeverageCard(res) {
   const allTbl = table([
     { k: 'week', h: 'Week', num: true, sort: g => g.week, f: g => h('b.mono', g.week) },
     { k: 'game', h: 'Matchup', sortable: false, f: g => h('div.row', { style: { gap: '5px', minWidth: 0 } }, h('span.tiny', g.a.team.short), h('span.tiny.muted', 'v'), h('span.tiny', g.b.team.short)) },
-    { k: 'swing', h: 'Playoff swing', num: true, sort: g => g.swing, f: g => h('div.meter', { style: { justifyContent: 'flex-end' } },
-      isNarrow() ? null : h('div.bar-track', { style: { width: '64px' } }, h('div.bar-fill', { style: { width: (clamp(g.swing / 0.35, 0, 1) * 100) + '%', background: g.swing > 0.22 ? 'var(--critical)' : g.swing > 0.12 ? 'var(--s4)' : 'var(--seq-300)' } })),
-      h('b.mono', pct(g.swing, 0))) },
-    { k: 'title', prio: 2, h: 'Title swing', num: true, sort: g => Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), f: g => pct(Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), 1) },
+    { k: 'swing', h: 'Playoff swing', num: true, sort: g => g.swing, f: g => g.thin
+      ? h('span.muted.tiny', { title: 'one outcome barely happens in the simulation, so the two cannot be compared' }, 'not weighable')
+      : h('div.meter', { style: { justifyContent: 'flex-end' } },
+        isNarrow() ? null : h('div.bar-track', { style: { width: '64px' } }, h('div.bar-fill', { style: { width: (clamp(g.swing / 0.35, 0, 1) * 100) + '%', background: g.swing > 0.22 ? 'var(--critical)' : g.swing > 0.12 ? 'var(--s4)' : 'var(--seq-300)' } })),
+        h('b.mono', pct(g.swing, 0))) },
+    { k: 'title', prio: 2, h: 'Title swing', num: true, sort: g => Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), f: g => g.thin ? h('span.muted', '—') : pct(Math.max(Math.abs(g.a.titleSwing), Math.abs(g.b.titleSwing)), 1) },
     { k: 'fav', prio: 2, h: 'Most at stake', sortable: false, f: g => h('span.tiny', (Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b).team.name) }
   ], picked, { sortKey: 'swing', sortDir: -1 });
   const wt = withTable(h('div', controls, body, more), allTbl);
@@ -6559,7 +6882,9 @@ async function loadWeekScores(season, week) {
 async function ensureWeekScores(wk) {
   S.weekScores = S.weekScores || {};
   const got = await loadWeekScores(S.season, wk);
-  if (got) { S.weekScores[wk] = got; S._live = null; }
+  // kickoff times are what the trace is cut on, so a path built before the feed
+  // arrived is built from the wrong clock — throw it away with the rest
+  if (got) { S.weekScores[wk] = got; S._live = null; S._wpPath = null; }
   return got;
 }
 function weekScoreGame(team, wk) {
@@ -6702,7 +7027,7 @@ async function refreshLiveWeek() {
     if (ms && ms.length) S.matchups[wk] = ms;
     if (sched) S.nflSched = sched;
   } catch (e) { }
-  S._live = null; S._wpSnaps = null;
+  S._live = null; S._wpPath = null;
   // a week that has just finished stops being the live one
   if (S.liveWeek && weekFinished(S.liveWeek)) { S.lastWeek = S.liveWeek; S.liveWeek = null; S._sched = null; }
 }
@@ -6726,10 +7051,13 @@ function liveBadge(p, wk) {
   return h('span.tag', 'to play');
 }
 
-/** Win probability with the banked points held fixed and only the open slots drawn. */
-function liveWinProb(A, B, wk, n) {
+/* Both sides of a matchup already split into points that are banked and slots
+   still to be drawn. Which games count as banked is the caller's business — the
+   live view banks whatever has finished by now, and the trace below banks
+   whatever had finished at some earlier moment in the week. The sampler is the
+   same either way, so the two can never drift apart. */
+function probFromSides(la, lb, seed, n) {
   n = n || 4000;
-  const la = liveRoster(A, wk), lb = liveRoster(B, wk);
   const mk = (l) => l.open.map(r => ({ m: r.used, sd: volFromMean(r.p.pos, r.used) }));
   const oa = mk(la), ob = mk(lb);
   const draw = (arr, base) => {
@@ -6737,7 +7065,7 @@ function liveWinProb(A, B, wk, n) {
     for (let k = 0; k < arr.length; k++) { if (rnd() < BUST_RATE) continue; s += drawScore(arr[k].m, arr[k].sd); }
     return base + Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
   };
-  seedRng(hashStr(A.rosterId + '~' + B.rosterId + '~' + wk) >>> 0);
+  seedRng(seed >>> 0);
   let aw = 0, tie = 0;
   const margins = new Float64Array(n);
   for (let i = 0; i < n; i++) {
@@ -6750,9 +7078,16 @@ function liveWinProb(A, B, wk, n) {
   return {
     pA: aw / n, pB: (n - aw - tie) / n, tie: tie / n,
     med: q(.5), lo: q(.1), hi: q(.9),
-    a: la, b: lb,
     settled: !oa.length && !ob.length
   };
+}
+
+/** Win probability with the banked points held fixed and only the open slots drawn. */
+function liveWinProb(A, B, wk, n) {
+  const la = liveRoster(A, wk), lb = liveRoster(B, wk);
+  const r = probFromSides(la, lb, hashStr(A.rosterId + '~' + B.rosterId + '~' + wk), n || 4000);
+  r.a = la; r.b = lb;
+  return r;
 }
 
 /** This week's matchups, both sides scored live. */
@@ -6825,49 +7160,114 @@ function weekGamesDone(wk) {
   return { done: ks.filter(t => GAME_OVER[sc[t].status]).length / 2, total: ks.length / 2 };
 }
 
-/* ---------- win-probability history ----------
-   Nothing records an intra-week path for us, so the app keeps its own: one
-   sample per visit, plus a synthetic point at the start of the week from the
-   pure projection, so the chart says something on the very first load. */
-function liveSnapKey(wk) { return 'wp:' + S.leagueId + ':' + wk; }
-function recordLiveSnapshot(wk) {
-  if (typeof HYP !== 'undefined' && HYP.on) return;      // never record a what-if
-  if (!wk || !weekStarted(wk) || weekFinished(wk)) return;
-  const key = liveSnapKey(wk);
-  let snaps = LS.get(key, []);
-  const now = Date.now();
-  const gd = weekGamesDone(wk);
-  const rec = { t: now, g: gd.done, gt: gd.total, p: {}, s: {} };
-  liveMatchups(wk).forEach(g => {
-    rec.p[g.A.rosterId] = Math.round(g.pA * 1000) / 1000;
-    rec.p[g.B.rosterId] = Math.round(g.pB * 1000) / 1000;
-    rec.s[g.A.rosterId] = Math.round(g.a.total * 10) / 10;
-    rec.s[g.B.rosterId] = Math.round(g.b.total * 10) / 10;
-  });
-  if (!Object.keys(rec.p).length) return;
-  // one sample every ten minutes is plenty; anything closer is noise
-  const last = snaps[snaps.length - 1];
-  if (last && Math.abs(now - last.t) < 10 * 60 * 1000) snaps[snaps.length - 1] = rec;
-  else snaps.push(rec);
-  snaps.sort((a, b) => a.t - b.t);
-  if (snaps.length > 400) snaps = snaps.slice(-400);
-  try { localStorage.setItem('dcc:' + key, JSON.stringify(snaps)); } catch (e) { }
-  S._wpSnaps = S._wpSnaps || {}; S._wpSnaps[wk] = snaps;
+/* ---------- the week's own probability path ----------
+   Nothing upstream keeps an intra-week win-probability trace, so this used to be
+   recorded: one reading per visit, kept in this browser. That made the chart a
+   record of when somebody was watching rather than of what happened — a week
+   nobody had open had no chart at all, the same week looked different on a
+   phone and a laptop, and every past week was blank forever.
+
+   None of that is necessary, because the week itself remembers enough. We know
+   when every game kicked off, what each player actually scored, and what he was
+   projected for before he played. Wind the clock back to any moment and the sum
+   is the one the live view already computes: everyone whose game had finished
+   counts at his real score, everyone else counts at his projection. So the
+   trace is derived rather than recorded — the same on every device, and there
+   for every week whether or not anyone watched it.
+
+   What it cannot rebuild is the inside of a game. Nothing upstream keeps a
+   history of who had how many points at half time, so between one whistle and
+   the next the line is flat by construction, and the path is cut at the moments
+   the picture actually changed: the end of each kickoff window. */
+
+const GAME_LEN = 3 * 3600 * 1000 + 15 * 60 * 1000;   // kickoff to final whistle
+
+/** When one player's game is reckoned to have ended, or null if unknown. */
+function gameEnd(p, wk) {
+  const sg = weekScoreGame(p && p.team, wk);
+  if (sg && sg.start) return sg.start + GAME_LEN;
+  const g = nflGame(p && p.team, wk);
+  if (g && g.date) return Date.parse(g.date + 'T17:00:00Z') + GAME_LEN;
+  return null;
 }
-function liveSeries(wk) {
-  S._wpSnaps = S._wpSnaps || {};
-  if (!S._wpSnaps[wk]) S._wpSnaps[wk] = LS.get(liveSnapKey(wk), []);
-  return S._wpSnaps[wk];
+/** Is his game over in fact — not at some earlier moment, but now? */
+function gameOver(p, wk) {
+  const sg = weekScoreGame(p && p.team, wk);
+  if (sg) return !!sg.over;
+  const g = nflGame(p && p.team, wk);
+  return !!(g && GAME_OVER[g.status]);
 }
-/** The pre-week anchor: what the odds were before anybody had played. */
-function preWeekOdds(wk) {
-  const out = {};
-  (schedule()[wk - 1] || []).forEach(([a, b]) => {
-    const A = S.teamById[a], B = S.teamById[b];
-    if (!A || !B) return;
-    const r = h2hSim(A, B, wk, 1500);
-    out[a] = r.pA; out[b] = r.pB;
+
+/** The moments in the week worth plotting: one per kickoff window, at the last
+ *  whistle in it, with whether every game in that window has actually ended. */
+function weekCuts(wk) {
+  const by = {};
+  const add = (start, over) => {
+    if (!start) return;
+    const k = slateLabel(start);
+    by[k] = by[k] || { label: k, start: start, t: 0, n: 0, over: 0 };
+    by[k].start = Math.min(by[k].start, start);
+    by[k].t = Math.max(by[k].t, start + GAME_LEN);
+    by[k].n++; if (over) by[k].over++;
+  };
+  const ws = S.weekScores && S.weekScores[wk];
+  if (ws && ws.games.length && ws.games.every(g => g.start)) {
+    ws.games.forEach(g => add(g.start, g.over));
+  } else {
+    const sc = S.nflSched && S.nflSched[wk];
+    if (!sc) return [];
+    const seen = {};
+    Object.keys(sc).forEach(t => {
+      const g = sc[t]; if (!g.date) return;
+      const id = [t, g.opp].sort().join('~'); if (seen[id]) return; seen[id] = 1;
+      add(Date.parse(g.date + 'T17:00:00Z'), !!GAME_OVER[g.status]);
+    });
+  }
+  const cuts = Object.keys(by).map(k => by[k]).sort((a, b) => a.t - b.t);
+  cuts.forEach(c => { c.done = c.n > 0 && c.over === c.n; });
+  return cuts;
+}
+
+/** A team's week with the clock wound back to `T`: the real scores of everyone
+ *  whose game had ended by then, and the projection for everyone who had not
+ *  played yet. A player on bye is neither — he is simply not in the sum. */
+function rosterAt(t, wk, T) {
+  const m = (S.matchups[wk] || []).find(x => x.roster_id === t.rosterId);
+  const pts = (m && m.players_points) || {};
+  let banked = 0; const open = [];
+  startersFor(t, wk).forEach(p => {
+    if (!p || onBye(p, wk)) return;
+    const end = gameEnd(p, wk);
+    if (gameOver(p, wk) && end !== null && end <= T) banked += (typeof pts[p.id] === 'number' ? pts[p.id] : 0);
+    else open.push({ p: p, used: pw(p, wk) });
   });
+  return { banked: banked, open: open, total: banked + sum(open.map(o => o.used)) };
+}
+
+/** The win-probability path across one matchup's week. One point before
+ *  kickoff, then one at the end of every window whose games have all finished.
+ *  Every point is drawn from the same seed, so the wobble of the sampler is
+ *  common to all of them and a move in the line is a move in the week. */
+function probPath(A, B, wk) {
+  S._wpPath = S._wpPath || {};
+  const key = A.rosterId + '|' + B.rosterId + '|' + wk + (typeof HYP !== 'undefined' && HYP.on ? '|h' : '');
+  if (S._wpPath[key]) return S._wpPath[key];
+  const cuts = weekCuts(wk);
+  if (!cuts.length) return null;
+  const seed = hashStr(A.rosterId + '~' + B.rosterId + '~' + wk + '~path') >>> 0;
+  const out = [];
+  const at = (T, label, extra) => {
+    const la = rosterAt(A, wk, T), lb = rosterAt(B, wk, T);
+    const r = probFromSides(la, lb, seed, 2500);
+    out.push(Object.assign({
+      t: T, p: r.pA, label: label,
+      a: la.banked, b: lb.banked, ta: la.total, tb: lb.total,
+      left: la.open.length + lb.open.length
+    }, extra || {}));
+  };
+  at(cuts[0].start - 1000, 'Before kickoff', { pre: true });
+  cuts.forEach(c => { if (c.done) at(c.t, 'After ' + c.label, { games: c.n }); });
+  S._wpPath[key] = out;
   return out;
 }
 
@@ -6957,7 +7357,6 @@ function viewWeek() {
     S._wsAsked[wk] = true;
     ensureWeekScores(wk).then(got => { if (got) render(); });
   }
-  if (live) recordLiveSnapshot(wk);
 
   wrap.appendChild(card('Week ' + wk + (live ? ' — in progress' : done ? ' — final' : ' — not started'),
     S.nflSched
@@ -6988,7 +7387,11 @@ function viewWeek() {
   /* ---- the biggest game of the week ---- */
   const sim = S.sim && S.sim.leverage && S.sim.leverage.some(x => x.week === wk) ? S.sim : null;
   if (sim) {
-    const g = sim.leverage.filter(x => x.week === wk)[0];
+    /* The biggest game has to be a game that is still in the balance. A blowout
+       already in progress has one empty branch, no measurable swing, and would
+       otherwise sit at the top of the list saying nothing. */
+    const weekLev = sim.leverage.filter(x => x.week === wk);
+    const g = weekLev.find(x => !x.thin) || weekLev[0];
     const pair = games.find(x => (x.A.rosterId === g.a.team.rosterId && x.B.rosterId === g.b.team.rosterId)
       || (x.A.rosterId === g.b.team.rosterId && x.B.rosterId === g.a.team.rosterId));
     wrap.appendChild(card('The biggest game this week',
@@ -6996,7 +7399,9 @@ function viewWeek() {
       h('div', { style: { display: 'grid', gap: '11px' } },
         h('div.row', { style: { gap: '10px' } },
           h('b', { style: { fontSize: '16px' } }, g.a.team.name + '  v  ' + g.b.team.name),
-          h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--critical)' } }, pct(g.swing, 0) + ' of playoff odds on the line'),
+          g.thin
+            ? h('span.tag', { title: 'one side of this game barely happens in the simulation, so there is no measurable difference between the two outcomes' }, 'too lopsided to weigh')
+            : h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--critical)' } }, pct(g.swing, 0) + ' of playoff odds on the line'),
           h('span', { style: { flex: 1 } }),
           pair ? h('span.tiny.muted', 'live ' + fmt(pair.a.total, 1) + ' – ' + fmt(pair.b.total, 1)) : null),
         h('div.grid.split2',
@@ -7069,17 +7474,32 @@ function viewWeek() {
   return wrap;
 }
 
+/* A branch nobody's simulation visited has no odds to report. Drawing it as 0%
+   says the season ends in nothing, which is not what the run found — it found
+   that this does not happen. The box says that instead. */
+function levUnmeasured(name, runs, total) {
+  return h('div.tiny.muted', { style: { padding: '2px 0 1px' } },
+    runs > 0
+      ? `Only ${runs} of ${total.toLocaleString()} simulated seasons went this way — too few to read odds from.`
+      : `Not one of the ${total.toLocaleString()} simulated seasons had ${name} winning this.`,
+    h('div', { style: { marginTop: '4px' } }, 'Nothing to compare the other side against, so the game carries no measurable swing.'));
+}
+
 /** One of the two worlds a leverage game leaves behind. */
 function leverageWorld(g, which) {
   const A = g.a.team, B = g.b.team;
   const wd = which === 0
     ? { win: A, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] }
     : { win: B, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] };
+  const runs = which === 0 ? (g.nA || 0) : (g.nB || 0);
+  const total = (g.nA || 0) + (g.nB || 0);
+  const blank = wd.rows.some(r => r.po === null || r.po === undefined);
   return h('div', {
-    style: { minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '9px 11px', background: 'var(--surface-1)' }
+    style: { minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '9px 11px', background: 'var(--surface-1)', opacity: blank ? .72 : 1 }
   },
     h('div.tiny', { style: { fontWeight: 700, marginBottom: '7px' } }, 'If ', h('span', { style: { color: 'var(--s1)' } }, wd.win.name), ' wins'),
-    h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r => h('div', {
+    blank ? levUnmeasured(wd.win.name, runs, total) : null,
+    blank ? null : h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r => h('div', {
       style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: '8px', alignItems: 'center' }
     },
       h('span.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: r.won ? 640 : 500 } }, r.t.short),
@@ -7142,19 +7562,24 @@ function weekDetail(wrap, g, wk, live) {
     matchupLadder(g, wk)));
 }
 
-/** ESPN-style win-probability trace for one matchup, cut into the week's slates. */
+/** ESPN-style win-probability trace for one matchup, cut into the week's slates.
+ *  The path is rebuilt from the week itself — see probPath() — so it is there
+ *  for any week, watched or not, and reads the same on every device. */
 function matchupProbChart(wk, g) {
   // nothing has moved until somebody has played
   if (!weekStarted(wk)) return null;
   const CA = 'var(--s1)', CB = 'var(--s2)';
-  const snaps = liveSeries(wk).filter(s => s.p[g.A.rosterId] !== undefined);
+  const path = probPath(g.A, g.B, wk);
   const slates = weekSlates(wk);
-  if (!slates.length) return null;
+  if (!path || !path.length || !slates.length) return null;
 
   /* Wall-clock time wastes most of its width on an empty Friday and crushes the
      three Sunday windows into a smudge. The axis is the week's slates instead:
-     pregame, then one equal column per kickoff window, with readings placed
-     proportionally inside the window they fall in. */
+     pregame, one equal column per kickoff window, and a post column for after
+     the last whistle. Every window the week has is on the axis from the start,
+     whatever day it is — the shape of the week is part of what the chart says,
+     and an axis that grew as Sunday went on would make two readings of the same
+     game impossible to compare. The line simply stops where the week has got to. */
   const bounds = [slates[0].start - 3 * 3600 * 1000].concat(slates.map(sl => sl.start));
   bounds.push(slates[slates.length - 1].start + 4 * 3600 * 1000);
   const nWin = bounds.length - 1;
@@ -7165,62 +7590,70 @@ function matchupProbChart(wk, g) {
     }
     return nWin;
   };
-  const labels = ['Pre'].concat(slates.map(sl => sl.label));
-  const t0 = bounds[0];
-  const pre = preWeekOdds(wk);
+  const labels = ['Pre'].concat(slates.map(sl => sl.label)).concat(['Post']);
 
-  const pts = [{ x: 0, y: (pre[g.A.rosterId] !== undefined ? pre[g.A.rosterId] : g.pA) * 100, label: 'Before kickoff' }];
-  snaps.forEach(s => {
-    if (s.t <= t0) return;
-    pts.push({
-      x: slateX(s.t), y: s.p[g.A.rosterId] * 100,
-      label: new Date(s.t).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
-        + (s.s && s.s[g.A.rosterId] !== undefined ? ' · ' + fmt(s.s[g.A.rosterId], 1) + '–' + fmt(s.s[g.B.rosterId], 1) : '')
-    });
-  });
-  const lastX = pts[pts.length - 1].x;
+  const score = (p) => fmt(p.a, 1) + '–' + fmt(p.b, 1);
+  const marks = path.map(p => ({
+    // the pregame point belongs at the left edge, not a second before kickoff
+    x: p.pre ? 0 : slateX(p.t), y: p.p * 100,
+    label: p.pre ? 'Before kickoff · projected ' + fmt(p.ta, 1) + '–' + fmt(p.tb, 1) : p.label + ' · ' + score(p)
+  }));
+  const lastX = marks[marks.length - 1].x;
   const nowX = slateX(Date.now());
-  // a week that is over ends where the readings ended; only a live week has a "now"
+  // a finished week ends at its last whistle; only a live week has a "now"
   if (!weekFinished(wk) && nowX > lastX + 0.02) {
-    pts.push({ x: nowX, y: g.pA * 100, label: 'now · ' + fmt(g.a.total, 1) + '–' + fmt(g.b.total, 1) });
+    marks.push({ x: nowX, y: g.pA * 100, label: 'now · ' + fmt(g.a.banked, 1) + '–' + fmt(g.b.banked, 1) + ' scored' });
   }
-  if (pts.length < 2) {
-    // the week ran without the app being open for it; say so rather than
-    // drawing a chart out of a single point
-    return card('Win probability', null, h('div.empty',
-      h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'No readings from this week'),
-      h('div.tiny', { style: { marginTop: '6px', maxWidth: '460px', margin: '6px auto 0' } },
-        'The trace is built from readings taken while this page is open, so it only exists for weeks you watched. '
-        + 'Open the app during a week and it fills in on its own.')));
-  }
-  pts.sort((a, b) => a.x - b.x);
+  if (marks.length < 2) return null;
+  marks.sort((a, b) => a.x - b.x);
+  /* Between one whistle and the next nothing is known, so nothing is claimed:
+     the line holds its value across the empty stretch and moves at the moment
+     the games actually ended. Sloping from one point to the next would invent a
+     Friday afternoon drift that nobody observed. */
+  const pts = [];
+  marks.forEach((m, i) => {
+    if (i) pts.push({ x: m.x, y: marks[i - 1].y, label: marks[i - 1].label });
+    pts.push(m);
+  });
+  // the two sides are the same story told twice; drawing both says so, and the
+  // crossing point is the moment the game turned
+  const ptsB = pts.map(p => ({ x: p.x, y: 100 - p.y, label: p.label }));
 
-  const xEnd = pts[pts.length - 1].x;
-  const ticks = labels.map((lb, i) => ({ x: i, label: lb, rule: i > 0 })).filter(t => t.x <= xEnd + 0.01);
-  const chart = lineChart([{ name: g.A.short, color: CA, width: 2.4, points: pts }], {
-    h: 270, dots: false, y0: 0, y1: 100, yRule: 50, yTicks: 2, x0: 0, x1: Math.max(1, xEnd),
-    yFmt: v => Math.abs(v - 50) < 1 ? '50' : String(Math.round(v > 50 ? v : 100 - v)),
-    xTickValues: ticks,
+  /* Drawn at a width it can live at rather than stretched across the monitor:
+     the label text is part of the drawing, so a 760-wide chart pulled over
+     2000px pulls its letters with it. */
+  const W = isNarrow() ? 380 : clamp(Math.round((typeof window !== 'undefined' ? window.innerWidth : 1400) - 470), 700, 1060);
+  const chart = lineChart([
+    { name: g.A.short, color: CA, width: 2.4, points: pts },
+    { name: g.B.short, color: CB, width: 2.4, points: ptsB }
+  ], {
+    w: W, maxW: W, h: isNarrow() ? 220 : 300, dots: false,
+    y0: 0, y1: 100, yRule: 50, yTicks: 4, x0: 0, x1: nWin,
+    yFmt: v => Math.round(v) + '%',
+    xTickValues: labels.map((lb, i) => ({ x: i, label: lb, rule: i > 0 && i < labels.length - 1 })),
     aria: 'win probability through the week'
   });
   const moved = Math.max.apply(null, pts.map(p => Math.abs(p.y - pts[0].y)));
   const swung = pts.some(p => (p.y - 50) * (pts[0].y - 50) < 0);
+  const windows = path.filter(p => !p.pre).length;
+  const swatch = (c, nm) => h('div.row', { style: { gap: '7px' } },
+    h('span', { style: { width: '16px', height: '9px', borderRadius: '2px', background: c, display: 'inline-block' } }),
+    h('b.tiny', nm));
   return card('Win probability',
-    `${g.A.name} above the line, ${g.B.name} below · ${snaps.length} reading${snaps.length === 1 ? '' : 's'} taken`
+    `the two lines are the same game from each side · rebuilt from when each game was played`
     + (moved > 1 ? ` · biggest move ${moved.toFixed(0)} points` : '')
     + (swung ? ' · the lead has changed hands' : ''),
     h('div',
-      h('div.row', { style: { gap: '7px', marginBottom: '6px' } },
-        h('span', { style: { width: '16px', height: '9px', borderRadius: '2px', background: CA, display: 'inline-block' } }),
-        h('b.tiny', g.A.name)),
+      h('div.row', { style: { gap: '18px', marginBottom: '6px', flexWrap: 'wrap' } },
+        swatch(CA, g.A.name), swatch(CB, g.B.name)),
       chart,
-      h('div.row', { style: { gap: '7px', marginTop: '6px' } },
-        h('span', { style: { width: '16px', height: '9px', borderRadius: '2px', background: CB, display: 'inline-block' } }),
-        h('b.tiny', g.B.name),
-        h('span.tiny.muted', '— ahead whenever the line is below the middle')),
       h('div.tiny.muted', { style: { marginTop: '8px' } },
         'One column per kickoff window' + (slates.length ? ' (' + slates.map(sl => sl.label + ' ×' + Math.round(sl.n)).join(', ') + ')' : '')
-        + '. The line is only as detailed as the times this page was open — it takes a reading on load, at most one every ten minutes.')));
+        + ', the whole week whether it has been played yet or not. Each point is the week paused at that whistle: everyone whose game had ended '
+        + 'counted at what they really scored, everyone still to play counted at their projection'
+        + (weekFinished(wk) ? ' — the whole week is in the books'
+          : windows ? ' — ' + windows + (windows === 1 ? ' window of the week has' : ' windows of the week have') + ' finished so far' : '')
+        + '. Nothing upstream keeps a record of what happened inside a game, so the line only moves when games end.')));
 }
 
 
