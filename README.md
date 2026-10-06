@@ -125,6 +125,30 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
 
 ---
 
+## Trade finder
+
+For every partner it builds candidate trades from two sources: an enumeration of
+common shapes (1-for-1, 2-for-1, 1-for-2, and 3-for-1 / 1-for-3 in the shape modes),
+and an assembly step that starts from each side's actual needs (the holes and
+surpluses from GM Scout) and builds 2-for-2 / 3-for-2 packages around them. Each
+candidate must clear four checks, then is ranked:
+
+- **Value balance** — within the chosen tolerance after a stud premium: a package's
+  best player counts in full, each further player for less (picks count in full).
+- **Roster fit** — a side that lands more players than it sends must cut down to its
+  active limit. The cheapest bench players are cut, the cost is priced in, and the
+  card says who goes. A trade with nobody left to cut is dropped.
+- **Both sides gain** on their own objective (contend / rebuild / balanced).
+- **Market angle** — trades that sell a flagged player or buy one rank higher.
+
+**Buy low / sell high.** A player is flagged when his scoring and his price disagree
+by more than week-to-week noise allows (variance for his position, shrinking with
+games played, calibrated against this league's own median), or from an age cliff or
+an injury to a young star. A 30-day value move only reinforces another signal; it
+never flags anyone alone. Each suggestion also lists, in words, why it works.
+
+---
+
 ## Known limits
 
 - Rotowire's weekly projections barely differ week to week before the season
