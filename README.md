@@ -103,6 +103,23 @@ then visit `http://localhost:8000`.
 
 ---
 
+## Design
+
+One stylesheet at the top of `index.html`, built on tokens (`:root`): a cool neutral
+surface scale, an indigo→violet brand used only for chrome (navigation, primary
+actions, focus), and the `--s1…--s8` / `--seq-*` data palette that charts and position
+pills read from, so a chart never changes meaning with the theme. Light, dark and
+*Auto* all resolve through the same tokens.
+
+- **Default** and **Minimal** views are one switch (`data-ui` on the root). Default is
+  roomier with photos; Minimal tightens table density and drops imagery.
+- Under 900px the sidebar becomes a bottom tab bar (Home · Week · Rosters · Players ·
+  More), with every page one tap behind **More**.
+- Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
+  fonts or other dependencies.
+
+---
+
 ## Known limits
 
 - Rotowire's weekly projections barely differ week to week before the season
