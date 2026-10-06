@@ -460,6 +460,14 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .why li{font-size:13px}
 }
 
+.ptags{display:inline-flex;gap:4px;flex:none}
+.sigtag.buy{background:color-mix(in srgb, var(--good) 14%, transparent);color:var(--good-text);border-color:color-mix(in srgb, var(--good) 35%, transparent)}
+.sigtag.sell{background:color-mix(in srgb, var(--s7) 13%, transparent);color:var(--s7);border-color:color-mix(in srgb, var(--s7) 35%, transparent)}
+.sigtag.now{background:color-mix(in srgb, var(--s2) 14%, transparent);color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));border-color:color-mix(in srgb, var(--s2) 40%, transparent)}
+.sigtag.later{background:color-mix(in srgb, var(--s1) 13%, transparent);color:var(--s1);border-color:color-mix(in srgb, var(--s1) 38%, transparent)}
+.tlnow{color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));font-weight:650}
+.tllater{color:var(--s1);font-weight:650}
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -982,7 +990,7 @@ function applyLeagueType() {
   if (was === S.dynasty) return false;
   // the currency, the projections and every roster metric all move together
   applyValueMode();
-  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {}; S._sig = null;
+  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {}; S._sig = null; S._tl = null;
   // rosters are rebuilt because pick ownership changes, then every metric is
   // recomputed because the currency under all of them just changed
   if (S.teams && S.teams.length) { buildTeams(); computeStrength(); recordSnapshot(); }
@@ -1618,7 +1626,7 @@ async function loadLeague(leagueId, onStep) {
 
   step('Loading ' + valueWord() + ' trade values…', 0.52);
   S.values = await loadValues(S.cfg);
-  S.index = buildIndex(); S._sig = null;
+  S.index = buildIndex(); S._sig = null; S._tl = null;
   if (isDynasty()) buildPickCurves();
 
   step('Loading weekly matchups…', 0.66);
@@ -4616,6 +4624,55 @@ function signalMap() {
   return (S._sig = out);
 }
 
+/* ---------- win now / rebuild ----------
+   The market prices every player twice: for this season (redraft) and for the
+   long run (dynasty). Where the two disagree, the player has a timeline. Worth
+   more this season than the long run — an older producer, a short window — is a
+   win-now asset: the right buy for a contender and the right sale for a
+   rebuild. Worth more over the long run — young, stashed, unproven — is the
+   opposite. Compared by rank, not raw value, so it does not matter that the two
+   prices sit on different scales. Needs both prices, so a redraft league (which
+   has no long run) and a response without redraft prices get nothing. */
+function timelineMap() {
+  if (S._tl) return S._tl;
+  const out = {};
+  if (!isDynasty() || S.redraftPricesMissing) return (S._tl = out);
+  const rows = Object.values(S.index).filter(p => POS4.includes(p.pos));
+  const rank = (key) => {
+    const r = {}; rows.filter(p => (p[key] || 0) > 0).sort((a, b) => b[key] - a[key]).forEach((p, i) => { r[p.id] = i + 1; });
+    return r;
+  };
+  const red = rank('rv'), dyn = rank('dvDyn');
+  rows.forEach(p => {
+    const r = red[p.id], d = dyn[p.id];
+    if (!r || !d || Math.min(r, d) > 150) return;
+    const ratio = d / r, gap = d - r;
+    const base = { redRank: r, dynRank: d, ratio, gap };
+    if (ratio >= 1.4 && gap >= 6) out[p.id] = Object.assign({ kind: 'now', strength: clamp(Math.log(ratio) / Math.log(3), 0.2, 1) }, base);
+    else if (ratio <= 1 / 1.4 && gap <= -6) out[p.id] = Object.assign({ kind: 'later', strength: clamp(Math.log(1 / ratio) / Math.log(3), 0.2, 1) }, base);
+  });
+  return (S._tl = out);
+}
+const TL_LABEL = { now: 'Win now', later: 'Rebuild' };
+function timelineWhy(t) {
+  return t.kind === 'now'
+    ? `Redraft #${t.redRank} but dynasty #${t.dynRank}: worth more this season than over the long run. A contender’s buy, a rebuilder’s sale.`
+    : `Dynasty #${t.dynRank} but redraft #${t.redRank}: worth more over the long run than this season. A rebuilder’s buy, a contender’s sale.`;
+}
+/** The small tags that say what the market thinks of a player. */
+function marketTags(p) {
+  const s = signalMap()[p.id], t = timelineMap()[p.id];
+  if (!s && !t) return null;
+  return h('span.ptags',
+    s ? h('span.sigtag.' + s.kind, { title: s.reasons.join(' · ') }, s.kind === 'buy' ? 'Buy low' : 'Sell high') : null,
+    t ? h('span.sigtag.' + t.kind, { title: timelineWhy(t) }, TL_LABEL[t.kind]) : null);
+}
+/** Jump to the Finder with a search already built around this player. */
+function shopInFinder(id) {
+  FinderUI.team = S.myRosterId; FinderUI.focus = String(id); FinderUI.partners = []; FinderUI.autorun = true;
+  S.view = 'finder'; render(); window.scrollTo(0, 0);
+}
+
 /* ---------- why a trade works ----------
    A list of numbers is not a reason. These are the reasons, in plain words:
    what hole it fills for you, why the other side would say yes, what it does to
@@ -4913,8 +4970,7 @@ function signalBoard(T, shop) {
   const sells = mine.filter(x => x.s.kind === 'sell').sort(rank).slice(0, 5);
   const holds = mine.filter(x => x.s.kind === 'buy').sort(rank).slice(0, 3);
   const buys = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').sort(rank).slice(0, 6);
-  const pips = (s) => { const n = s >= 0.66 ? 3 : s >= 0.45 ? 2 : 1; return h('span.pips', { title: 'signal strength: ' + (n === 3 ? 'strong' : n === 2 ? 'moderate' : 'mild') }, [1, 2, 3].map(i => h('i' + (i <= n ? '.on' : ''))));
-  };
+  const pips = pipsOf;
   const rowEl = (x, verb, where) => h('div.sigrow',
     isSimple() ? playerFace(x.p) : posPill(x.p.pos),
     h('div.sigmain',
@@ -5500,6 +5556,18 @@ function viewPlayer() {
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
         owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')))));
+
+  // ---- what the market is saying about him ----
+  const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
+  if (sgp || tlp) {
+    const line = (tag, text) => h('div.row', { style: { gap: '10px', alignItems: 'flex-start', flexWrap: 'nowrap' } },
+      h('span.sigtag.' + tag.k, { style: { marginTop: '2px' } }, tag.label), h('div.sec', { style: { fontSize: '13px', lineHeight: '1.45' } }, text));
+    wrap.appendChild(card('Market read', 'where his price and his production disagree, and which way his value leans',
+      h('div', { style: { display: 'grid', gap: '9px' } },
+        sgp ? line({ k: sgp.kind, label: sgp.kind === 'buy' ? 'Buy low' : 'Sell high' },
+          sgp.reasons.join('. ') + '.' + (sgp.games ? ` (${sgp.games} game${sgp.games > 1 ? 's' : ''} played)` : '')) : null,
+        tlp ? line({ k: tlp.kind, label: TL_LABEL[tlp.kind] }, timelineWhy(tlp)) : null)));
+  }
 
   // ---- headline numbers ----
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
@@ -8566,7 +8634,7 @@ function myHeadliners(me) {
    has picked up. Two lists on one page because they answer the two questions
    people actually bring to a rankings page: where does this player sit, and who
    could I go and get for nothing. */
-const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15 };
+const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15, market: 'any', window: 'any' };
 const RANK_POS = ['QB', 'RB', 'WR', 'TE'];
 
 function viewPlayers() {
@@ -8595,10 +8663,16 @@ function viewPlayers() {
   if (PlayersUI.owner === 'mine') players = players.filter(p => ownerOf[p.id] && ownerOf[p.id].rosterId === S.myRosterId);
   else if (PlayersUI.owner === 'rostered') players = players.filter(p => ownerOf[p.id]);
   else if (PlayersUI.owner === 'fa') players = players.filter(p => !ownerOf[p.id]);
+  // the market filters: who the price and the production disagree about, and which
+  // way each player's value leans in time
+  const sigs = signalMap(), tls = timelineMap();
+  if (PlayersUI.market !== 'any') players = players.filter(p => sigs[p.id] && sigs[p.id].kind === PlayersUI.market);
+  if (PlayersUI.window !== 'any' && isDynasty()) players = players.filter(p => tls[p.id] && tls[p.id].kind === PlayersUI.window);
+  const filtered = PlayersUI.market !== 'any' || (PlayersUI.window !== 'any' && isDynasty());
 
   // where the league's own draft picks fall among them — the real picks, held by
   // whoever holds them, priced where they are projected to land
-  const showPicks = isDynasty() && PlayersUI.picks && PlayersUI.owner !== 'fa';
+  const showPicks = isDynasty() && PlayersUI.picks && PlayersUI.owner !== 'fa' && !filtered;
   let picks = [];
   if (showPicks) {
     S.teams.forEach(t => (t.pickAssets || []).forEach(pk => {
@@ -8639,9 +8713,9 @@ function viewPlayers() {
           // on a phone the position rides under the name instead of taking a column
           ? h('div', { style: { minWidth: 0 } },
             h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury)),
-            h('div.tiny.muted', { style: { marginTop: '1px' } }, r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')))
+            h('div.row', { style: { gap: '6px', marginTop: '1px', flexWrap: 'nowrap' } }, h('span.tiny.muted', r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')), marketTags(r.p)))
           : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
-            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury))
+            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury), marketTags(r.p))
     },
     {
       k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 'ZZ' : r.p.pos + String(posRank[r.p.id]).padStart(4, '0'),
@@ -8652,6 +8726,15 @@ function viewPlayers() {
     { k: 'dv', h: 'Value', num: true, sort: r => r.dv, f: r => h('b.mono', kfmt(Math.round(r.dv))) },
     { k: 'ppg', h: 'Proj/wk', num: true, prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 0 : (r.p.ppg || 0), f: r => r._pick ? '' : fmt(r.p.ppg || 0, 1) },
     { k: 'trend', prio: 2, h: '30d', num: true, sort: r => r._pick ? 0 : (r.p.trend30 || 0), f: r => r._pick ? '' : (r.p.trend30 ? deltaTag(r.p.trend30, 0) : h('span.flat.tiny', '–')) },
+    { k: 'sig', h: 'Market', num: true, prio: 2, keepSimple: true,
+      tip: 'Where price and production disagree. Three dots is a strong signal, one is mild. Sorts by strength.',
+      sort: r => r._pick ? -1 : (sigs[r.p.id] ? sigs[r.p.id].strength : 0),
+      f: r => { const s = !r._pick && sigs[r.p.id]; return s ? h('span.row', { style: { gap: '6px', justifyContent: 'flex-end', flexWrap: 'nowrap' } },
+        h('span.tiny', { class: s.kind === 'buy' ? 'up' : 'sec' }, s.kind === 'buy' ? 'Buy' : 'Sell'), pipsOf(s.strength)) : h('span.flat.tiny', '–'); } },
+    isDynasty() ? { k: 'tl', h: 'Redraft · Dynasty', num: true, prio: 2, keepSimple: true,
+      tip: 'Where the player ranks by redraft value and by dynasty value. A better redraft rank means the market pays for this season (win now); a better dynasty rank means it pays for the future (rebuild).',
+      sort: r => { const t = !r._pick && tls[r.p.id]; return t ? t.ratio : 1; },
+      f: r => { const t = !r._pick && tls[r.p.id]; return t ? h('span.tiny.mono', { class: t.kind === 'now' ? 'tlnow' : 'tllater' }, `#${t.redRank} · #${t.dynRank}`) : h('span.flat.tiny', '–'); } } : null,
     { k: 'own', h: 'Roster', sort: r => r._pick ? r.holder.name : (ownerOf[r.p.id] || { name: 'zz' }).name, f: r => r._pick ? ownerTag(r.holder) : ownerTag(ownerOf[r.p.id]) }
   ];
 
@@ -8665,7 +8748,13 @@ function viewPlayers() {
           : [{ k: 'all', label: 'Everyone' }, { k: 'mine', label: 'Mine' }, { k: 'rostered', label: 'Rostered' }, { k: 'fa', label: 'Free agents' }],
           PlayersUI.owner, v => { PlayersUI.owner = v; PlayersUI.limit = 50; render(); })),
       isDynasty() ? h('label.fld', 'Draft picks',
-        segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null));
+        segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null),
+    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+      h('label.fld', 'Market', segmented([{ k: 'any', label: 'Any' }, { k: 'buy', label: 'Buy low' }, { k: 'sell', label: 'Sell high' }],
+        PlayersUI.market, v => { PlayersUI.market = v; PlayersUI.limit = 50; render(); })),
+      isDynasty() ? h('label.fld', 'Timeline', segmented([{ k: 'any', label: 'Any' }, { k: 'now', label: 'Win now' }, { k: 'later', label: 'Rebuild' }],
+        PlayersUI.window, v => { PlayersUI.window = v; PlayersUI.limit = 50; render(); })) : null,
+      filtered ? h('span.tiny.muted', 'Picks are hidden while a market filter is on — they have no signal.') : null));
 
   const more = shownPlayers < total
     ? h('div.row', { style: { justifyContent: 'center', gap: '10px', marginTop: '6px' } },
@@ -8679,11 +8768,50 @@ function viewPlayers() {
     + ' · showing ' + shownPlayers + ' of ' + total,
     h('div', { style: { display: 'grid', gap: '12px' } },
       controls,
-      table(cols, shown, { sortKey: 'dv', sortDir: -1, rowClass: r => r._pick ? 'pickline' : (ownerOf[r.p.id] && ownerOf[r.p.id].rosterId === S.myRosterId ? 'mineline' : '') }),
+      table(cols, shown, { sortKey: PlayersUI.window !== 'any' && isDynasty() ? 'tl' : PlayersUI.market !== 'any' ? 'sig' : 'dv', sortDir: PlayersUI.window === 'later' && isDynasty() ? 1 : -1, rowClass: r => r._pick ? 'pickline' : (ownerOf[r.p.id] && ownerOf[r.p.id].rosterId === S.myRosterId ? 'mineline' : '') }),
       more)));
 
+  if (isDynasty()) wrap.appendChild(timelineCard(ownerOf));
   wrap.appendChild(waiverCard(ownerOf, me));
   return wrap;
+}
+
+/** Who the market pays for this season, and who it pays for the long run. */
+function timelineCard(ownerOf) {
+  const tls = timelineMap();
+  const rows = Object.keys(tls).map(id => ({ p: S.index[id], t: tls[id], o: ownerOf[id] || null })).filter(x => x.p);
+  const scope = rows.filter(x => PlayersUI.owner === 'mine' ? x.o && x.o.rosterId === S.myRosterId
+    : PlayersUI.owner === 'rostered' ? x.o : PlayersUI.owner === 'fa' ? !x.o : true);
+  const rank = (a, b) => (b.t.strength - a.t.strength) || ((b.p.dvDyn || 0) - (a.p.dvDyn || 0));
+  const now = scope.filter(x => x.t.kind === 'now').sort(rank).slice(0, 8);
+  const later = scope.filter(x => x.t.kind === 'later').sort(rank).slice(0, 8);
+  const rowEl = (x) => {
+    const mineP = x.o && x.o.rosterId === S.myRosterId;
+    return h('div.sigrow',
+      isSimple() ? playerFace(x.p) : posPill(x.p.pos),
+      h('div.sigmain',
+        h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, pname(x.p, { face: false, style: { fontWeight: '640' } }), pipsOf(x.t.strength)),
+        h('div.tiny.muted', `${x.p.pos}${x.p.posRank || ''} · ${x.p.team || 'FA'}${x.p.age ? ' · ' + fmt(x.p.age, 0) + ' yrs' : ''} · ${x.o ? (mineP ? 'yours' : x.o.name) : 'free agent'}`),
+        h('div.tiny.sec.sigwhy', h('span', { class: x.t.kind === 'now' ? 'tlnow' : 'tllater' }, `Redraft #${x.t.redRank}`), ' · ', h('span', { class: x.t.kind === 'now' ? 'tllater' : 'tlnow' }, `Dynasty #${x.t.dynRank}`))),
+      x.o ? h('button.btn.sm', { onclick: () => shopInFinder(x.p.id) }, mineP ? 'Shop him' : 'Get him') : null);
+  };
+  const col = (title, note, list) => h('div.sigcol',
+    h('div.sigh', h('b', title), h('span.tiny.muted', note)),
+    list.length ? h('div.sigrows', list.map(rowEl)) : h('div.tiny.muted.signone', 'Nobody in this view.'));
+  return card('Win now vs rebuild', 'players the market prices differently for this season than for the long run',
+    h('div', { style: { display: 'grid', gap: '14px' } },
+      (now.length || later.length) ? h('div.sigcols',
+        col('Win-now assets', 'worth more in redraft than dynasty — buy if you’re contending, sell if you’re rebuilding', now),
+        col('Rebuild assets', 'worth more in dynasty than redraft — buy if you’re rebuilding, sell if you’re contending', later))
+        : h('div.empty', { style: { padding: '18px' } }, S.redraftPricesMissing
+          ? 'The value feed carried no redraft prices, so there is nothing to compare dynasty against.'
+          : 'No player’s redraft and dynasty prices disagree enough to call.'),
+      h('div.tiny.muted', 'Compared by rank among the players the market prices, so it works whatever the two values’ scales. A player has to rank at least 40% and six places better in one than the other. Follows the Rostered filter above.')));
+}
+/* a strength meter: one to three dots */
+function pipsOf(s) {
+  const n = s >= 0.66 ? 3 : s >= 0.45 ? 2 : 1;
+  return h('span.pips', { title: 'signal strength: ' + (n === 3 ? 'strong' : n === 2 ? 'moderate' : 'mild') }, [1, 2, 3].map(i => h('i' + (i <= n ? '.on' : ''))));
 }
 
 /** The best of what nobody in the league has rostered. Ranked on market value by

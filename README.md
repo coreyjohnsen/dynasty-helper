@@ -147,6 +147,14 @@ games played, calibrated against this league's own median), or from an age cliff
 an injury to a young star. A 30-day value move only reinforces another signal; it
 never flags anyone alone. Each suggestion also lists, in words, why it works.
 
+**On the Players page** the same flags appear as tags beside each name, with Market
+(Buy low / Sell high) and Timeline (Win now / Rebuild) filters, two sortable columns,
+and a *Win now vs rebuild* section. A player is **win now** when his redraft rank is
+at least 40% and six places better than his dynasty rank — worth more this season than
+over the long run — and **rebuild** when it is the other way round. Compared by rank so
+the two prices' scales don't matter. Dynasty leagues only; a redraft league has no long
+run to compare against. The player page explains any flag in words.
+
 ---
 
 ## Known limits
