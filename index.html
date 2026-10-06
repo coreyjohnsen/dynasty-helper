@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dynasty Command Center</title>
 <meta name="description" content="Live Sleeper dynasty league analysis — rosters, trade calculator, power rankings, season simulation, draft-pick pricing and a hypothetical roster sandbox.">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#f4f4f1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f3f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a0d17" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232a78d6'/><stop offset='1' stop-color='%234a3aa7'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><g transform='rotate(-32 32 32)'><ellipse cx='32' cy='32' rx='18' ry='11' fill='%23fdfdfb'/><path d='M24 32h16' stroke='%232a78d6' stroke-width='2.4' stroke-linecap='round'/><path d='M27 28.6v6.8M31 28.6v6.8M35 28.6v6.8' stroke='%232a78d6' stroke-width='2.2' stroke-linecap='round'/></g></svg>">
 <!-- SITE-ONLY: these resolve when hosted; a bare local file just 404s them harmlessly -->
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -23,92 +23,199 @@
 <meta name="twitter:card" content="summary_large_image">
 <!-- /SITE-ONLY -->
 <style>
-/* ============ tokens ============ */
+/* ============ tokens ============
+   One scale of cool neutrals, one brand (indigo into violet) and the data
+   palette (--s1…--s8, --seq-*) that every chart reads from. The brand is chrome
+   only — navigation, primary actions, focus — so it never competes with the
+   colours that carry meaning in a chart or a position pill. */
 :root{
   color-scheme: light;
-  --surface-1:#fcfcfb; --surface-2:#f9f9f7; --surface-3:#f2f2ee; --plane:#f4f4f1;
-  --text-primary:#0b0b0b; --text-secondary:#52514e; --text-muted:#898781;
-  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10); --border-strong:rgba(11,11,11,0.18);
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
-  --seq-100:#cde2fb; --seq-150:#b7d3f6; --seq-200:#9ec5f4; --seq-250:#86b6ef; --seq-300:#6da7ec;
-  --seq-350:#5598e7; --seq-400:#3987e5; --seq-450:#2a78d6; --seq-500:#256abf; --seq-550:#1c5cab;
-  --seq-600:#184f95; --seq-650:#104281; --seq-700:#0d366b;
-  --div-neutral:#f0efec;
-  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
-  --good-text:#006300; --bad-text:#a92f2f;
-  --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 14px rgba(11,11,11,.05);
-  --r:10px; --r-sm:7px;
-  --font: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --surface-1:#ffffff; --surface-2:#f8f9fc; --surface-3:#eef0f6; --plane:#f2f3f8;
+  --text-primary:#0d1020; --text-secondary:#454b63; --text-muted:#6a7089;
+  --grid:#e8eaf2; --axis:#c8ccdb; --border:rgba(18,22,48,0.085); --border-strong:rgba(18,22,48,0.16);
+  --s1:#2f6df0; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6a4fd8; --s8:#e34948;
+  --seq-100:#d3e3fc; --seq-150:#bdd5f8; --seq-200:#a3c6f5; --seq-250:#89b7f1; --seq-300:#6fa7ee;
+  --seq-350:#5798ea; --seq-400:#3f89e6; --seq-450:#2f6df0; --seq-500:#2960d6; --seq-550:#2252b8;
+  --seq-600:#1c4499; --seq-650:#15367d; --seq-700:#0f2961;
+  --div-neutral:#eff0f5;
+  --good:#12a150; --warning:#fab219; --serious:#ec835a; --critical:#d93b45;
+  --good-text:#0a7a3b; --bad-text:#c0303a;
+  --brand:#4f5bf0; --brand-2:#8a5cf6; --brand-soft:color-mix(in srgb, var(--brand) 9%, transparent);
+  --brand-grad:linear-gradient(135deg,#4468f5 0%,#6a55f2 55%,#8a5cf6 100%);
+  --ring:0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
+  --ink:#0e1226; --ink-2:#161b36; --ink-text:#aab0cc; --ink-text-hi:#ffffff;
+  --hero-a:#10143a; --hero-b:#1c2160; --hero-c:#2d2078;
+  --glow-a:rgba(168,108,255,.5); --glow-b:rgba(70,118,255,.42);
+  --title-a:#9fb0ff; --title-b:#d2a6ff; --nav-on:#b9c2ff;
+  --shadow-xs: 0 1px 2px rgba(18,22,48,.06);
+  --shadow: 0 1px 2px rgba(18,22,48,.04), 0 10px 28px -12px rgba(18,22,48,.12);
+  --shadow-lg: 0 2px 4px rgba(18,22,48,.05), 0 24px 56px -16px rgba(18,22,48,.22);
+  --r:16px; --r-sm:10px;
+  --font: "Inter var","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme: dark;
-    --surface-1:#1a1a19; --surface-2:#141413; --surface-3:#232322; --plane:#0d0d0d;
-    --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
-    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.18);
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-    --div-neutral:#383835;
-    --good-text:#0ca30c; --bad-text:#e66767;
-    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+    --surface-1:#141826; --surface-2:#0f1320; --surface-3:#1c2132; --plane:#0a0d17;
+    --text-primary:#f3f5fb; --text-secondary:#b9bfd3; --text-muted:#8b92ab;
+    --grid:#232940; --axis:#343b57; --border:rgba(255,255,255,0.075); --border-strong:rgba(255,255,255,0.15);
+    --s1:#4b8cf2; --s2:#e0652f; --s3:#22b585; --s4:#d9981a; --s5:#df5f8e; --s6:#1a9a1a; --s7:#9b8cf0; --s8:#ee6b6b;
+    --div-neutral:#343b57;
+    --good:#22b15f; --good-text:#3fcf80; --bad-text:#f27a7a;
+    --brand:#7480ff; --brand-2:#a37bff;
+    --brand-grad:linear-gradient(135deg,#5b78ff 0%,#7a62f7 55%,#9a68fb 100%);
+    --ink:#070912; --ink-2:#0d1020;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px -12px rgba(0,0,0,.6);
+    --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 28px 60px -16px rgba(0,0,0,.75);
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --surface-1:#1a1a19; --surface-2:#141413; --surface-3:#232322; --plane:#0d0d0d;
-  --text-primary:#ffffff; --text-secondary:#c3c2b7; --text-muted:#898781;
-  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10); --border-strong:rgba(255,255,255,0.18);
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
-  --div-neutral:#383835;
-  --good-text:#0ca30c; --bad-text:#e66767;
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+  --surface-1:#141826; --surface-2:#0f1320; --surface-3:#1c2132; --plane:#0a0d17;
+  --text-primary:#f3f5fb; --text-secondary:#b9bfd3; --text-muted:#8b92ab;
+  --grid:#232940; --axis:#343b57; --border:rgba(255,255,255,0.075); --border-strong:rgba(255,255,255,0.15);
+  --s1:#4b8cf2; --s2:#e0652f; --s3:#22b585; --s4:#d9981a; --s5:#df5f8e; --s6:#1a9a1a; --s7:#9b8cf0; --s8:#ee6b6b;
+  --div-neutral:#343b57;
+  --good:#22b15f; --good-text:#3fcf80; --bad-text:#f27a7a;
+  --brand:#7480ff; --brand-2:#a37bff;
+  --brand-grad:linear-gradient(135deg,#5b78ff 0%,#7a62f7 55%,#9a68fb 100%);
+  --ink:#070912; --ink-2:#0d1020;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px -12px rgba(0,0,0,.6);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 28px 60px -16px rgba(0,0,0,.75);
+}
+
+/* ---- accent themes ----
+   The brand is one hue. Everything that is "brand" — buttons, links, focus, the
+   sidebar's tint, the home banner, the landing page — is derived from --hue, so a
+   theme is a single number (plus --cs, how saturated: 0 is graphite). The hex
+   values above are what a browser without oklch() keeps: the original indigo. */
+:root{--hue:278;--cs:1}
+:root[data-accent="blue"]{--hue:252}
+:root[data-accent="teal"]{--hue:200}
+:root[data-accent="green"]{--hue:157}
+:root[data-accent="orange"]{--hue:48}
+:root[data-accent="rose"]{--hue:8}
+:root[data-accent="graphite"]{--hue:265;--cs:.12}
+@supports (color: oklch(50% .1 200)){
+  :root{
+    --brand:oklch(53% calc(.21*var(--cs)) var(--hue));
+    --brand-2:oklch(57% calc(.2*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(58% calc(.2*var(--cs)) calc(var(--hue) - 14)) 0%,var(--brand) 55%,var(--brand-2) 100%);
+    --ink:oklch(15.5% calc(.04*var(--cs)) var(--hue)); --ink-2:oklch(20.5% calc(.052*var(--cs)) var(--hue));
+    --hero-a:oklch(19% calc(.075*var(--cs)) var(--hue)); --hero-b:oklch(27% calc(.125*var(--cs)) var(--hue)); --hero-c:oklch(31% calc(.14*var(--cs)) calc(var(--hue) + 24));
+    --glow-a:oklch(62% calc(.2*var(--cs)) calc(var(--hue) + 36) / .5); --glow-b:oklch(60% calc(.2*var(--cs)) calc(var(--hue) - 6) / .42);
+    --title-a:oklch(82% calc(.11*var(--cs)) var(--hue)); --title-b:oklch(84% calc(.12*var(--cs)) calc(var(--hue) + 40));
+    --nav-on:oklch(84% calc(.09*var(--cs)) var(--hue));
+  }
+}
+@supports (color: oklch(50% .1 200)){
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+      --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+      --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+      --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+    }
+  }
+  :root[data-theme="dark"]{
+    --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+    --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+    --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+  }
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--plane);color:var(--text-primary);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{margin:0;font-weight:620;letter-spacing:-.011em}
-a{color:var(--s1)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--plane);color:var(--text-primary);font-family:var(--font);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;
+  font-feature-settings:"cv11","ss03","tnum" 0}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.018em}
+a{color:var(--brand)}
 button{font-family:inherit;font-size:inherit;color:inherit}
+::selection{background:color-mix(in srgb, var(--brand) 30%, transparent)}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:var(--axis);border-radius:6px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted);background-clip:content-box}
 ::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* ============ shell ============ */
 #app{min-height:100%}
-.shell{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+.shell{display:grid;grid-template-columns:244px 1fr;min-height:100vh}
 .shell>*{min-width:0}
-.side{background:var(--surface-2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto}
-.brand{display:flex;align-items:center;gap:9px;padding:4px 8px 14px}
-.brand .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(140deg,var(--s1),var(--s7));flex:none}
-.brand b{font-size:13.5px;letter-spacing:-.015em;line-height:1.15}
-.brand small{display:block;color:var(--text-muted);font-size:10.5px;font-weight:500;letter-spacing:.02em;text-transform:uppercase}
-.navbtn{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--r-sm);border:0;background:transparent;color:var(--text-secondary);cursor:pointer;text-align:left;width:100%;font-size:13px;font-weight:500;transition:background .12s,color .12s}
-.navbtn:hover{background:var(--surface-3);color:var(--text-primary)}
-.navbtn.on{background:var(--surface-1);color:var(--text-primary);font-weight:600;box-shadow:var(--shadow)}
-.navbtn .ic{width:16px;text-align:center;font-size:13px;opacity:.9;flex:none}
-.navbtn.on .ic{color:var(--s1)}
-.side .spacer{flex:1}
-.side .foot{padding:8px;border-top:1px solid var(--border);margin-top:8px;font-size:11px;color:var(--text-muted)}
+/* the sidebar is always ink, in either theme: it is the one fixed landmark, and
+   a dark rail makes the working surface beside it read as lighter and calmer */
+.side{
+  background:
+    radial-gradient(320px 220px at 0% 0%, color-mix(in srgb, var(--brand) 26%, transparent), transparent 70%),
+    linear-gradient(180deg,var(--ink-2),var(--ink));
+  color:var(--ink-text);padding:16px 12px 14px;display:flex;flex-direction:column;gap:1px;
+  position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent;
+}
+.side::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);background-clip:content-box}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 16px}
+.brand .mark{width:34px;height:34px;border-radius:11px;background:var(--brand-grad);flex:none;display:grid;place-items:center;
+  box-shadow:0 6px 18px -4px color-mix(in srgb, var(--brand) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.35)}
+.brand .mark svg{width:19px;height:19px;color:#fff}
+.brand b{font-size:15px;letter-spacing:-.02em;line-height:1.1;color:var(--ink-text-hi);display:block}
+.brand small{display:block;color:var(--ink-text);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;margin-top:2px;opacity:.8}
+.navgroup{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(170,176,204,.5);padding:14px 11px 5px}
+.navbtn{position:relative;display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:10px;border:0;background:transparent;
+  color:var(--ink-text);cursor:pointer;text-align:left;width:100%;font-size:13.5px;font-weight:540;
+  transition:background .15s,color .15s}
+.navbtn:hover{background:rgba(255,255,255,.07);color:var(--ink-text-hi)}
+.navbtn:focus-visible{outline-color:#fff;outline-offset:-2px}
+.navbtn.on{background:rgba(255,255,255,.1);color:var(--ink-text-hi);font-weight:640;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.navbtn.on::before{content:'';position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand-grad)}
+.navbtn .ic{width:18px;height:18px;flex:none;display:grid;place-items:center;opacity:.8}
+.navbtn .ic svg{width:18px;height:18px}
+.navbtn.on .ic{opacity:1;color:var(--nav-on)}
+.side .spacer{flex:1;min-height:12px}
+.side .foot{padding:12px 11px 2px;border-top:1px solid rgba(255,255,255,.08);margin-top:10px;font-size:11px;color:rgba(170,176,204,.7);line-height:1.6}
 
-.main{min-width:0;display:flex;flex-direction:column}
-.topbar{position:sticky;top:0;z-index:30;background:var(--surface-1);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.topbar .lg{font-weight:640;letter-spacing:-.012em}
-.topbar .sub{color:var(--text-muted);font-size:12px}
+.main{min-width:0;display:flex;flex-direction:column;
+  background:radial-gradient(900px 380px at 78% -60px, color-mix(in srgb, var(--brand) 9%, transparent), transparent 70%)}
+.topbar{position:sticky;top:0;z-index:30;
+  background:color-mix(in srgb, var(--plane) 82%, transparent);
+  -webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);
+  border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.topbar .lg{font-weight:700;font-size:17px;letter-spacing:-.02em;line-height:1.2}
+.topbar .sub{color:var(--text-muted);font-size:12.5px}
 .topbar .grow{flex:1}
+.topbar .btn .bl{display:inline}
+.live{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;font-size:11.5px;font-weight:700;letter-spacing:.01em;
+  color:var(--brand);background:color-mix(in srgb, var(--brand) 11%, var(--surface-1));border:1px solid color-mix(in srgb, var(--brand) 32%, transparent)}
+.live i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:pulse 1.8s ease-out infinite}
+.live.idle{color:var(--text-secondary);background:var(--surface-1);border-color:var(--border-strong)}
+.live.idle i{animation:none;opacity:.55}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb, currentColor 55%, transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 /* The content column takes whatever width the window gives it. Nothing here is
    a wall of prose, and every grid is auto-fit, so a wide monitor buys more
    cards per row rather than longer lines. The cap is past any ordinary display
    — it only stops a table spreading itself across an ultrawide. */
-.content{padding:20px 22px;width:100%;max-width:2400px}
-@media (min-width:1700px){ .content{padding:22px 30px} }
+.content{padding:24px 28px 56px;width:100%;max-width:1760px;margin-inline:auto}
+@media (min-width:1700px){ .content{padding:28px 36px 64px} }
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* only on a change of page — a re-render from a click inside one must not replay it */
+.content.enter>*{animation:rise .42s var(--ease) both}
+.content.enter>*:nth-child(2){animation-delay:.04s}
+.content.enter>*:nth-child(3){animation-delay:.08s}
+.content.enter>*:nth-child(4){animation-delay:.12s}
+.content.enter>*:nth-child(n+5){animation-delay:.16s}
+@media (prefers-reduced-motion:reduce){ .content.enter>*{animation:none} .live i{animation:none} *{transition-duration:.01ms!important} }
 
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
-.card .hd{padding:13px 16px 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.card .hd h3{font-size:14px}
-.card .hd .note{color:var(--text-muted);font-size:11.5px}
-.card .bd{padding:14px 16px 16px}
-.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
+.card .hd h3{font-size:15.5px;font-weight:680}
+.card .hd .note{color:var(--text-muted);font-size:12.5px}
+.card .bd{padding:15px 20px 20px}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
 .grid>*{min-width:0}
 .grid.split{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
 .grid.split2{display:grid;gap:10px;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);align-items:center}
@@ -119,60 +226,79 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .muted{color:var(--text-muted)}
 .sec{color:var(--text-secondary)}
 .mono{font-variant-numeric:tabular-nums}
-.tiny{font-size:11.5px}
-.big{font-size:26px;font-weight:660;letter-spacing:-.02em}
-.hero{font-size:34px;font-weight:660;letter-spacing:-.025em;line-height:1.1}
+.tiny{font-size:12px}
+.big{font-size:28px;font-weight:700;letter-spacing:-.025em}
+.hero{font-size:36px;font-weight:720;letter-spacing:-.03em;line-height:1.1}
 
-.btn{padding:6px 11px;border-radius:var(--r-sm);border:1px solid var(--border-strong);background:var(--surface-1);cursor:pointer;font-size:12.5px;font-weight:520;transition:background .12s,border-color .12s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 13px;min-height:34px;border-radius:var(--r-sm);
+  border:1px solid var(--border-strong);background:var(--surface-1);cursor:pointer;font-size:13px;font-weight:580;
+  box-shadow:var(--shadow-xs);transition:background .15s,border-color .15s,box-shadow .15s,transform .1s,filter .15s}
 .btn:hover{background:var(--surface-3)}
-.btn.pri{background:var(--s1);border-color:var(--s1);color:#fff}
-.btn.pri:hover{filter:brightness(1.07)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.sm{padding:3px 8px;font-size:11.5px}
-.seg{display:inline-flex;background:var(--surface-3);border-radius:var(--r-sm);padding:2px;gap:2px;border:1px solid var(--border)}
-.seg button{border:0;background:transparent;padding:5px 11px;border-radius:5px;cursor:pointer;font-size:12.5px;font-weight:520;color:var(--text-secondary)}
-.seg button.on{background:var(--surface-1);color:var(--text-primary);font-weight:620;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-input,select,textarea{font-family:inherit;font-size:13px;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--border-strong);background:var(--surface-1);color:var(--text-primary)}
-input:focus,select:focus{outline:2px solid var(--s1);outline-offset:-1px}
-label.fld{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-muted);font-weight:560}
+.btn:active{transform:translateY(1px)}
+.btn .ic{display:inline-flex}
+.btn svg{width:16px;height:16px;flex:none}
+.btn.lgpick{width:100%;justify-content:flex-start;text-align:left;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 13px}
+.btn.lgpick div:first-child{font-weight:650}
+.btn.pri{background:var(--brand-grad);border-color:transparent;color:#fff;
+  box-shadow:0 1px 2px rgba(10,12,40,.25), 0 8px 18px -8px color-mix(in srgb, var(--brand) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.22)}
+.btn.pri:hover{filter:brightness(1.07);background:var(--brand-grad)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn.sm{padding:4px 10px;min-height:28px;font-size:12px;border-radius:8px}
+.seg{display:inline-flex;background:var(--surface-3);border-radius:calc(var(--r-sm) + 2px);padding:3px;gap:2px;border:1px solid var(--border)}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:12.5px;font-weight:560;color:var(--text-secondary);transition:background .15s,color .15s}
+.seg button:hover{color:var(--text-primary)}
+.seg button.on{background:var(--surface-1);color:var(--text-primary);font-weight:680;box-shadow:var(--shadow-xs), 0 0 0 1px var(--border)}
+input,select,textarea{font-family:inherit;font-size:13px;padding:8px 11px;border-radius:var(--r-sm);border:1px solid var(--border-strong);background:var(--surface-1);color:var(--text-primary);transition:border-color .15s,box-shadow .15s}
+input::placeholder{color:var(--text-muted)}
+input:hover,select:hover{border-color:color-mix(in srgb, var(--text-muted) 55%, transparent)}
+input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
+select{cursor:pointer}
+label.fld{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--text-muted);font-weight:620;letter-spacing:.01em}
 
-.pill{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:99px;font-size:11px;font-weight:620;border:1px solid var(--border)}
+/* a position pill is the one place the app uses colour as a label, so it is
+   saturated and the same shape everywhere */
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-width:30px;padding:1px 7px;border-radius:7px;font-size:10.5px;font-weight:720;letter-spacing:.03em;border:1px solid var(--border)}
 .pos-QB{background:#e34948;color:#fff;border-color:transparent}
-.pos-RB{background:#1baf7a;color:#fff;border-color:transparent}
-.pos-WR{background:#2a78d6;color:#fff;border-color:transparent}
+.pos-RB{background:#16a56f;color:#fff;border-color:transparent}
+.pos-WR{background:#2f6df0;color:#fff;border-color:transparent}
 .pos-TE{background:#eb6834;color:#fff;border-color:transparent}
-.pos-K{background:#8a8880;color:#fff;border-color:transparent}
-.pos-DEF{background:#4a3aa7;color:#fff;border-color:transparent}
-.pos-PICK{background:#eda100;color:#231a00;border-color:transparent}
+.pos-K{background:#7d8099;color:#fff;border-color:transparent}
+.pos-DEF{background:#5b46c8;color:#fff;border-color:transparent}
+.pos-PICK{background:#f0b020;color:#2a1d00;border-color:transparent}
 .pos-FLEX,.pos-NA{background:var(--surface-3);color:var(--text-secondary)}
-.hypbar{border:1px dashed var(--s7);border-radius:var(--r);background:color-mix(in srgb, var(--s7) 6%, var(--surface-1));padding:13px 15px;margin-bottom:14px;min-width:0}
-.hypbar.quiet{padding:9px 13px}
-.hyp-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;background:#4a3aa7;color:#fff;font-size:10px;font-weight:700;letter-spacing:.06em;flex:none;white-space:nowrap}
+.hypbar{border:1px dashed color-mix(in srgb, var(--s7) 70%, transparent);border-radius:var(--r);background:color-mix(in srgb, var(--s7) 7%, var(--surface-1));padding:14px 16px;margin-bottom:16px;min-width:0}
+.hypbar.quiet{padding:10px 14px}
+.hyp-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:6px;background:var(--s7);color:#fff;font-size:10px;font-weight:750;letter-spacing:.08em;flex:none;white-space:nowrap}
 :root[data-hyp] .topbar{box-shadow:inset 0 -2px 0 var(--s7)}
 .btn.hypon{background:var(--s7);border-color:var(--s7);color:#fff}
-.btn.hypon:hover{filter:brightness(1.08)}
+.btn.hypon:hover{filter:brightness(1.08);background:var(--s7)}
 tr.hyp-out td{opacity:.42}
-.plink{cursor:pointer;border-bottom:1px solid color-mix(in srgb, var(--s1) 45%, transparent);transition:color .12s,border-color .12s}
-.plink:hover{color:var(--s1);border-bottom-color:var(--s1)}
-.plink:focus-visible{outline:2px solid var(--s1);outline-offset:2px;border-radius:2px}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;border:1px solid var(--border-strong);background:var(--surface-1);cursor:pointer;font-size:12px;font-weight:560;user-select:none;transition:background .12s,border-color .12s,color .12s}
+.plink{cursor:pointer;border-bottom:1px solid color-mix(in srgb, var(--brand) 35%, transparent);transition:color .12s,border-color .12s}
+.plink:hover{color:var(--brand);border-bottom-color:var(--brand)}
+.plink:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:2px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;border:1px solid var(--border-strong);background:var(--surface-1);cursor:pointer;font-size:12.5px;font-weight:580;user-select:none;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
 .chip:hover{background:var(--surface-3)}
-.chip.on{background:var(--s1);border-color:var(--s1);color:#fff}
+.chip.on{background:var(--ink-2);border-color:var(--ink-2);color:#fff;box-shadow:var(--shadow-xs)}
+:root[data-theme="dark"] .chip.on{background:var(--brand);border-color:var(--brand)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .chip.on{background:var(--brand);border-color:var(--brand)} }
 .chip.on .dot{background:#fff}
-.chipwrap{display:flex;gap:6px;flex-wrap:wrap}
-.tag{display:inline-block;padding:1px 6px;border-radius:5px;background:var(--surface-3);border:1px solid var(--border);font-size:10.5px;font-weight:600;color:var(--text-secondary)}
-.up{color:var(--good-text);font-weight:620}
-.down{color:var(--bad-text);font-weight:620}
+.chipwrap{display:flex;gap:7px;flex-wrap:wrap}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;background:var(--surface-3);border:1px solid var(--border);font-size:10.5px;font-weight:650;color:var(--text-secondary);letter-spacing:.01em;white-space:nowrap}
+.up{color:var(--good-text);font-weight:650}
+.down{color:var(--bad-text);font-weight:650}
 .flat{color:var(--text-muted)}
 
-table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
-table.tbl th{text-align:left;font-weight:600;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--grid);position:sticky;top:0;background:var(--surface-1);z-index:2;white-space:nowrap}
+table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+table.tbl th{text-align:left;font-weight:650;color:var(--text-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;padding:9px 12px;border-bottom:1px solid var(--grid);position:sticky;top:0;background:var(--surface-1);z-index:2;white-space:nowrap}
 table.tbl th.num,table.tbl td.num{text-align:right;font-variant-numeric:tabular-nums}
-table.tbl td{padding:6px 8px;border-bottom:1px solid var(--grid);vertical-align:middle}
-table.tbl tbody tr:hover{background:var(--surface-3)}
+table.tbl td{padding:11px 12px;border-bottom:1px solid var(--grid);vertical-align:middle;transition:background .12s}
+table.tbl tbody tr:hover td{background:var(--surface-2)}
 table.tbl tbody tr:last-child td{border-bottom:0}
-table.tbl th.sortable{cursor:pointer;user-select:none}
+table.tbl th.sortable{cursor:pointer;user-select:none;transition:color .12s}
 table.tbl th.sortable:hover{color:var(--text-primary)}
+/* Minimal is the dense view: same table, a third less air */
+:root:not([data-ui="simple"]) table.tbl td{padding:7px 10px}
+:root:not([data-ui="simple"]) table.tbl th{padding:7px 10px}
 .scroll-x{overflow-x:auto;max-width:100%}
 /* A table wider than its card scrolls sideways. Without a cue that reads as a
    column someone simply cut off, so the fade is driven by measurement: it is
@@ -180,7 +306,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
    you reach the end. */
 .sx{position:relative;min-width:0}
 .sx::after{
-  content:'';position:absolute;top:0;right:0;bottom:0;width:38px;pointer-events:none;
+  content:'';position:absolute;top:0;right:0;bottom:0;width:44px;pointer-events:none;
   opacity:0;transition:opacity .16s;border-radius:0 var(--r-sm) var(--r-sm) 0;
   background:linear-gradient(to left, var(--surface-1) 18%, color-mix(in srgb, var(--surface-1) 55%, transparent) 62%, transparent);
 }
@@ -188,7 +314,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .sx .sx-hint{
   position:absolute;right:6px;bottom:1px;pointer-events:none;opacity:0;transition:opacity .16s;
   background:var(--surface-3);border:1px solid var(--border);border-radius:99px;
-  padding:1px 8px;font-size:10.5px;font-weight:620;color:var(--text-secondary);white-space:nowrap;
+  padding:1px 8px;font-size:10.5px;font-weight:650;color:var(--text-secondary);white-space:nowrap;
 }
 /* The worded hint is for touch, where there is no scrollbar to see and no
    wheel to try; on a desktop the fade plus a scrollbar already says it, so the
@@ -201,114 +327,207 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .sx.canscroll.hintable>.scroll-x{padding-bottom:19px}
 }
 
-.bar-track{background:var(--surface-3);border-radius:4px;height:8px;overflow:hidden;min-width:40px}
-.bar-fill{height:100%;border-radius:0 4px 4px 0;background:var(--s1)}
+.bar-track{background:var(--surface-3);border-radius:99px;height:8px;overflow:hidden;min-width:40px}
+.bar-fill{height:100%;border-radius:99px;background:var(--s1)}
 .meter{display:flex;align-items:center;gap:8px}
 
-.tt{position:fixed;z-index:200;pointer-events:none;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:0 4px 20px rgba(0,0,0,.18);padding:8px 10px;font-size:12px;max-width:280px;opacity:0;transition:opacity .09s}
-.tt.on{opacity:1}
-.tt .k{color:var(--text-muted);font-size:11px}
-.tt b{font-weight:640}
+.tt{position:fixed;z-index:200;pointer-events:none;background:var(--ink-2);color:#eef0fa;border:1px solid rgba(255,255,255,.1);border-radius:12px;box-shadow:var(--shadow-lg);padding:9px 12px;font-size:12px;line-height:1.45;max-width:290px;opacity:0;transform:translateY(3px);transition:opacity .12s,transform .12s}
+.tt.on{opacity:1;transform:none}
+.tt .k{color:#9ea5c4;font-size:10.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.tt b{font-weight:680}
 
-.avatar{width:22px;height:22px;border-radius:6px;background:var(--surface-3);flex:none;object-fit:cover}
-.tm{display:flex;align-items:center;gap:7px;min-width:0}
-.tm .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:560}
+.avatar{width:24px;height:24px;border-radius:8px;background:var(--surface-3);flex:none;object-fit:cover}
+.tm{display:flex;align-items:center;gap:8px;min-width:0}
+.tm .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 
-.empty{padding:40px 20px;text-align:center;color:var(--text-muted)}
-.kpi{display:flex;flex-direction:column;gap:1px;padding:11px 13px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1)}
-.kpi .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:620}
-.kpi .val{font-size:21px;font-weight:650;letter-spacing:-.02em}
-.kpi .sub{font-size:11.5px;color:var(--text-secondary)}
+.empty{padding:44px 20px;text-align:center;color:var(--text-muted)}
+.kpi{position:relative;display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);box-shadow:var(--shadow);transition:transform .18s var(--ease),box-shadow .18s,border-color .18s}
+.kpi[tabindex]:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+.kpi .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);font-weight:680}
+.kpi .val{font-size:25px;font-weight:720;letter-spacing:-.028em;line-height:1.2;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpi .sub{overflow-wrap:anywhere}
+.kpi .sub{font-size:12px;color:var(--text-secondary)}
 
 .chart{width:100%;display:block;overflow:visible}
 .chart text{font-family:var(--font)}
 .ax{font-size:10.5px;fill:var(--text-muted);font-variant-numeric:tabular-nums}
 .gl{stroke:var(--grid);stroke-width:1;shape-rendering:crispEdges}
 .axline{stroke:var(--axis);stroke-width:1;shape-rendering:crispEdges}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text-secondary);align-items:center}
-.legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-secondary);align-items:center}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
 
-.splash{min-height:100vh;display:grid;place-items:center;padding:26px;background:var(--plane)}
-.splash .box{width:100%;max-width:520px}
-.loadbar{height:3px;background:var(--surface-3);border-radius:2px;overflow:hidden}
-.loadbar i{display:block;height:100%;background:var(--s1);width:0;transition:width .3s}
-.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--s1);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+.splash{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:var(--plane)}
+.sp-art{position:relative;overflow:hidden;color:#fff;padding:56px clamp(32px,5vw,84px);display:flex;flex-direction:column;justify-content:center;gap:28px;
+  background:
+    radial-gradient(620px 420px at 12% 8%, var(--glow-b), transparent 70%),
+    radial-gradient(560px 460px at 92% 96%, var(--glow-a), transparent 70%),
+    linear-gradient(150deg,var(--hero-a) 0%,var(--hero-b) 52%,var(--hero-c) 100%)}
+.sp-art::before{content:'';position:absolute;inset:0;opacity:.5;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+  background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 30% 40%,#000 0%,transparent 72%);mask-image:radial-gradient(ellipse at 30% 40%,#000 0%,transparent 72%)}
+.sp-art>*{position:relative}
+.sp-logo{display:flex;align-items:center;gap:12px}
+.sp-logo .mark{width:42px;height:42px;border-radius:13px;background:var(--brand-grad);display:grid;place-items:center;box-shadow:0 10px 28px -6px rgba(110,100,255,.7),inset 0 1px 0 rgba(255,255,255,.4)}
+.sp-logo .mark svg{width:23px;height:23px;color:#fff}
+.sp-logo b{font-size:16px;letter-spacing:-.02em}
+.sp-art h1{font-size:clamp(30px,3.6vw,50px);line-height:1.04;letter-spacing:-.035em;font-weight:750;max-width:15em;margin:0}
+.sp-art h1 span{background:linear-gradient(90deg,var(--title-a),var(--title-b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-art p{margin:0;color:rgba(226,230,255,.78);font-size:15.5px;line-height:1.6;max-width:34em}
+.sp-feats{display:flex;flex-wrap:wrap;gap:8px;max-width:38em}
+.sp-feats span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;font-size:12.5px;font-weight:580;color:#e7eaff;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.sp-feats svg{width:14px;height:14px;opacity:.85}
+.sp-form{display:grid;place-items:center;padding:32px}
+.splash .box{width:100%;max-width:460px}
+.splash .box .card{box-shadow:var(--shadow-lg);border-radius:20px}
+.splash .box .bd{padding:28px}
+.sp-title{font-size:22px;font-weight:720;letter-spacing:-.03em;margin:0 0 3px}
+.loadbar{height:4px;background:var(--surface-3);border-radius:99px;overflow:hidden}
+.loadbar i{display:block;height:100%;background:var(--brand-grad);width:0;transition:width .3s;border-radius:99px}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .stale{opacity:.45;transition:opacity .2s}
+@media (max-width:900px){
+  .splash{grid-template-columns:1fr}
+  .sp-art{padding:30px 22px 34px;gap:18px}
+  .sp-art h1{font-size:30px}
+  .sp-art p{font-size:14px}
+  .sp-feats{display:none}
+  .sp-form{padding:18px 14px 30px;margin-top:-22px;position:relative}
+}
 
-.tradebox{border:1px dashed var(--border-strong);border-radius:var(--r);min-height:78px;padding:8px;display:flex;flex-direction:column;gap:5px;background:var(--surface-2)}
-.asset{display:flex;align-items:center;gap:7px;padding:4px 7px;border-radius:6px;background:var(--surface-1);border:1px solid var(--border);font-size:12px;cursor:pointer;min-width:0}
+.tradebox{border:1.5px dashed var(--border-strong);border-radius:var(--r);min-height:84px;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
+.asset{display:flex;align-items:center;gap:8px;padding:5px 9px;border-radius:9px;background:var(--surface-1);border:1px solid var(--border);font-size:12.5px;cursor:pointer;min-width:0;transition:border-color .12s,background .12s,box-shadow .12s}
 .asset>*{min-width:0}
 .asset>span:not(.pill):not(.v):not(.x){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .asset .v,.asset .pill{flex:none}
-.asset:hover{border-color:var(--s1)}
+.asset:hover{border-color:var(--brand);box-shadow:var(--shadow-xs)}
 .asset .x{margin-left:auto;color:var(--text-muted);font-weight:700;padding:0 3px}
-.asset .v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text-secondary);font-size:11.5px}
+.asset .v{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--text-secondary);font-size:12px;font-weight:600}
+.asset .v+.x{margin-left:4px}
 .asset.pickable:hover{background:var(--surface-3)}
-.picker{max-height:330px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px;display:flex;flex-direction:column;gap:3px;background:var(--surface-2)}
+.picker{max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px;display:flex;flex-direction:column;gap:4px;background:var(--surface-2)}
 
-.board{display:grid;gap:3px;min-width:760px}
-.cell{border-radius:6px;padding:5px 6px;font-size:11px;border:1px solid var(--border);background:var(--surface-1);min-height:46px;overflow:hidden}
-.cell .pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-:root[data-ui="simple"] .cell{min-height:54px;padding:6px 7px}
+.board{display:grid;gap:4px;min-width:760px}
+.cell{border-radius:8px;padding:6px 7px;font-size:11px;border:1px solid var(--border);background:var(--surface-1);min-height:48px;overflow:hidden}
+.cell .pn{font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+:root[data-ui="simple"] .cell{min-height:56px;padding:7px 8px}
 :root[data-ui="simple"] .board{min-width:1040px}
 .cell .mt{color:var(--text-muted);font-size:10px;display:flex;gap:4px;align-items:center}
 
+/* the page title: where you are, in words, on every page but the two that carry their own */
+.pagehead{display:flex;align-items:center;gap:14px;margin:0 0 2px}
+.pagehead .pic{width:44px;height:44px;border-radius:14px;flex:none;display:grid;place-items:center;color:#fff;background:var(--brand-grad);
+  box-shadow:0 10px 22px -10px color-mix(in srgb, var(--brand) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.28)}
+.pagehead .pic svg{width:22px;height:22px}
+.pagehead h2{font-size:24px;font-weight:740;letter-spacing:-.03em;line-height:1.15}
+.pagehead p{margin:2px 0 0;color:var(--text-muted);font-size:13.5px;line-height:1.4;max-width:60em}
+.content>.pagehead{margin-bottom:18px}
+@media (max-width:900px){ .pagehead{gap:11px} .pagehead .pic{width:38px;height:38px;border-radius:12px} .pagehead .pic svg{width:20px;height:20px} .pagehead h2{font-size:20px} .pagehead p{font-size:12.5px} .content>.pagehead{margin-bottom:14px} }
+
+/* ---- trade finder: reasons and market angle ---- */
+.sigtag{flex:none;padding:0 6px;border-radius:5px;font-size:10px;font-weight:720;letter-spacing:.02em;line-height:1.6;white-space:nowrap;border:1px solid transparent}
+.sigtag.good{background:color-mix(in srgb, var(--good) 14%, transparent);color:var(--good-text);border-color:color-mix(in srgb, var(--good) 35%, transparent)}
+.sigtag.warn{background:color-mix(in srgb, var(--warning) 20%, transparent);color:var(--warn-text,#8a5a00);border-color:color-mix(in srgb, var(--warning) 50%, transparent)}
+:root[data-theme="dark"] .sigtag.warn{color:#f3c36b}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .sigtag.warn{color:#f3c36b} }
+.why{margin-top:10px;padding:10px 12px;border-radius:var(--r-sm);background:color-mix(in srgb, var(--brand) 5%, var(--surface-1));border:1px solid color-mix(in srgb, var(--brand) 14%, var(--border))}
+.whyh{font-size:10px;font-weight:720;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px}
+.why ul{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.why li{position:relative;padding-left:15px;font-size:12.5px;line-height:1.45;color:var(--text-secondary)}
+.why li::before{content:'';position:absolute;left:1px;top:.5em;width:7px;height:7px;border-radius:50%;background:var(--brand)}
+.why li.w-buy::before,.why li.w-sell::before{background:var(--good)}
+.why li.w-cost::before{background:var(--warning)}
+.why li.w-age::before{background:var(--s4)}
+.why li.w-them::before{background:var(--s3)}
+.sigcols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.sigh{display:grid;gap:1px;margin-bottom:8px}
+.sigrows{display:grid;gap:8px}
+.sigrow{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);min-width:0}
+.sigrow .btn{flex:none;margin-left:auto}
+.sigmain{min-width:0;flex:1}
+.sigwhy{margin-top:2px;line-height:1.35}
+.pips{display:inline-flex;gap:3px;flex:none}
+.pips i{width:6px;height:6px;border-radius:50%;background:var(--axis)}
+.pips i.on{background:var(--good)}
+.signone{padding:8px 2px}
+
+.tcols{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:10px;align-items:center}
+.tcols .swap{text-align:center;font-size:17px;color:var(--text-muted)}
+@media (max-width:620px){
+  .tcols{grid-template-columns:minmax(0,1fr);gap:8px}
+  .tcols .swap{transform:rotate(90deg);justify-self:center;line-height:1}
+  .why li{font-size:13px}
+}
+
+.ptags{display:inline-flex;gap:4px;flex:none}
+.sigtag.buy{background:color-mix(in srgb, var(--good) 14%, transparent);color:var(--good-text);border-color:color-mix(in srgb, var(--good) 35%, transparent)}
+.sigtag.sell{background:color-mix(in srgb, var(--s7) 13%, transparent);color:var(--s7);border-color:color-mix(in srgb, var(--s7) 35%, transparent)}
+.sigtag.now{background:color-mix(in srgb, var(--s2) 14%, transparent);color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));border-color:color-mix(in srgb, var(--s2) 40%, transparent)}
+.sigtag.later{background:color-mix(in srgb, var(--s1) 13%, transparent);color:var(--s1);border-color:color-mix(in srgb, var(--s1) 38%, transparent)}
+.tlnow{color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));font-weight:650}
+.tllater{color:var(--s1);font-weight:650}
+
 /* ============ simple mode ============
-   A calmer skin for the same data: more air, larger type, rounder edges, and
-   the secondary columns and deep-dive cards left out. Everything here hangs off
-   one attribute on the root, so the dense view is completely untouched. */
+   The Default view: the same data with more air, larger type, rounder edges,
+   and the secondary columns and deep-dive cards left out. Everything here hangs
+   off one attribute on the root, so the dense Minimal view is untouched. */
 :root[data-ui="simple"]{
-  --r:14px; --r-sm:10px;
-  --shadow: 0 1px 2px rgba(11,11,11,.04), 0 6px 20px rgba(11,11,11,.05);
+  --r:18px; --r-sm:12px;
 }
 :root[data-ui="simple"] body{font-size:15px}
-:root[data-ui="simple"] .content{padding:26px}
-:root[data-ui="simple"] .grid{gap:18px}
-:root[data-ui="simple"] .card .hd{padding:17px 20px 0;gap:12px}
-:root[data-ui="simple"] .card .hd h3{font-size:16.5px;letter-spacing:-.015em}
-:root[data-ui="simple"] .card .hd .note{font-size:12.5px}
-:root[data-ui="simple"] .card .bd{padding:16px 20px 20px}
-:root[data-ui="simple"] .kpi{padding:15px 17px;gap:3px}
-:root[data-ui="simple"] .kpi .val{font-size:26px}
-:root[data-ui="simple"] .kpi .lbl{font-size:11px;letter-spacing:.06em}
-:root[data-ui="simple"] .kpi .sub{font-size:12.5px}
-:root[data-ui="simple"] table.tbl{font-size:13.5px}
-:root[data-ui="simple"] table.tbl th{font-size:11.5px;padding:9px 10px}
-:root[data-ui="simple"] table.tbl td{padding:11px 10px}
+:root[data-ui="simple"] .grid{gap:20px}
+:root[data-ui="simple"] .card .hd{padding:20px 24px 0;gap:6px 12px}
+:root[data-ui="simple"] .card .hd h3{font-size:17px;letter-spacing:-.02em}
+:root[data-ui="simple"] .card .hd .note{font-size:13px}
+:root[data-ui="simple"] .card .bd{padding:18px 24px 24px}
+:root[data-ui="simple"] .kpi{padding:18px 20px;gap:3px}
+:root[data-ui="simple"] .kpi .val{font-size:30px}
+:root[data-ui="simple"] .kpi .lbl{font-size:11px}
+:root[data-ui="simple"] .kpi .sub{font-size:13px}
+:root[data-ui="simple"] table.tbl{font-size:14px}
+:root[data-ui="simple"] table.tbl th{font-size:11px;padding:11px 12px}
+:root[data-ui="simple"] table.tbl td{padding:12px}
 :root[data-ui="simple"] .tiny{font-size:12.5px}
-:root[data-ui="simple"] .navbtn{padding:9px 11px;font-size:13.5px}
-:root[data-ui="simple"] .btn{padding:8px 14px;font-size:13.5px}
-:root[data-ui="simple"] .seg button{padding:7px 14px;font-size:13.5px}
-:root[data-ui="simple"] .side{width:auto}
+:root[data-ui="simple"] .navbtn{padding:9px 12px;font-size:14px}
+:root[data-ui="simple"] .btn{padding:8px 15px;min-height:38px;font-size:13.5px}
+:root[data-ui="simple"] .btn.sm{min-height:30px;padding:5px 11px;font-size:12.5px}
+:root[data-ui="simple"] .seg button{padding:7px 15px;font-size:13.5px}
+:root[data-ui="simple"] .avatar{width:32px;height:32px;border-radius:10px}
 /* ---- settings menu ---- */
 .menuwrap{position:relative}
-.menupanel{position:absolute;top:calc(100% + 8px);right:0;z-index:60;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r);box-shadow:0 10px 34px rgba(11,11,11,.16),0 2px 8px rgba(11,11,11,.08);padding:14px;width:288px;display:grid;gap:15px}
-.menupanel .mlbl{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px}
-.menupanel .mnote{font-size:11.5px;color:var(--text-muted);margin-top:5px;line-height:1.35}
+.menupanel{position:absolute;top:calc(100% + 10px);right:0;z-index:60;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:18px;width:312px;display:grid;gap:16px;animation:rise .22s var(--ease) both}
+.menupanel .mlbl{font-size:10.5px;font-weight:720;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
+.menupanel .mnote{font-size:12px;color:var(--text-muted);margin-top:7px;line-height:1.45}
 .menupanel .seg{width:100%}
 .menupanel .seg button{flex:1;text-align:center}
 .menupanel hr{border:0;border-top:1px solid var(--border);margin:0}
 .menupanel .btn{width:100%;justify-content:center}
-@media (max-width:560px){ .menupanel{width:min(300px,calc(100vw - 28px))} }
+.swatches{display:flex;gap:8px;flex-wrap:wrap;padding:4px 3px}
+.swatch{width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;flex:none;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28),var(--shadow-xs);transition:transform .15s var(--ease),box-shadow .15s}
+.swatch:hover{transform:scale(1.1)}
+.swatch.on{box-shadow:0 0 0 2.5px var(--surface-1),0 0 0 4.5px var(--text-primary)}
+.swatch.on::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:11px;margin:-6.5px 0 0 -3px;border:solid #fff;border-width:0 2.2px 2.2px 0;transform:rotate(45deg) translate(-1px,-1px);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+@media (max-width:560px){ .menupanel{width:min(320px,calc(100vw - 28px))} }
 
 /* imagery — only ever used in simple mode */
-.face{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--surface-3);flex:none}
-.face.lg{width:44px;height:44px;border-radius:12px}
-.face.sm{width:22px;height:22px;border-radius:50%}
+.face{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--surface-3);flex:none}
+.face.lg{width:46px;height:46px;border-radius:13px}
+.face.sm{width:24px;height:24px;border-radius:50%}
 .face.xs{width:18px;height:18px;border-radius:50%}
 .pnrow{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:nowrap}
 /* a name with its headshot, wherever a name appears on its own */
-.pnf{display:inline-flex;align-items:center;gap:7px;min-width:0;max-width:100%}
+.pnf{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .pnf.mir{flex-direction:row-reverse}
 /* ---- head-to-head slot ladder: a mirror down the middle ---- */
-.ladderrow{display:grid;gap:12px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--grid)}
+.ladderrow{display:grid;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--grid)}
 .ladderrow:last-child{border-bottom:0}
-.ladderrow.ladderhd{padding-bottom:6px;border-bottom:1px solid var(--border)}
+.ladderrow.ladderhd{padding-bottom:7px;border-bottom:1px solid var(--border)}
 .ladderrow .pl{display:flex;align-items:center;gap:7px;min-width:0}
 .ladderrow .pl.l{justify-content:flex-end;text-align:right;flex-direction:row}
 .ladderrow .pl .plink{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ladderstack{border-bottom:1px solid var(--grid);padding:7px 0}
+.ladderstack{border-bottom:1px solid var(--grid);padding:8px 0}
 /* a counted score with where the game is underneath it */
 .lcell{display:inline-grid;gap:1px;line-height:1.15}
 .lstat{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:600}
@@ -316,22 +535,30 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .lstat .down{color:var(--bad-text)}
 
 /* ---- home ---- */
-.hero{position:relative;overflow:hidden;display:flex;align-items:center;gap:18px;padding:20px 22px;
-  border:1px solid var(--border);border-radius:var(--r);
-  background:linear-gradient(115deg, color-mix(in srgb, var(--s1) 11%, var(--surface-1)) 0%, var(--surface-1) 58%)}
-.hero > *{position:relative;z-index:1}
-.hero h1{font-size:28px;letter-spacing:-.025em;line-height:1.1;overflow:hidden;text-overflow:ellipsis}
-.heroav{width:60px;height:60px;border-radius:16px;object-fit:cover;flex:none;background:linear-gradient(140deg,var(--s1),var(--s7))}
+.banner{position:relative;overflow:hidden;display:flex;align-items:center;gap:22px;padding:28px 30px;color:#fff;
+  border-radius:calc(var(--r) + 4px);box-shadow:var(--shadow-lg);
+  background:
+    radial-gradient(520px 280px at 100% 0%, var(--glow-a), transparent 70%),
+    radial-gradient(460px 280px at 0% 110%, var(--glow-b), transparent 70%),
+    linear-gradient(135deg,var(--hero-a) 0%,var(--hero-b) 55%,var(--hero-c) 100%)}
+.banner::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:40px 40px;-webkit-mask-image:linear-gradient(100deg,transparent 30%,#000 100%);mask-image:linear-gradient(100deg,transparent 30%,#000 100%)}
+.banner > *{position:relative;z-index:1}
+.banner h1{font-size:32px;font-weight:750;letter-spacing:-.035em;line-height:1.08;overflow:hidden;text-overflow:ellipsis;color:#fff}
+.banner .sec{color:rgba(224,228,255,.78)}
+.banner .tag{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:#eef0ff}
+.banner .live{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.26);color:#fff}
+.heroav{width:68px;height:68px;border-radius:20px;object-fit:cover;flex:none;background:var(--brand-grad);
+  box-shadow:0 0 0 3px rgba(255,255,255,.18),0 12px 28px -8px rgba(0,0,0,.5)}
 /* the league's own badges, running off the right edge and fading out before
    they reach the name; decoration only, so it never carries a number */
 .heroband{position:absolute;z-index:0;top:0;right:0;bottom:0;width:min(62%,560px);
-  display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-right:20px;pointer-events:none;
-  opacity:.42;
+  display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-right:24px;pointer-events:none;
+  opacity:.5;
   -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 62%,#000 100%);
   mask-image:linear-gradient(to right,transparent 0%,#000 62%,#000 100%)}
-.heroband img{width:52px;height:52px;border-radius:15px;object-fit:cover;flex:none;filter:saturate(.8)}
-:root[data-theme="dark"] .heroband{opacity:.3}
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .heroband{opacity:.3} }
+.heroband img{width:54px;height:54px;border-radius:16px;object-fit:cover;flex:none;box-shadow:0 8px 18px -6px rgba(0,0,0,.5)}
 @media (max-width:820px){ .heroband{display:none} }
 
 /* ---- the headliners: your best players, lined up ----
@@ -394,8 +621,8 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 /* ---- players page ---- */
 tr.pickline td{background:color-mix(in srgb, #eda100 7%, transparent)}
 tr.pickline td:first-child{box-shadow:inset 3px 0 0 #eda100}
-tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
-.mine-own{color:var(--s1);font-weight:700}
+tr.mineline td{background:color-mix(in srgb, var(--brand) 7%, transparent)}
+.mine-own{color:var(--brand);font-weight:700}
 .tag.fa{border-color:var(--good);color:var(--good-text);font-weight:660}
 .wirebest{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-sm);
   border:1px solid color-mix(in srgb, var(--good) 40%, var(--border));background:color-mix(in srgb, var(--good) 6%, transparent)}
@@ -434,7 +661,7 @@ tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
 .pod .nm{font-weight:660;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .pod .pododds{font-size:11.5px;color:var(--text-secondary)}
 .pod .pododds b{color:var(--s1)}
-.pod.mine .podtop .nm{color:var(--s1)}
+.pod.mine .podtop .nm{color:var(--brand)}
 .pod .form{justify-content:center}
 .pod.p1 .nm{font-size:14.5px}
 .pod .block{width:100%;border-radius:8px 8px 0 0;display:grid;place-items:end center;padding-bottom:7px;
@@ -480,8 +707,8 @@ tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
   padding:9px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid transparent}
 .lgrow:hover{background:var(--surface-2);border-color:var(--border)}
 .lgrow:focus-visible{outline:2px solid var(--s1);outline-offset:-2px}
-.lgrow.mine{background:color-mix(in srgb, var(--s1) 7%, transparent)}
-.lgrow.mine:hover{background:color-mix(in srgb, var(--s1) 12%, transparent)}
+.lgrow.mine{background:color-mix(in srgb, var(--brand) 8%, transparent)}
+.lgrow.mine:hover{background:color-mix(in srgb, var(--brand) 13%, transparent)}
 .lgrow .rk{font-size:13px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
 .lgrow .who{display:flex;align-items:center;gap:10px;min-width:0}
 .lgrow .who .avatar{width:34px;height:34px;border-radius:10px}
@@ -504,16 +731,20 @@ tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
   .lgrow .form{display:none}
   .lgrow .who .avatar{width:30px;height:30px;border-radius:9px}
 }
-.tilegrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(258px,1fr))}
-.tile{display:flex;align-items:flex-start;gap:11px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;min-width:0;transition:border-color .12s,background .12s,transform .12s}
-.tile:hover{border-color:var(--s1);background:var(--surface-2);transform:translateY(-1px)}
-.tile:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
-.tile .ic{font-size:15px;color:var(--s1);flex:none;line-height:1.45}
-.tile b{font-size:13.5px;font-weight:640;display:block}
+.tilegrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(262px,1fr))}
+.tile{display:flex;align-items:flex-start;gap:13px;text-align:left;padding:15px 16px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;min-width:0;
+  box-shadow:var(--shadow-xs);transition:border-color .15s,background .15s,transform .18s var(--ease),box-shadow .18s}
+.tile:hover{border-color:color-mix(in srgb, var(--brand) 45%, var(--border));transform:translateY(-2px);box-shadow:var(--shadow)}
+.tile:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.tile .ic{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:var(--brand);
+  background:var(--brand-soft);transition:background .15s,color .15s}
+.tile .ic svg{width:19px;height:19px}
+.tile:hover .ic{background:var(--brand-grad);color:#fff}
+.tile b{font-size:14px;font-weight:660;display:block;margin-bottom:1px}
 @media (max-width:560px){
-  .hero{gap:13px;padding:15px 16px}
-  .hero h1{font-size:21px}
-  .heroav{width:46px;height:46px;border-radius:13px}
+  .banner{gap:14px;padding:20px 18px}
+  .banner h1{font-size:23px}
+  .heroav{width:52px;height:52px;border-radius:15px}
   .tilegrid{grid-template-columns:minmax(0,1fr)}
 }
 td .pnf,.asset .pnf{vertical-align:middle}
@@ -547,6 +778,12 @@ td .pnf,.asset .pnf{vertical-align:middle}
   .mvs{grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr);gap:7px}
   .mvs .tmside .sc{font-size:21px}
 }
+.mvs-lg{max-width:760px;margin-inline:auto;width:100%}
+.mvs-lg .tmside .sc{font-size:34px}
+.mvs-lg .mlogo{width:48px;height:48px;border-radius:14px}
+.mvs-lg .mid{padding-top:62px}
+.mvs-lg .mid .bar{height:12px;border-radius:99px}
+.mvs-lg .mid .bar>i{border-radius:99px 0 0 99px}
 .rankrow .pos{font-size:19px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
 @media (max-width:620px){
   .rankrow{grid-template-columns:28px 1fr auto;gap:10px}
@@ -556,50 +793,70 @@ td .pnf,.asset .pnf{vertical-align:middle}
 /* ============ narrow screens ============
    Everything below is scoped to a width or pointer query, so the desktop
    layout above is untouched. */
+.tabbar,.sheet,.sheet-back{display:none}
 @media (max-width: 900px){
-  /* auto rows in a min-height grid stretch to fill it, which turned the nav
-     strip into a tall empty band on any page shorter than the screen */
-  .shell{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  /* the sidebar becomes one sticky, horizontally scrolling tab strip: five
-     wrapped rows of nav pushed every page a third of a screen down, and the
-     nav went out of reach the moment you scrolled */
-  .side{
-    position:sticky;top:0;z-index:40;height:auto;max-width:100%;min-width:0;
-    flex-direction:row;flex-wrap:nowrap;gap:4px;padding:6px 8px;
-    border-right:0;border-bottom:1px solid var(--border);
-    overflow-x:auto;overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
-    scroll-snap-type:x proximity;scrollbar-width:none;
-  }
-  .side::-webkit-scrollbar{display:none}
-  .brand,.side .spacer,.side .foot{display:none}
-  .navbtn{width:auto;white-space:nowrap;flex:0 0 auto;scroll-snap-align:center;padding:8px 11px}
-  /* the top bar stops competing with the nav for the sticky slot */
-  .topbar{position:static;padding:10px 14px;gap:8px}
-  .topbar .lg{font-size:15px}
-  .topbar>div:first-child{flex:1 1 100%}
+  .shell{grid-template-columns:1fr}
+  /* the rail gives way to a thumb-reach tab bar: five places that matter, and a
+     sheet behind "More" for the rest, so nothing is further than two taps */
+  .side{display:none}
+  .topbar{padding:10px 14px;gap:8px;flex-wrap:nowrap}
+  .topbar>div:first-child{flex:1 1 auto;min-width:0}
+  .topbar .lg{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .topbar .sub{font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .topbar .grow{display:none}
-  .content{padding:12px;max-width:100%}
-  .card .hd{padding:12px 13px 0}
-  .card .bd{padding:12px 13px 14px}
+  .topbar>.btn,.topbar>.menuwrap>.btn{padding:0;width:40px;min-width:40px}
+  .topbar>.btn .bl,.topbar>.menuwrap>.btn .bl{display:none}
+  .topbar .live{padding:4px 9px;flex:none}
+  .content{padding:14px 14px calc(96px + env(safe-area-inset-bottom));max-width:100%}
+  .card .hd{padding:15px 16px 0}
+  .card .bd{padding:13px 16px 16px}
   /* a five-option segmented control is wider than a phone; let it wrap rather
      than push the page sideways */
   .seg{flex-wrap:wrap;max-width:100%}
-  .kpi{padding:10px 12px}
-  .kpi .val{font-size:19px}
-  .hero{font-size:27px}
-  .big{font-size:22px}
-  .hypbar{padding:11px 12px}
+  .kpi{padding:12px 14px}
+  .kpi .val{font-size:22px}
+  .hero{font-size:28px}
+  .big{font-size:23px}
+  .hypbar{padding:12px 14px}
   .picker{max-height:46vh}
   .tt{max-width:min(280px, calc(100vw - 24px))}
   .board{min-width:660px}
   .scroll-x{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:50;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    background:color-mix(in srgb, var(--surface-1) 96%, transparent);
+    -webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);
+    border-top:1px solid var(--border);box-shadow:0 -10px 30px -18px rgba(18,22,48,.28)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px 4px;border:0;background:transparent;cursor:pointer;
+    border-radius:12px;color:var(--text-muted);font-size:10.5px;font-weight:620;letter-spacing:.01em;min-width:0}
+  .tab svg{width:22px;height:22px;transition:transform .2s var(--ease)}
+  .tab.on{color:var(--brand)}
+  .tab.on svg{transform:translateY(-1px) scale(1.06)}
+  .tab.on span{font-weight:720}
+  .tab span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .sheet-back{display:block;position:fixed;inset:0;z-index:70;background:rgba(8,10,24,.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);animation:fade .2s both}
+  .sheet{display:block;position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:84vh;overflow-y:auto;
+    background:var(--surface-1);border-radius:24px 24px 0 0;padding:10px 16px calc(22px + env(safe-area-inset-bottom));
+    box-shadow:var(--shadow-lg);animation:slideup .3s var(--ease) both}
+  .sheet .grab{width:38px;height:4px;border-radius:4px;background:var(--axis);margin:0 auto 14px}
+  .sheet h4{font-size:17px;margin:0 4px 4px}
+  .sheet .sg{font-size:10px;font-weight:720;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin:16px 4px 8px}
+  .sheet .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sitem{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);
+    cursor:pointer;text-align:left;font-size:13.5px;font-weight:600;min-width:0}
+  .sitem svg{width:20px;height:20px;flex:none;color:var(--brand)}
+  .sitem.on{border-color:var(--brand);background:var(--brand-soft)}
 }
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes slideup{from{transform:translateY(100%)}to{transform:none}}
 @media (max-width: 560px){
-  .content{padding:10px}
-  .card .hd{padding:11px 11px 0}
-  .card .bd{padding:11px 11px 13px}
-  table.tbl{font-size:12px}
+  .content{padding:12px 12px calc(96px + env(safe-area-inset-bottom))}
+  .card .hd{padding:14px 14px 0}
+  .card .bd{padding:12px 14px 15px}
+  :root[data-ui="simple"] .card .hd{padding:16px 16px 0}
+  :root[data-ui="simple"] .card .bd{padding:14px 16px 18px}
+  table.tbl{font-size:12.5px}
   /* a long franchise name should not push every number off the screen */
   table.tbl .tm{max-width:112px}
   /* inside a table cell a wrapping row puts the position pill on its own line
@@ -609,25 +866,28 @@ td .pnf,.asset .pnf{vertical-align:middle}
   table.tbl .row{flex-wrap:nowrap}
   table.tbl .pill,table.tbl .tag{flex:none}
   table.tbl .plink{min-width:0;max-width:124px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  table.tbl th,table.tbl td{padding:7px 5px}
+  table.tbl th,table.tbl td,:root[data-ui="simple"] table.tbl th,:root[data-ui="simple"] table.tbl td{padding:9px 5px}
   table.tbl th:first-child,table.tbl td:first-child{padding-left:2px}
   table.tbl th:last-child,table.tbl td:last-child{padding-right:2px}
-  .grid{gap:11px}
-  .topbar{padding:9px 11px}
+  .grid,:root[data-ui="simple"] .grid{gap:12px}
+  .kpi,:root[data-ui="simple"] .kpi{padding:12px 14px}
+  .kpi .val,:root[data-ui="simple"] .kpi .val{font-size:22px}
+  .kpi .sub,:root[data-ui="simple"] .kpi .sub{font-size:12px}
+  .topbar{padding:9px 12px}
 }
 /* Touch devices and phone widths: fingers are not cursors. A desktop window is
    never below 560px in practice, so nothing here reaches a machine with a mouse. */
 @media (pointer: coarse), (max-width: 560px){
-  .btn{min-height:38px;padding:8px 13px}
-  .btn.sm{min-height:32px;padding:6px 11px;font-size:12px}
-  .chip{min-height:34px;padding:6px 12px}
-  .seg button{min-height:34px;padding:7px 13px}
+  .btn{min-height:40px;padding:8px 14px}
+  .btn.sm{min-height:34px;padding:6px 12px;font-size:12.5px}
+  .chip{min-height:36px;padding:6px 13px}
+  .seg button{min-height:36px;padding:7px 14px}
   .navbtn{min-height:38px}
-  .asset{padding:7px 8px}
+  .asset{padding:8px 9px}
   .asset .x{padding:0 8px;font-size:15px}
   /* iOS zooms the whole page when a focused field is under 16px */
-  input,select,textarea{font-size:16px;min-height:40px}
-  table.tbl tbody tr:hover{background:transparent}
+  input,select,textarea{font-size:16px;min-height:42px}
+  table.tbl tbody tr:hover td{background:transparent}
   .plink{padding:2px 0}
 }
 @supports (height: 100dvh){
@@ -635,7 +895,7 @@ td .pnf,.asset .pnf{vertical-align:middle}
   .shell{min-height:100dvh}
   .splash{min-height:100dvh}
 }
-@media print{ .side,.topbar{display:none} }
+@media print{ .side,.topbar,.tabbar,.sheet,.sheet-back{display:none} .shell{display:block} .main{background:none} }
 </style>
 </head>
 <body>
@@ -730,7 +990,7 @@ function applyLeagueType() {
   if (was === S.dynasty) return false;
   // the currency, the projections and every roster metric all move together
   applyValueMode();
-  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {};
+  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {}; S._sig = null; S._tl = null;
   // rosters are rebuilt because pick ownership changes, then every metric is
   // recomputed because the currency under all of them just changed
   if (S.teams && S.teams.length) { buildTeams(); computeStrength(); recordSnapshot(); }
@@ -1366,7 +1626,7 @@ async function loadLeague(leagueId, onStep) {
 
   step('Loading ' + valueWord() + ' trade values…', 0.52);
   S.values = await loadValues(S.cfg);
-  S.index = buildIndex();
+  S.index = buildIndex(); S._sig = null; S._tl = null;
   if (isDynasty()) buildPickCurves();
 
   step('Loading weekly matchups…', 0.66);
@@ -2975,22 +3235,55 @@ function depthBars(e, opts) {
   return g;
 }
 /* ================= app shell ================= */
+/* Line icons, one 24×24 grid, drawn as strokes so they take the colour of
+   whatever they sit in. Inline rather than fetched: the app is one file. */
+const ICON = {
+  home: '<path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.8V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.8"/><path d="M10 20v-5.5h4V20"/>',
+  week: '<path d="M3 12h4l2.6-7 4.8 14 2.6-7H21"/>',
+  roster: '<circle cx="9" cy="8" r="3.4"/><path d="M2.8 19.5c.4-3.3 2.9-5.2 6.2-5.2s5.8 1.9 6.2 5.2"/><circle cx="17.3" cy="9" r="2.5"/><path d="M17.6 14.3c2.2.2 3.8 1.7 4.1 4.2"/>',
+  players: '<path d="m12 3.4 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17.1l-5.4 3 1.1-6.1L3.2 9.8l6.1-.8z"/>',
+  lineup: '<path d="M8 4.5v15M8 4.5 4.7 7.8M8 4.5l3.3 3.3"/><path d="M16 19.5v-15M16 19.5l-3.3-3.3M16 19.5l3.3-3.3"/>',
+  trade: '<path d="M12 4v16M7 20h10M5.5 7.5h13"/><path d="m5.5 7.5-2.8 6.2a3.2 3.2 0 0 0 5.6 0z"/><path d="m18.5 7.5-2.8 6.2a3.2 3.2 0 0 0 5.6 0z"/>',
+  finder: '<circle cx="11" cy="11" r="6.6"/><path d="m20.3 20.3-4.6-4.6"/><path d="M8.6 11h4.8M11 8.6v4.8"/>',
+  trades: '<path d="M4 12a8 8 0 1 0 2.6-5.9L4 8.6"/><path d="M4 4v4.6h4.6"/><path d="M12 8v4.4l3 1.8"/>',
+  h2h: '<rect x="3.2" y="4.5" width="7.6" height="15" rx="2.2"/><rect x="13.2" y="4.5" width="7.6" height="15" rx="2.2"/><path d="M6 9h2M16 9h2M6 13h2M16 13h2"/>',
+  power: '<path d="M7.5 4h9v5.2a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H4.4a3 3 0 0 0 3.3 4.4M16.5 6h3.1a3 3 0 0 1-3.3 4.4"/><path d="M12 13.8V18M8.5 20.2h7"/>',
+  standings: '<path d="M5.5 20V11M12 20V4.5M18.5 20v-6.5"/>',
+  scout: '<circle cx="12" cy="12" r="7.6"/><circle cx="12" cy="12" r="2.6"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>',
+  sim: '<rect x="3.8" y="3.8" width="16.4" height="16.4" rx="4.4"/><circle cx="8.8" cy="8.8" r="1.1" fill="currentColor"/><circle cx="15.2" cy="8.8" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="8.8" cy="15.2" r="1.1" fill="currentColor"/><circle cx="15.2" cy="15.2" r="1.1" fill="currentColor"/>',
+  draft: '<rect x="3.6" y="3.6" width="7.2" height="7.2" rx="1.8"/><rect x="13.2" y="3.6" width="7.2" height="7.2" rx="1.8"/><rect x="3.6" y="13.2" width="7.2" height="7.2" rx="1.8"/><rect x="13.2" y="13.2" width="7.2" height="7.2" rx="1.8"/>',
+  stock: '<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+  more: '<circle cx="5.5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18.5" cy="12" r="1.4" fill="currentColor"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  chevup: '<path d="m6 15 6-6 6 6"/>',
+  flask: '<path d="M9.2 3.5h5.6M10 3.5v5.7L4.7 18.3A1.6 1.6 0 0 0 6.1 20.7h11.8a1.6 1.6 0 0 0 1.4-2.4L14 9.2V3.5"/><path d="M7.6 14.5h8.8"/>',
+  sliders: '<path d="M4 7h8.5M17 7h3M4 17h3M11.5 17H20"/><circle cx="14.8" cy="7" r="2.2"/><circle cx="9.2" cy="17" r="2.2"/>',
+  refresh: '<path d="M20 11.5A8 8 0 0 0 5.6 7.2L4 9"/><path d="M4 4.5V9h4.5"/><path d="M4 12.5a8 8 0 0 0 14.4 4.3L20 15"/><path d="M20 19.5V15h-4.5"/>',
+  swap: '<path d="M4 8h14l-3.4-3.4M20 16H6l3.4 3.4"/>',
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>'
+};
+function ico(name) {
+  return h('span.ic', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>' });
+}
+/* the football from the favicon, for the brand mark */
+const MARK_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-32 32 32)"><ellipse cx="32" cy="32" rx="19" ry="12" fill="#fff"/><path d="M14 32h36" style="stroke:var(--brand)" stroke-width="1.6" opacity=".5"/><path d="M24 32h16" style="stroke:var(--brand)" stroke-width="2.6" stroke-linecap="round"/><path d="M27 28.4v7.2M31 28.4v7.2M35 28.4v7.2" style="stroke:var(--brand)" stroke-width="2.3" stroke-linecap="round"/></g></svg>';
+
 const VIEWS = [
-  { k: 'home', ic: '⌂', label: 'Home' },
-  { k: 'week', ic: '◉', label: 'This Week' },
-  { k: 'roster', ic: '▤', label: 'Rosters' },
-  { k: 'players', ic: '★', label: 'Players' },
-  { k: 'lineup', ic: '⚖', label: 'Start / Sit' },
-  { k: 'trade', ic: '⇄', label: 'Trade Calculator' },
-  { k: 'finder', ic: '⌕', label: 'Trade Finder' },
-  { k: 'trades', ic: '⇌', label: 'Trade History' },
-  { k: 'h2h', ic: '⚔', label: 'Head to Head' },
-  { k: 'power', ic: '◆', label: 'Power Rankings' },
-  { k: 'standings', ic: '☰', label: 'Active Rankings' },
-  { k: 'scout', ic: '⌖', label: 'GM Scout' },
-  { k: 'sim', ic: '⟳', label: 'Simulator' },
-  { k: 'draft', ic: '▦', label: 'Draft Board' },
-  { k: 'stock', ic: '↗', label: 'Stock Mode' }
+  { k: 'home', ic: 'home', label: 'Home', grp: 'Overview' },
+  { k: 'week', ic: 'week', label: 'This Week', grp: 'Overview' },
+  { k: 'roster', ic: 'roster', label: 'Rosters', grp: 'Teams' },
+  { k: 'players', ic: 'players', label: 'Players', grp: 'Teams' },
+  { k: 'lineup', ic: 'lineup', label: 'Start / Sit', grp: 'Teams' },
+  { k: 'trade', ic: 'trade', label: 'Trade Calculator', grp: 'Trading' },
+  { k: 'finder', ic: 'finder', label: 'Trade Finder', grp: 'Trading' },
+  { k: 'trades', ic: 'trades', label: 'Trade History', grp: 'Trading' },
+  { k: 'h2h', ic: 'h2h', label: 'Head to Head', grp: 'League' },
+  { k: 'power', ic: 'power', label: 'Power Rankings', grp: 'League' },
+  { k: 'standings', ic: 'standings', label: 'Active Rankings', grp: 'League' },
+  { k: 'scout', ic: 'scout', label: 'GM Scout', grp: 'League' },
+  { k: 'sim', ic: 'sim', label: 'Simulator', grp: 'Tools' },
+  { k: 'draft', ic: 'draft', label: 'Draft Board', grp: 'Tools' },
+  { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' }
 ];
 /* The tabs simple mode leads with. The rest are still there, one tap behind
    "More" — hiding them outright would be a different app, not a calmer one. */
@@ -3002,6 +3295,24 @@ function setTheme(t) {
   LS.set('theme', t);
 }
 function currentTheme() { return LS.get('theme', 'system'); }
+/* Accent colour: one hue drives every brand token (see "accent themes" in the
+   stylesheet). The hexes are only the swatches' faces. */
+const ACCENTS = [
+  { k: 'indigo', label: 'Indigo', a: '#4f6bf2', b: '#8a5cf6' },
+  { k: 'blue', label: 'Ocean', a: '#2b6ae8', b: '#3d9be9' },
+  { k: 'teal', label: 'Lagoon', a: '#0a8fb0', b: '#1fb6a6' },
+  { k: 'green', label: 'Emerald', a: '#0f9d63', b: '#37b86a' },
+  { k: 'orange', label: 'Sunset', a: '#d9560a', b: '#ef8a1e' },
+  { k: 'rose', label: 'Rose', a: '#d81f4d', b: '#e5498f' },
+  { k: 'graphite', label: 'Graphite', a: '#3b4254', b: '#6a7186' }
+];
+function currentAccent() { const a = LS.get('accent', 'indigo'); return ACCENTS.some(x => x.k === a) ? a : 'indigo'; }
+function setAccent(k) {
+  if (!ACCENTS.some(x => x.k === k)) k = 'indigo';
+  if (k === 'indigo') document.documentElement.removeAttribute('data-accent');
+  else document.documentElement.setAttribute('data-accent', k);
+  LS.set('accent', k);
+}
 
 /* One menu for everything that changes how the app looks rather than what it
    says. It survives a render so a click inside it does not close it, and one
@@ -3016,7 +3327,7 @@ function settingsMenu() {
       if (e.target.closest && e.target.closest('.menuwrap')) return;
       settingsOpen = false; render();
     });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen) { settingsOpen = false; render(); } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (settingsOpen || moreOpen)) { settingsOpen = false; moreOpen = false; render(); } });
   }
   const group = (label, control, note) => h('div',
     h('div.mlbl', label), control, note ? h('div.mnote', note) : null);
@@ -3036,6 +3347,14 @@ function settingsMenu() {
       useUsernames()
         ? 'Sleeper handles, everywhere. Team names show underneath.'
         : 'Team names, everywhere. Usernames show underneath.'),
+    group('Accent colour',
+      h('div.swatches', { role: 'radiogroup', 'aria-label': 'Accent colour' }, ACCENTS.map(a =>
+        h('button.swatch' + (currentAccent() === a.k ? '.on' : ''), {
+          title: a.label, 'aria-label': a.label, role: 'radio', 'aria-checked': currentAccent() === a.k ? 'true' : 'false',
+          style: { background: `linear-gradient(135deg,${a.a},${a.b})` },
+          onclick: () => { setAccent(a.k); render(); }
+        }))),
+      (ACCENTS.find(a => a.k === currentAccent()) || ACCENTS[0]).label + ' — the colour of buttons, links, the sidebar and the home banner.'),
     S.league ? group('League type',
       segmented([{ k: 'auto', label: 'Auto' }, { k: 'dynasty', label: 'Dynasty' }, { k: 'redraft', label: 'Redraft' }],
         leagueTypeChoice(), m => { setLeagueType(m); render(); }),
@@ -3044,17 +3363,24 @@ function settingsMenu() {
         ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
         : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
     h('hr'),
-    h('button.btn', { onclick: () => { settingsOpen = false; hardRefresh(); } }, '↻ Refresh data'),
+    h('button.btn', { onclick: () => { settingsOpen = false; hardRefresh(); } }, ico('refresh'), 'Refresh data'),
     h('button.btn', {
       onclick: () => { settingsOpen = false; S.league = null; S._sched = null; hypExit(); render(); }
-    }, 'Change league'));
+    }, ico('swap'), 'Change league'));
   return h('div.menuwrap',
     h('button.btn' + (settingsOpen ? '.pri' : ''), {
-      title: 'Settings', 'aria-expanded': settingsOpen ? 'true' : 'false',
+      title: 'Settings', 'aria-label': 'Settings', 'aria-expanded': settingsOpen ? 'true' : 'false',
       onclick: () => { settingsOpen = !settingsOpen; render(); }
-    }, '⚙ Settings'),
+    }, ico('sliders'), h('span.bl', 'Settings')),
     settingsOpen ? panel : null);
 }
+
+let moreOpen = false;
+let _lastView = null;
+const NAV_ORDER = ['Overview', 'Teams', 'Trading', 'League', 'Tools'];
+/* the four places most visits start from, plus "More" — what the phone tab bar shows */
+const TAB_VIEWS = ['home', 'week', 'roster', 'players'];
+function go(view) { S.view = view; moreOpen = false; render(); window.scrollTo(0, 0); }
 
 function render() {
   const app = $('#app');
@@ -3063,40 +3389,51 @@ function render() {
   const simple = isSimple();
   const shown = !simple || navExpanded ? VIEWS : VIEWS.filter(v => CORE_VIEWS.includes(v.k) || v.k === S.view);
   const hiddenCount = VIEWS.length - shown.length;
+  let lastGrp = null;
+  const navItems = [];
+  shown.forEach(v => {
+    if (v.grp !== lastGrp) { lastGrp = v.grp; navItems.push(h('div.navgroup', v.grp)); }
+    navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label));
+  });
   const side = h('div.side',
-    h('div.brand', h('div.mark'), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
-    shown.map(v => h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => { S.view = v.k; render(); window.scrollTo(0, 0); } },
-      h('span.ic', v.ic), v.label)),
+    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
+    navItems,
     simple && (hiddenCount > 0 || navExpanded)
-      ? h('button.navbtn', { onclick: () => { navExpanded = !navExpanded; render(); } },
-        h('span.ic', navExpanded ? '▴' : '▾'), navExpanded ? 'Less' : 'More (' + hiddenCount + ')')
+      ? h('button.navbtn', { style: { marginTop: '6px' }, onclick: () => { navExpanded = !navExpanded; render(); } },
+        ico(navExpanded ? 'chevup' : 'chev'), navExpanded ? 'Show fewer' : 'More pages (' + hiddenCount + ')')
       : null,
     h('div.spacer'),
     h('div.foot',
       h('div', 'Values: FantasyCalc'), h('div', 'League: Sleeper'),
-      h('div', { style: { marginTop: '6px' } }, 'Updated ' + new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })))
+      h('div', 'Updated ' + new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })))
   );
   const cfg = S.cfg;
   const fmtStr = `${cfg.superflex ? 'Superflex' : '1QB'} · ${cfg.actualTeams}-team · ${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'}`;
   const top = h('div.topbar',
     h('div', h('div.lg', S.league.name), h('div.sub', fmtStr + ' · ' + S.season + ' · '
       + (S.liveWeek ? 'week ' + S.liveWeek + ' in progress' : S.lastWeek ? 'through week ' + S.lastWeek : 'preseason'))),
-    h('div.grow', { style: { flex: '1' } }),
-    h('span.tag', { style: S.liveWeek ? { borderColor: 'var(--s1)', color: 'var(--s1)' } : null },
-      S.liveWeek ? '● Week ' + S.liveWeek : S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
+    h('div.grow'),
+    S.liveWeek ? h('span.live', h('i'), 'Week ' + S.liveWeek)
+      : h('span.live.idle', h('i'), S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
     h('button.btn' + (HYP.on ? '.hypon' : ''), {
-      title: 'Try roster changes and see every page recompute',
+      title: 'Try roster changes and see every page recompute', 'aria-label': 'Hypothetical roster sandbox',
       onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
-    }, HYP.on ? '⚗ Hypothetical · ' + hypCount() : '⚗ Hypothetical'),
+    }, ico('flask'), h('span.bl', HYP.on ? 'Hypothetical · ' + hypCount() : 'Hypothetical')),
     settingsMenu()
   );
-  const content = h('div.content');
+  const entering = _lastView !== S.view; _lastView = S.view;
+  const content = h('div.content' + (entering ? '.enter' : ''));
   const V = {
     home: viewHome, week: viewWeek, players: viewPlayers, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
     h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
     draft: viewDraft, stock: viewStock, player: viewPlayer
   }[S.view];
   try {
+    const pv = VIEWS.find(v => v.k === S.view);
+    if (pv && S.view !== 'home') {
+      content.appendChild(h('div.pagehead', h('div.pic', ico(pv.ic)),
+        h('div', h('h2', pv.label), h('p', blurbFor(pv.k)))));
+    }
     if (HYP.on) {
       const bar = HYP_UNAFFECTED[S.view] ? hypNote(S.view) : hypBar();
       if (bar) content.appendChild(bar);
@@ -3105,11 +3442,19 @@ function render() {
   }
   catch (e) { console.error(e); content.appendChild(card('Something broke in this view', null, h('div', h('p.sec', String(e && e.message || e)), h('pre.tiny.muted', { style: { whiteSpace: 'pre-wrap' } }, String(e && e.stack || ''))))); }
   app.appendChild(h('div.shell', side, h('div.main', top, content)));
-  // on a phone the nav is one scrolling strip, so the current view can sit off
-  // screen after a jump from a link inside a page
-  const on = $('.navbtn.on', side);
-  if (on && side.scrollWidth > side.clientWidth + 4) {
-    side.scrollLeft = Math.max(0, on.offsetLeft - (side.clientWidth - on.offsetWidth) / 2);
+  // phone navigation: the four places visits start from, then everything else in a sheet
+  const inTabs = TAB_VIEWS.includes(S.view);
+  app.appendChild(h('nav.tabbar', { 'aria-label': 'Pages' },
+    TAB_VIEWS.map(k => { const v = VIEWS.find(x => x.k === k);
+      return h('button.tab' + (S.view === k && !moreOpen ? '.on' : ''), { onclick: () => go(k), 'aria-label': v.label }, ico(v.ic), h('span', v.label.replace('This Week', 'Week'))); }),
+    h('button.tab' + (moreOpen || !inTabs ? '.on' : ''), { onclick: () => { moreOpen = !moreOpen; render(); }, 'aria-label': 'More pages', 'aria-expanded': moreOpen ? 'true' : 'false' },
+      ico('more'), h('span', 'More'))));
+  if (moreOpen) {
+    app.appendChild(h('div.sheet-back', { onclick: () => { moreOpen = false; render(); } }));
+    app.appendChild(h('div.sheet', { role: 'dialog', 'aria-label': 'All pages' },
+      h('div.grab'), h('h4', 'All pages'),
+      NAV_ORDER.map(g => [h('div.sg', g), h('div.sgrid', VIEWS.filter(v => v.grp === g).map(v =>
+        h('button.sitem' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label)))])));
   }
 }
 /* Charts are sized for the viewport they were drawn in, so a rotation or a
@@ -3137,12 +3482,12 @@ async function hardRefresh() {
 /* ================= splash / league picker ================= */
 function splash() {
   const box = h('div.box');
-  const status = h('div.tiny.muted', { style: { minHeight: '18px' } });
+  const status = h('div.tiny.muted.sp-status', { style: { minHeight: '18px' } });
   const bar = h('div.loadbar', h('i'));
   const inp = h('input', { placeholder: 'Sleeper username or 18-digit league ID', style: { width: '100%' }, value: LS.get('last', '') });
   const seasonSel = h('select', [String(new Date().getFullYear()), String(new Date().getFullYear() - 1)].map(y => h('option', { value: y }, y)));
   const list = h('div', { style: { display: 'grid', gap: '6px', marginTop: '10px' } });
-  const go = h('button.btn.pri', { style: { width: '100%', padding: '9px' } }, 'Load league');
+  const go = h('button.btn.pri', { style: { width: '100%', minHeight: '42px', fontSize: '14px' } }, 'Load league');
 
   const setStatus = (msg, p) => { status.textContent = msg; $('i', bar).style.width = (p * 100) + '%'; };
 
@@ -3159,8 +3504,7 @@ function splash() {
       S.me = u.user_id; LS.set('me', u.user_id);
       setStatus('Pick a league', 0);
       clear(list).appendChild(h('div.tiny.muted', { style: { marginTop: '4px' } }, lgs.length + ' league' + (lgs.length > 1 ? 's' : '') + ' for ' + (u.display_name || v)));
-      lgs.forEach(l => list.appendChild(h('button.btn', {
-        style: { width: '100%', textAlign: 'left', padding: '9px 11px' },
+      lgs.forEach(l => list.appendChild(h('button.btn.lgpick', {
         onclick: async () => { LS.set('last', l.league_id); go.disabled = true; clear(list); await boot(l.league_id, setStatus); }
       },
         h('div', { style: { fontWeight: '620' } }, l.name),
@@ -3175,19 +3519,25 @@ function splash() {
   go.addEventListener('click', submit);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 
-  box.appendChild(card(null, null, h('div', { style: { display: 'grid', gap: '13px' } },
-    h('div.row', { style: { gap: '10px', alignItems: 'center' } },
-      h('div', { style: { width: '34px', height: '34px', borderRadius: '9px', background: 'linear-gradient(140deg,var(--s1),var(--s7))' } }),
-      h('div', h('div', { style: { fontWeight: '680', fontSize: '17px', letterSpacing: '-.02em' } }, 'Dynasty Command Center'),
-        h('div.tiny.muted', 'Live Sleeper league data · live FantasyCalc trade values'))),
-    h('div', { style: { display: 'grid', gap: '7px' } },
+  box.appendChild(card(null, null, h('div', { style: { display: 'grid', gap: '16px' } },
+    h('div', h('h2.sp-title', 'Load your league'),
+      h('div.tiny.muted', 'Public Sleeper data — no sign-in, no key.')),
+    h('div', { style: { display: 'grid', gap: '12px' } },
       h('label.fld', 'Sleeper username or league ID', inp),
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
-    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '10px' } },
+    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
       'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — nothing is uploaded anywhere.')
   )));
-  return h('div.splash', box);
+  const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
+  const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
+  return h('div.splash',
+    h('div.sp-art',
+      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Command Center')),
+      h('h1', 'Every dynasty decision, ', h('span', 'one command center.')),
+      h('p', 'Live analysis for any Sleeper league: who’s really winning, what a trade is worth, and what the season looks like when you play it a thousand times.'),
+      h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
+    h('div.sp-form', box));
 }
 
 /* ================= 1. ROSTERS ================= */
@@ -4013,7 +4363,7 @@ function tradeResult(R) {
 }
 
 /* ================= 5. TRADE FINDER ================= */
-const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null };
+const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
   { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
@@ -4072,6 +4422,13 @@ function viewFinder() {
       ? `Shopping ${focusP.name}. Every package below sends them out, and the return has to move you forward on your own objective.`
       : `Going after ${focusP.name} from ${focusOwner.name}. Every package below brings them back, and ${focusOwner.short} has to want it too.`;
 
+  const run = () => {
+    FinderUI.results = findTrades(T, mode, FinderUI.tol, {
+      positions: FinderUI.positions, shape: FinderUI.shape, partners: FinderUI.partners, focus: focus, signal: FinderUI.signal
+    });
+  };
+  if (FinderUI.autorun) { FinderUI.autorun = false; run(); }
+
   wrap.appendChild(card('What are you trying to do?', 'the filters below are all optional', h('div', { style: { display: 'grid', gap: '14px' } },
     h('div.row', { style: { gap: '14px' } },
       h('label.fld', { style: { minWidth: '240px' } }, 'Your team',
@@ -4106,15 +4463,19 @@ function viewFinder() {
             : h('span.tiny.muted', 'off — any player')),
         focusSel,
         h('div.tiny.muted', { style: { marginTop: '5px' } }, focusBlurb))),
-    h('button.btn.pri', {
-      onclick: () => {
-        FinderUI.results = findTrades(T, mode, FinderUI.tol, {
-          positions: FinderUI.positions, shape: FinderUI.shape, partners: FinderUI.partners, focus: focus
-        });
-        render();
-      }
-    }, 'Find trades')
+    h('div',
+      h('label.fld', { style: { gap: '4px' } }, 'Market angle', segmented([
+        { k: 'off', label: 'Ignore' }, { k: 'prefer', label: 'Prefer buy-low / sell-high' }, { k: 'only', label: 'Only those' }
+      ], FinderUI.signal, k => { FinderUI.signal = k; dirty(); render(); })),
+      h('div.tiny.muted', { style: { marginTop: '5px' } }, {
+        off: 'Rank on lineup and future value alone.',
+        prefer: 'Trades that sell a player the market is overpaying for, or buy one it is underpricing, rank higher.',
+        only: 'Show only trades with a buy-low or sell-high player in them.'
+      }[FinderUI.signal])),
+    h('button.btn.pri', { onclick: () => { run(); render(); } }, 'Find trades')
   )));
+
+  wrap.appendChild(signalBoard(T, (id) => { FinderUI.focus = id; FinderUI.partners = []; FinderUI.autorun = true; render(); window.scrollTo(0, 0); }));
 
   if (FinderUI.results) {
     const res = FinderUI.results;
@@ -4186,6 +4547,166 @@ function bestFreeAgentFor(players, taxi, ir, n) {
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, n || 2);
 }
+/* ---------- what a package is worth ----------
+   Adding up trade values treats two 4k players as a 8k asset. They are not: the
+   team receiving them has to start one, bench or cut the other, and the team
+   sending the single better player has given up the one scarce thing. So the
+   best piece of a package counts in full, and each further player counts for
+   less. Picks occupy no roster spot, so they count in full. */
+const DEPTH_W = [1, 0.88, 0.78, 0.7];
+function packageValue(assets) {
+  const pl = assets.filter(a => a.kind === 'player').map(a => a.dv).sort((a, b) => b - a);
+  const pk = assets.filter(a => a.kind !== 'player').reduce((x, a) => x + a.dv, 0);
+  return pl.reduce((x, v, i) => x + v * (DEPTH_W[i] !== undefined ? DEPTH_W[i] : 0.6), 0) + pk;
+}
+
+/* ---------- buy low / sell high ----------
+   A player's price is the market's opinion; his scoring is the evidence. Where
+   they disagree there is a trade: scoring well under what his value implies is a
+   buy-low (the price is ahead of the production, and the gap tends to close on a
+   rebound); scoring well over it, or sitting at a peak or an age cliff, is a
+   sell-high. Production is only believed in proportion to how many games it
+   rests on, and a young player is not expected to produce what his future is
+   priced at. */
+const AGE_CLIFF = { RB: 27, WR: 29, TE: 30, QB: 35 };
+function computeSignal(x, cal) {
+  const p = x.p, n = x.n, actual = x.actual;
+  // what his value rank typically scores, scaled by how this league's players of that
+  // position really score against the same curve
+  const expected = x.base * cal;
+  let buy = 0, sell = 0; const rb = [], rs = [];
+  /* A weekly score is noisy — about half the player's average either side — so
+     a few games prove little. The gap is judged against the noise it could be
+     (variance for his position, shrinking with the square root of games played):
+     two games need a huge gap, sixteen need a modest one. */
+  if (n >= 2 && expected > 3) {
+    const se = (POS_CV[p.pos] || 0.58) * expected / Math.sqrt(n);
+    const z = (actual - expected) / se, ratio = actual / expected - 1;
+    if (z <= -1.05 && ratio <= -0.2) { buy += clamp((-z - 0.5) / 1.5, 0.2, 1); rb.push(`scoring ${fmt(actual, 1)} pts/wk against ~${fmt(expected, 1)} typical for his value`); }
+    else if (z >= 1.05 && ratio >= 0.2) { sell += clamp((z - 0.5) / 1.5, 0.2, 1); rs.push(`scoring ${fmt(actual, 1)} pts/wk, well above the ~${fmt(expected, 1)} his value implies`); }
+  }
+  const tr = p.trend30 ? p.trend30 / Math.max(1, p.dv) : 0;
+  /* a month of price movement is routine, so on its own it never flags anyone —
+     it only reinforces a read that production, age or injury has already made */
+  if (tr <= -0.08 && (p.age || 99) <= 27) { buy += 0.2; rb.push(`value down ${Math.round(-tr * 100)}% in 30 days`); }
+  if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days — close to a peak`); }
+  if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos} — values fall away from here`); }
+  if (['Out', 'IR', 'PUP'].includes(p.injury) && p.dv >= 2000 && (p.age || 99) <= 28) { buy += 0.4; rb.push(`injured (${p.injury}), so his price is depressed`); }
+  if (Math.max(buy, sell) < 0.35) return null;
+  const kind = buy > sell ? 'buy' : 'sell';
+  return { kind, strength: Math.min(1, Math.max(buy, sell)), reasons: kind === 'buy' ? rb : rs, actual, expected, games: n };
+}
+/** id -> signal, for every player worth flagging. Rebuilt when the values change. */
+function signalMap() {
+  if (S._sig) return S._sig;
+  const rank = {};
+  POS4.forEach(pos => Object.values(S.index).filter(p => p.pos === pos && (p.dv || 0) > 0)
+    .sort((a, b) => b.dv - a.dv).forEach((p, i) => { rank[p.id] = i + 1; }));
+  const info = {};
+  Object.values(S.index).forEach(p => {
+    if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id]) return;
+    const games = playerGameLog(p.id).filter(g => g.state === 'final' && g.pts !== null && g.pts > 0);
+    // a young player is not expected to produce what his future is priced at
+    const youth = p.age ? clamp(0.78 + (p.age - 21) * 0.07, 0.78, 1) : 1;
+    info[p.id] = { p, n: games.length, actual: games.length ? mean(games.map(g => g.pts)) : null,
+      base: scoringAdjust(p.pos, curveLookup(p.pos, rank[p.id]), rank[p.id], S.cfg) * youth };
+  });
+  // Scoring format, a tight-end premium or the curve itself shift every player of a
+  // position the same way. The league's own median answers to that, so a flag means
+  // "scoring less than comparably priced players here", not "off a fixed curve".
+  const cal = {};
+  POS4.forEach(pos => {
+    const rs = Object.values(info).filter(x => x.p.pos === pos && x.n >= 2 && x.base > 3).map(x => x.actual / x.base).sort((a, b) => a - b);
+    cal[pos] = rs.length >= 8 ? rs[Math.floor(rs.length / 2)] : 1;
+  });
+  const out = {};
+  Object.values(info).forEach(x => { const s = computeSignal(x, cal[x.p.pos]); if (s) out[x.p.id] = s; });
+  return (S._sig = out);
+}
+
+/* ---------- win now / rebuild ----------
+   The market prices every player twice: for this season (redraft) and for the
+   long run (dynasty). Where the two disagree, the player has a timeline. Worth
+   more this season than the long run — an older producer, a short window — is a
+   win-now asset: the right buy for a contender and the right sale for a
+   rebuild. Worth more over the long run — young, stashed, unproven — is the
+   opposite. Compared by rank, not raw value, so it does not matter that the two
+   prices sit on different scales. Needs both prices, so a redraft league (which
+   has no long run) and a response without redraft prices get nothing. */
+function timelineMap() {
+  if (S._tl) return S._tl;
+  const out = {};
+  if (!isDynasty() || S.redraftPricesMissing) return (S._tl = out);
+  const rows = Object.values(S.index).filter(p => POS4.includes(p.pos));
+  const rank = (key) => {
+    const r = {}; rows.filter(p => (p[key] || 0) > 0).sort((a, b) => b[key] - a[key]).forEach((p, i) => { r[p.id] = i + 1; });
+    return r;
+  };
+  const red = rank('rv'), dyn = rank('dvDyn');
+  rows.forEach(p => {
+    const r = red[p.id], d = dyn[p.id];
+    if (!r || !d || Math.min(r, d) > 150) return;
+    const ratio = d / r, gap = d - r;
+    const base = { redRank: r, dynRank: d, ratio, gap };
+    if (ratio >= 1.4 && gap >= 6) out[p.id] = Object.assign({ kind: 'now', strength: clamp(Math.log(ratio) / Math.log(3), 0.2, 1) }, base);
+    else if (ratio <= 1 / 1.4 && gap <= -6) out[p.id] = Object.assign({ kind: 'later', strength: clamp(Math.log(1 / ratio) / Math.log(3), 0.2, 1) }, base);
+  });
+  return (S._tl = out);
+}
+const TL_LABEL = { now: 'Win now', later: 'Rebuild' };
+function timelineWhy(t) {
+  return t.kind === 'now'
+    ? `Redraft #${t.redRank} but dynasty #${t.dynRank}: worth more this season than over the long run. A contender’s buy, a rebuilder’s sale.`
+    : `Dynasty #${t.dynRank} but redraft #${t.redRank}: worth more over the long run than this season. A rebuilder’s buy, a contender’s sale.`;
+}
+/** The small tags that say what the market thinks of a player. */
+function marketTags(p) {
+  const s = signalMap()[p.id], t = timelineMap()[p.id];
+  if (!s && !t) return null;
+  return h('span.ptags',
+    s ? h('span.sigtag.' + s.kind, { title: s.reasons.join(' · ') }, s.kind === 'buy' ? 'Buy low' : 'Sell high') : null,
+    t ? h('span.sigtag.' + t.kind, { title: timelineWhy(t) }, TL_LABEL[t.kind]) : null);
+}
+/** Jump to the Finder with a search already built around this player. */
+function shopInFinder(id) {
+  FinderUI.team = S.myRosterId; FinderUI.focus = String(id); FinderUI.partners = []; FinderUI.autorun = true;
+  S.view = 'finder'; render(); window.scrollTo(0, 0);
+}
+
+/* ---------- why a trade works ----------
+   A list of numbers is not a reason. These are the reasons, in plain words:
+   what hole it fills for you, why the other side would say yes, what it does to
+   your lineup and your age curve, what the market is mispricing, and what it
+   costs on the roster. */
+function explainTrade(r, T, scT, scP) {
+  const out = [];
+  const P = r.partner;
+  const gp = r.give.filter(a => a.kind === 'player'), tp = r.get.filter(a => a.kind === 'player');
+  const names = (arr) => arr.map(a => a.name).join(' + ');
+  const gotPos = Array.from(new Set(tp.map(a => a.pos)));
+  const myHole = scT.holes.find(x => gotPos.includes(x.pos));
+  if (myHole) out.push({ k: 'need', t: `You’re thin at ${myHole.pos} (${myHole.startable} startable for ${myHole.need} lineup spots), and ${names(tp.filter(a => a.pos === myHole.pos))} fills it.` });
+  const after = optimalLineup(afterRoster(T, r.give, r.get).filter(p => !T.taxi.has(p.id) && !T.ir.has(p.id)), 'ppg');
+  const newSt = after.filter(s => s.player && !T.starterIds.has(s.player.id)).sort((a, b) => b.player.ppg - a.player.ppg);
+  const dNow = r.myAfter.now - r.myBase.now;
+  if (newSt.length && dNow > 0.05) {
+    const s = newSt[0];
+    out.push({ k: 'lineup', t: `${s.player.name} starts at ${SLOT_LABEL[s.slot] || s.slot} (${fmt(s.player.ppg, 1)} pts/wk) — your lineup improves by ${fmt(dNow, 1)} pts/wk.` });
+  }
+  const theirHole = scP.holes.find(x => r.give.some(a => a.pos === x.pos));
+  if (theirHole) out.push({ k: 'them', t: `${P.name} is thin at ${theirHole.pos}; ${names(r.give.filter(a => a.pos === theirHole.pos))} solves that, which is why they’d say yes.` });
+  else if (r.pGain > 0) out.push({ k: 'them', t: `${P.name}${P.window ? ' (' + P.window.toLowerCase() + ')' : ''} also comes out ahead on their own plan, so there’s something in it for them.` });
+  if (isDynasty()) {
+    const ag = (arr) => { const x = arr.filter(a => a.kind === 'player' && a.ref.age); return x.length ? sum(x.map(a => a.ref.age * a.dv)) / sum(x.map(a => a.dv)) : null; };
+    const a1 = ag(r.give), a2 = ag(r.get);
+    if (a1 && a2 && Math.abs(a1 - a2) >= 2) out.push({ k: 'age', t: a2 < a1 ? `You get younger — ${fmt(a2, 1)} against ${fmt(a1, 1)} years on average, value that holds.` : `You get older — ${fmt(a2, 1)} against ${fmt(a1, 1)} years: more now, a shorter shelf life.` });
+  }
+  (r.signals || []).slice(0, 2).forEach(s => out.push({ k: s.kind, t: `${s.kind === 'buy' ? 'Buy low' : 'Sell high'}: ${s.asset.name} — ${s.reasons[0]}.` }));
+  if (r.theirDrops && r.theirDrops.length) out.push({ k: 'cost', t: `${P.short} would have to cut ${names(r.theirDrops.map(p => ({ name: p.name })))} to fit the extra roster spot.` });
+  if (r.myDrops && r.myDrops.length) out.push({ k: 'cost', t: `You’d have to cut ${names(r.myDrops.map(p => ({ name: p.name })))} to fit.` });
+  return out;
+}
+
 function findTrades(T, mode, tol, filters) {
   filters = filters || {};
   const wantPos = filters.positions || [];
@@ -4194,15 +4715,34 @@ function findTrades(T, mode, tol, filters) {
   // a named player on someone else's roster fixes who you are dealing with
   const partners = focus && focus.side === 'get' ? [focus.owner.rosterId] : (filters.partners || []);
   const myObj = objectiveFor(mode);
-  // roster side of a hypothetical swap, with picks left unpriced for now
+  const spots = S.cfg.activeSpots || 0;
+  const sigMap = signalMap();
+  /* Roster side of a hypothetical swap, with picks left unpriced for now. A team
+     that lands more bodies than it sends has to cut down to its active limit, so
+     its cheapest bench players leave — and that is a cost of the trade, not a
+     footnote to it. A trade with nobody droppable to cut cannot be made at all. */
   const shellQ = (t, out, inc) => {
     const rm = new Set(out.filter(a => a.kind === 'player').map(a => a.id));
-    const players = t.players.filter(p => !rm.has(p.id)).concat(inc.filter(a => a.kind === 'player').map(a => a.ref));
+    const incP = inc.filter(a => a.kind === 'player').map(a => a.ref);
+    let players = t.players.filter(p => !rm.has(p.id)).concat(incP);
     const rmp = new Set(out.filter(a => a.kind === 'pick').map(a => a.id));
     const picks = t.pickAssets.filter(p => !rmp.has(p.id)).concat(inc.filter(a => a.kind === 'pick').map(a => a.ref));
-    const act = players.filter(p => !t.taxi.has(p.id) && !t.ir.has(p.id));
+    let act = players.filter(p => !t.taxi.has(p.id) && !t.ir.has(p.id));
+    let drops = [], infeasible = false;
+    if (spots > 0) {
+      const before = t.players.filter(p => !t.taxi.has(p.id) && !t.ir.has(p.id)).length;
+      const over = act.length - Math.max(spots, before);
+      if (over > 0) {
+        const incIds = new Set(incP.map(p => p.id));
+        const lu = new Set(optimalLineup(act, 'ppg').filter(s => s.player).map(s => s.player.id));
+        drops = act.filter(p => !incIds.has(p.id) && !lu.has(p.id)).sort((a, b) => (a.dv || 0) - (b.dv || 0)).slice(0, over);
+        if (drops.length < over) infeasible = true;
+        const dr = new Set(drops.map(p => p.id));
+        players = players.filter(p => !dr.has(p.id)); act = act.filter(p => !dr.has(p.id));
+      }
+    }
     const now = lineupPoints(act, 'ppg');
-    return { picks, now, futureRoster: isDynasty() ? lineupPoints(players, 'fppg') : now };
+    return { picks, now, futureRoster: isDynasty() ? lineupPoints(players, 'fppg') : now, drops, infeasible, dropCost: sum(drops.map(p => p.dv || 0)) };
   };
   /* Both sides at once, because the picks have to be priced against the standings
      the swap produces — improving your roster pushes your own picks later. */
@@ -4214,9 +4754,10 @@ function findTrades(T, mode, tol, filters) {
     const price = isDynasty() ? pickPricer(ov) : null;
     const capA = price ? sum(a.picks.map(pk => price(pk).value)) : 0;
     const capB = price ? sum(b.picks.map(pk => price(pk).value)) : 0;
+    // a cut is a real loss, but half of it is the replacement-level scrub who can be re-signed
     return [
-      { now: a.now, future: a.futureRoster + capA / 620, pickCapital: capA },
-      { now: b.now, future: b.futureRoster + capB / 620, pickCapital: capB }
+      { now: a.now, future: a.futureRoster + capA / 620 - a.dropCost * 0.5 / 620, pickCapital: capA, drops: a.drops, infeasible: a.infeasible },
+      { now: b.now, future: b.futureRoster + capB / 620 - b.dropCost * 0.5 / 620, pickCapital: capB, drops: b.drops, infeasible: b.infeasible }
     ];
   };
   const quick = (t, out, inc) => {
@@ -4243,6 +4784,7 @@ function findTrades(T, mode, tol, filters) {
   const posOk = (get) => !wantPos.length || (focus && focus.side === 'get') || get.some(a => wantPos.includes(a.pos));
 
   const myBase = quick(T, [], []);
+  const scT = scoutTeam(T);
   let mine = assetsOf(T).filter(a => a.dv > 180).sort((a, b) => b.dv - a.dv).slice(0, 20);
   // a focus player has to be in the pool even if the value cut would have dropped them
   let focusAsset = null;
@@ -4325,20 +4867,61 @@ function findTrades(T, mode, tol, filters) {
       }
     }
 
+    /* ---- built from need: what each side is actually missing ----
+       The enumeration above only ever produces 1-for-1, 2-for-1 and 1-for-2. Real
+       deals are often 2-for-2 or 3-for-2, because two rosters rarely line up
+       one piece against one. So start from the hole instead: pick the players
+       on their roster that fill yours, then assemble packages from the things I
+       can spare (a surplus position, a position they are short at, picks) whose
+       worth lands on theirs, and let the value check and both lineups decide. */
+    if (!focus) {
+      const scP = scoutTeam(P);
+      const wanted = wantPos.length ? wantPos.filter(x => POS4.includes(x)) : (scT.holes.length ? scT.holes.map(x => x.pos) : scP.surplus.map(x => x.pos));
+      const tgt = assetsOf(P).filter(a => a.kind === 'player' && wanted.includes(a.pos) && a.dv > 400).sort((a, b) => b.dv - a.dv).slice(0, 5);
+      const theirHoles = scP.holes.map(x => x.pos), mySurplus = scT.surplus.map(x => x.pos);
+      let cur = mine.filter(a => a.kind === 'pick' || mySurplus.includes(a.pos) || theirHoles.includes(a.pos)).slice(0, 12);
+      if (cur.length < 8) cur = cur.concat(mine.filter(a => !cur.includes(a)).slice(0, 8 - cur.length));
+      const sets = tgt.map(a => [a]);
+      for (let i = 0; i < Math.min(tgt.length, 4); i++) for (let j = i + 1; j < Math.min(tgt.length, 4); j++) sets.push([tgt[i], tgt[j]]);
+      const loB = 1 - tol - 0.03, hiB = 1 / loB;
+      sets.forEach(gs => {
+        const target = packageValue(gs);
+        const fits = (g) => { const v = packageValue(g); return v >= target * loB && v <= target * hiB; };
+        for (let i = 0; i < cur.length; i++) {
+          if (fits([cur[i]])) combos.push([[cur[i]], gs]);
+          for (let j = i + 1; j < cur.length; j++) {
+            if (fits([cur[i], cur[j]])) combos.push([[cur[i], cur[j]], gs]);
+            for (let k = j + 1; k < cur.length; k++) if (fits([cur[i], cur[j], cur[k]])) combos.push([[cur[i], cur[j], cur[k]], gs]);
+          }
+        }
+      });
+    }
+
+    const seenCombo = new Set();
     combos.forEach(([give, get]) => {
+      const ck = give.map(a => a.id).sort().join('+') + '>' + get.map(a => a.id).sort().join('+');
+      if (seenCombo.has(ck)) return;
+      seenCombo.add(ck);
       scanned++;
       if (!posOk(get) || !shapeOk(give, get)) { filtered++; return; }
-      const gv = sum(give.map(a => a.dv)), gt = sum(get.map(a => a.dv));
+      const gv = packageValue(give), gt = packageValue(get);
       if (gv <= 0 || gt <= 0) return;
       const hi = Math.max(gv, gt), lo = Math.min(gv, gt);
       if (lo / hi < 1 - tol) return;
       const pair = evalPair(T, P, give, get);
       const myAfter = pair[0], pAfter = pair[1];
+      if (myAfter.infeasible || pAfter.infeasible) return;
       const myGain = myObj(myBase, myAfter);
       if (myGain <= 0.12) return;
       const pGain = pObj(pBase, pAfter);
       if (pGain <= 0.08) return;
-      out.push({ partner: P, give, get, myGain, pGain, gv, gt, myAfter, myBase, score: myGain + pGain * 0.55, fair: lo / hi });
+      // the market angle: selling what the market overpays for, buying what it underprices
+      const signal = sum(give.map(a => sigMap[a.id] && sigMap[a.id].kind === 'sell' ? sigMap[a.id].strength : 0))
+        + sum(get.map(a => sigMap[a.id] && sigMap[a.id].kind === 'buy' ? sigMap[a.id].strength : 0));
+      if (filters.signal === 'only' && signal < 0.35) return;
+      out.push({ partner: P, give, get, myGain, pGain, gv, gt, myAfter, myBase, signal, myDrops: myAfter.drops, theirDrops: pAfter.drops,
+        score: myGain + pGain * 0.55 + (filters.signal === 'off' ? 0 : 0.35 * signal)
+          - 0.12 * pAfter.drops.length - 0.04 * myAfter.drops.length, fair: lo / hi });
     });
   });
   out.sort((a, b) => b.score - a.score);
@@ -4368,13 +4951,63 @@ function findTrades(T, mode, tol, filters) {
     r.freed = freed;
     r.fa = bestFreeAgentFor(afterRoster(T, r.give, r.get), T.taxi, T.ir, 2);
   });
+  // the shortlist is small, so this is where the reasons get worked out
+  list.forEach(r => {
+    r.signals = [];
+    r.give.forEach(a => { const s = a.kind === 'player' && sigMap[a.id]; if (s && s.kind === 'sell') r.signals.push(Object.assign({ asset: a, side: 'give' }, s)); });
+    r.get.forEach(a => { const s = a.kind === 'player' && sigMap[a.id]; if (s && s.kind === 'buy') r.signals.push(Object.assign({ asset: a, side: 'get' }, s)); });
+    r.why = explainTrade(r, T, scT, scoutTeam(r.partner));
+  });
   return { list, scanned, filtered, focus };
 }
+/* ---------- the buy-low / sell-high board ---------- */
+function signalBoard(T, shop) {
+  const sg = signalMap();
+  const owner = {}; S.teams.forEach(t => t.players.forEach(p => { owner[p.id] = t; }));
+  const rows = Object.keys(sg).map(id => ({ p: S.index[id], s: sg[id], o: owner[id] })).filter(x => x.o && x.p);
+  const rank = (a, b) => (b.s.strength - a.s.strength) || (b.p.dv - a.p.dv);
+  const mine = rows.filter(x => x.o.rosterId === T.rosterId);
+  const sells = mine.filter(x => x.s.kind === 'sell').sort(rank).slice(0, 5);
+  const holds = mine.filter(x => x.s.kind === 'buy').sort(rank).slice(0, 3);
+  const buys = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').sort(rank).slice(0, 6);
+  const pips = pipsOf;
+  const rowEl = (x, verb, where) => h('div.sigrow',
+    isSimple() ? playerFace(x.p) : posPill(x.p.pos),
+    h('div.sigmain',
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, pname(x.p, { face: false, style: { fontWeight: '640' } }), pips(x.s.strength)),
+      h('div.tiny.muted', `${x.p.pos}${x.p.posRank || ''} · ${x.p.team || 'FA'} · ${kfmt(Math.round(x.p.dv || 0))}${where ? ' · ' + x.o.name : ''}`),
+      h('div.tiny.sec.sigwhy', x.s.reasons.join(' · '))),
+    verb ? h('button.btn.sm', { onclick: () => shop(x.p.id) }, verb) : null);
+  const col = (title, note, list, verb, where) => h('div.sigcol',
+    h('div.sigh', h('b', title), h('span.tiny.muted', note)),
+    list.length ? h('div.sigrows', list.map(x => rowEl(x, verb, where))) : h('div.tiny.muted.signone', 'Nothing flagged.'));
+  const any = sells.length || buys.length || holds.length;
+  return card('Buy low / sell high', 'where a player’s price and his production disagree',
+    h('div', { style: { display: 'grid', gap: '14px' } },
+      any ? h('div.sigcols',
+        col('Sell high', 'yours — the market is paying more than the production earns', sells, 'Shop him', false),
+        col('Buy low', 'on other rosters — price is ahead of production, or temporarily down', buys, 'Get him', true),
+        holds.length ? col('Don’t sell yet', 'yours — scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
+        : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
+      h('div.tiny.muted', S.lastWeek
+        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend, age and injuries add to the read.`
+        : 'No games have been played yet, so flags come only from age cliffs and injuries to young stars. Production-based flags appear once the season starts.')));
+}
+
 function tradeCardRow(r, T, i) {
-  const chip = (a) => h('div.asset', { style: { cursor: 'default' } },
+  const sigs = signalMap();
+  // good when it lines up with what you are doing; a warning when it cuts against you
+  const angle = (a, side) => {
+    const s = a.kind === 'player' ? sigs[a.id] : null; if (!s) return null;
+    const good = (side === 'give' && s.kind === 'sell') || (side === 'get' && s.kind === 'buy');
+    const label = side === 'give' ? (s.kind === 'sell' ? 'Sell high' : 'Selling low') : (s.kind === 'buy' ? 'Buy low' : 'Buying high');
+    return h('span.sigtag.' + (good ? 'good' : 'warn'), { title: s.reasons.join(' · ') }, label);
+  };
+  const chip = (a, side) => h('div.asset', { style: { cursor: 'default' } },
     posPill(a.pos),
     a.kind === 'pick' ? h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name)
       : pname(a.ref, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
+    angle(a, side),
     h('span.v', kfmt(Math.round(a.dv))));
   const shapeTag = r.give.length > r.get.length ? 'uptier' : r.get.length > r.give.length ? 'downtier' : null;
   return h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 12px', background: 'var(--surface-2)' } },
@@ -4383,7 +5016,7 @@ function tradeCardRow(r, T, i) {
         r.partner.window ? h('span.tag', r.partner.window) : null,
         shapeTag ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, shapeTag) : null),
       h('div.row', { style: { gap: '10px' } },
-        h('span.tiny.muted', 'balance ' + pct(r.fair, 0)),
+        h('span.tiny.muted', { title: 'Value of each side after counting the best piece in full and each extra player for less' }, 'balance ' + pct(r.fair, 0)),
         h('button.btn.sm', {
           onclick: () => {
             TradeUI.a = T.rosterId; TradeUI.b = r.partner.rosterId;
@@ -4392,10 +5025,12 @@ function tradeCardRow(r, T, i) {
             S.view = 'trade'; render(); window.scrollTo(0, 0);
           }
         }, 'Open in calculator'))),
-    h('div', { style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 28px minmax(0,1fr)', gap: '10px', alignItems: 'center' } },
-      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You send'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.give.map(chip))),
-      h('div', { style: { textAlign: 'center', fontSize: '17px', color: 'var(--text-muted)' } }, '⇄'),
-      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You get'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.get.map(chip)))),
+    h('div.tcols',
+      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You send'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.give.map(a => chip(a, 'give')))),
+      h('div.swap', '⇄'),
+      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You get'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.get.map(a => chip(a, 'get'))))),
+    r.why && r.why.length ? h('div.why', h('div.whyh', 'Why this works'),
+      h('ul', r.why.slice(0, 5).map(w => h('li.w-' + w.k, w.t)))) : null,
     r.fa && r.fa.length ? h('div', { style: { marginTop: '9px', borderTop: '1px dashed var(--border)', paddingTop: '7px' } },
       h('div.tiny.muted', { style: { marginBottom: '5px' } },
         (r.freed > 1 ? r.freed + ' roster spots open up' : 'A roster spot opens up') + ' — best free agent to sign with it:'),
@@ -4921,6 +5556,18 @@ function viewPlayer() {
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
         owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')))));
+
+  // ---- what the market is saying about him ----
+  const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
+  if (sgp || tlp) {
+    const line = (tag, text) => h('div.row', { style: { gap: '10px', alignItems: 'flex-start', flexWrap: 'nowrap' } },
+      h('span.sigtag.' + tag.k, { style: { marginTop: '2px' } }, tag.label), h('div.sec', { style: { fontSize: '13px', lineHeight: '1.45' } }, text));
+    wrap.appendChild(card('Market read', 'where his price and his production disagree, and which way his value leans',
+      h('div', { style: { display: 'grid', gap: '9px' } },
+        sgp ? line({ k: sgp.kind, label: sgp.kind === 'buy' ? 'Buy low' : 'Sell high' },
+          sgp.reasons.join('. ') + '.' + (sgp.games ? ` (${sgp.games} game${sgp.games > 1 ? 's' : ''} played)` : '')) : null,
+        tlp ? line({ k: tlp.kind, label: TL_LABEL[tlp.kind] }, timelineWhy(tlp)) : null)));
+  }
 
   // ---- headline numbers ----
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
@@ -7754,7 +8401,7 @@ function viewHome() {
     return h('div.heroband', { 'aria-hidden': 'true' }, badges.map(t =>
       h('img', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.remove() })));
   })();
-  wrap.appendChild(h('div.hero',
+  wrap.appendChild(h('div.banner',
     band,
     S.league.avatar
       ? h('img.heroav', { src: 'https://sleepercdn.com/avatars/' + S.league.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
@@ -7763,7 +8410,7 @@ function viewHome() {
       h('h1', S.league.name),
       h('div.tiny.sec', { style: { marginTop: '3px' } }, fmtStr + ' · ' + S.season + ' season · ' + S.regEnd + '-week regular season'),
       h('div.row', { style: { gap: '7px', marginTop: '9px' } },
-        h('span.tag', { style: S.liveWeek ? { borderColor: 'var(--s1)', color: 'var(--s1)' } : null }, (S.liveWeek ? '● ' : '') + state),
+        S.liveWeek ? h('span.live', h('i'), state) : h('span.tag', state),
         me ? h('span.tag', 'You: ' + me.name) : null,
         S.league.status ? h('span.tag', String(S.league.status).replace(/_/g, ' ')) : null))));
 
@@ -7787,23 +8434,22 @@ function viewHome() {
       const mine = g.A.rosterId === me.rosterId;
       const my = mine ? g.a : g.b, th = mine ? g.b : g.a;
       const them = mine ? g.B : g.A, p = mine ? g.pA : g.pB;
-      // both badges either side of the score, so the card says who at a glance
-      const face = (T, colour, total, right) => h('div.mvside' + (right ? '.r' : ''),
-        T.avatar
-          ? h('img.mvav', { src: T.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
-          : h('div.mvav'),
-        h('div', { style: { minWidth: 0 } },
-          h('div.tiny.muted', { style: { lineHeight: '1.2' } }, T.rosterId === me.rosterId ? 'You' : T.name),
-          h('b', { style: { fontSize: '26px', color: colour, lineHeight: '1.1', display: 'block' } }, fmt(total, 1))));
+      const pMe = p, pThem = 1 - p;
+      // the same team · odds · team layout as the This Week page, so a game reads
+      // the same wherever it appears
       wrap.appendChild(card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
-        h('div', { style: { display: 'grid', gap: '12px' } },
-          h('div.row', { style: { gap: '16px', flexWrap: 'wrap' } },
-            face(me, 'var(--s1)', my.total, false),
-            h('span.tiny.muted', 'v'),
-            face(them, 'var(--s2)', th.total, true),
-            h('span', { style: { flex: 1 } }),
-            h('span.tag', { style: { borderColor: p >= 0.5 ? 'var(--good)' : 'var(--border-strong)' } }, pct(p, 0) + ' to win')),
-          h('div.row', { style: { gap: '10px' } },
+        h('div', { style: { display: 'grid', gap: '16px' } },
+          h('div.mvs.mvs-lg',
+            matchupSide(my, me, 'var(--s1)'),
+            h('div.mid',
+              h('div.pcts',
+                h('span', { style: { color: pMe >= 0.5 ? 'var(--s1)' : 'var(--text-muted)' } }, pct(pMe, 0)),
+                h('span', { style: { color: pThem > 0.5 ? 'var(--s2)' : 'var(--text-muted)' } }, pct(pThem, 0))),
+              h('div.bar', { style: { background: 'var(--s2)' } },
+                h('i', { style: { width: (pMe * 100) + '%', background: 'var(--s1)' } })),
+              h('div.cap', pMe >= 0.5 ? 'you’re favoured' : 'you’re the underdog')),
+            matchupSide(th, them, 'var(--s2)')),
+          h('div.row', { style: { gap: '10px', justifyContent: 'center' } },
             h('button.btn.pri', { onclick: () => goView('week') }, 'This week →'),
             h('button.btn', { onclick: () => goView('lineup') }, 'Check my lineup')))));
     }
@@ -7822,7 +8468,7 @@ function viewHome() {
     h('div.tilegrid', HOME_TILES.map(k => {
       const v = VIEWS.find(x => x.k === k); if (!v) return null;
       return h('button.tile', { onclick: () => goView(k) },
-        h('span.ic', v.ic),
+        ico(v.ic),
         h('span', { style: { minWidth: 0 } },
           h('b', v.label),
           h('span.tiny.muted', { style: { display: 'block', lineHeight: '1.35', marginTop: '2px' } }, blurbFor(k))));
@@ -7988,7 +8634,7 @@ function myHeadliners(me) {
    has picked up. Two lists on one page because they answer the two questions
    people actually bring to a rankings page: where does this player sit, and who
    could I go and get for nothing. */
-const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15 };
+const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15, market: 'any', window: 'any' };
 const RANK_POS = ['QB', 'RB', 'WR', 'TE'];
 
 function viewPlayers() {
@@ -8017,10 +8663,16 @@ function viewPlayers() {
   if (PlayersUI.owner === 'mine') players = players.filter(p => ownerOf[p.id] && ownerOf[p.id].rosterId === S.myRosterId);
   else if (PlayersUI.owner === 'rostered') players = players.filter(p => ownerOf[p.id]);
   else if (PlayersUI.owner === 'fa') players = players.filter(p => !ownerOf[p.id]);
+  // the market filters: who the price and the production disagree about, and which
+  // way each player's value leans in time
+  const sigs = signalMap(), tls = timelineMap();
+  if (PlayersUI.market !== 'any') players = players.filter(p => sigs[p.id] && sigs[p.id].kind === PlayersUI.market);
+  if (PlayersUI.window !== 'any' && isDynasty()) players = players.filter(p => tls[p.id] && tls[p.id].kind === PlayersUI.window);
+  const filtered = PlayersUI.market !== 'any' || (PlayersUI.window !== 'any' && isDynasty());
 
   // where the league's own draft picks fall among them — the real picks, held by
   // whoever holds them, priced where they are projected to land
-  const showPicks = isDynasty() && PlayersUI.picks && PlayersUI.owner !== 'fa';
+  const showPicks = isDynasty() && PlayersUI.picks && PlayersUI.owner !== 'fa' && !filtered;
   let picks = [];
   if (showPicks) {
     S.teams.forEach(t => (t.pickAssets || []).forEach(pk => {
@@ -8061,9 +8713,9 @@ function viewPlayers() {
           // on a phone the position rides under the name instead of taking a column
           ? h('div', { style: { minWidth: 0 } },
             h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury)),
-            h('div.tiny.muted', { style: { marginTop: '1px' } }, r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')))
+            h('div.row', { style: { gap: '6px', marginTop: '1px', flexWrap: 'nowrap' } }, h('span.tiny.muted', r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')), marketTags(r.p)))
           : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
-            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury))
+            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury), marketTags(r.p))
     },
     {
       k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 'ZZ' : r.p.pos + String(posRank[r.p.id]).padStart(4, '0'),
@@ -8074,6 +8726,15 @@ function viewPlayers() {
     { k: 'dv', h: 'Value', num: true, sort: r => r.dv, f: r => h('b.mono', kfmt(Math.round(r.dv))) },
     { k: 'ppg', h: 'Proj/wk', num: true, prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 0 : (r.p.ppg || 0), f: r => r._pick ? '' : fmt(r.p.ppg || 0, 1) },
     { k: 'trend', prio: 2, h: '30d', num: true, sort: r => r._pick ? 0 : (r.p.trend30 || 0), f: r => r._pick ? '' : (r.p.trend30 ? deltaTag(r.p.trend30, 0) : h('span.flat.tiny', '–')) },
+    { k: 'sig', h: 'Market', num: true, prio: 2, keepSimple: true,
+      tip: 'Where price and production disagree. Three dots is a strong signal, one is mild. Sorts by strength.',
+      sort: r => r._pick ? -1 : (sigs[r.p.id] ? sigs[r.p.id].strength : 0),
+      f: r => { const s = !r._pick && sigs[r.p.id]; return s ? h('span.row', { style: { gap: '6px', justifyContent: 'flex-end', flexWrap: 'nowrap' } },
+        h('span.tiny', { class: s.kind === 'buy' ? 'up' : 'sec' }, s.kind === 'buy' ? 'Buy' : 'Sell'), pipsOf(s.strength)) : h('span.flat.tiny', '–'); } },
+    isDynasty() ? { k: 'tl', h: 'Redraft · Dynasty', num: true, prio: 2, keepSimple: true,
+      tip: 'Where the player ranks by redraft value and by dynasty value. A better redraft rank means the market pays for this season (win now); a better dynasty rank means it pays for the future (rebuild).',
+      sort: r => { const t = !r._pick && tls[r.p.id]; return t ? t.ratio : 1; },
+      f: r => { const t = !r._pick && tls[r.p.id]; return t ? h('span.tiny.mono', { class: t.kind === 'now' ? 'tlnow' : 'tllater' }, `#${t.redRank} · #${t.dynRank}`) : h('span.flat.tiny', '–'); } } : null,
     { k: 'own', h: 'Roster', sort: r => r._pick ? r.holder.name : (ownerOf[r.p.id] || { name: 'zz' }).name, f: r => r._pick ? ownerTag(r.holder) : ownerTag(ownerOf[r.p.id]) }
   ];
 
@@ -8087,7 +8748,13 @@ function viewPlayers() {
           : [{ k: 'all', label: 'Everyone' }, { k: 'mine', label: 'Mine' }, { k: 'rostered', label: 'Rostered' }, { k: 'fa', label: 'Free agents' }],
           PlayersUI.owner, v => { PlayersUI.owner = v; PlayersUI.limit = 50; render(); })),
       isDynasty() ? h('label.fld', 'Draft picks',
-        segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null));
+        segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null),
+    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+      h('label.fld', 'Market', segmented([{ k: 'any', label: 'Any' }, { k: 'buy', label: 'Buy low' }, { k: 'sell', label: 'Sell high' }],
+        PlayersUI.market, v => { PlayersUI.market = v; PlayersUI.limit = 50; render(); })),
+      isDynasty() ? h('label.fld', 'Timeline', segmented([{ k: 'any', label: 'Any' }, { k: 'now', label: 'Win now' }, { k: 'later', label: 'Rebuild' }],
+        PlayersUI.window, v => { PlayersUI.window = v; PlayersUI.limit = 50; render(); })) : null,
+      filtered ? h('span.tiny.muted', 'Picks are hidden while a market filter is on — they have no signal.') : null));
 
   const more = shownPlayers < total
     ? h('div.row', { style: { justifyContent: 'center', gap: '10px', marginTop: '6px' } },
@@ -8101,11 +8768,50 @@ function viewPlayers() {
     + ' · showing ' + shownPlayers + ' of ' + total,
     h('div', { style: { display: 'grid', gap: '12px' } },
       controls,
-      table(cols, shown, { sortKey: 'dv', sortDir: -1, rowClass: r => r._pick ? 'pickline' : (ownerOf[r.p.id] && ownerOf[r.p.id].rosterId === S.myRosterId ? 'mineline' : '') }),
+      table(cols, shown, { sortKey: PlayersUI.window !== 'any' && isDynasty() ? 'tl' : PlayersUI.market !== 'any' ? 'sig' : 'dv', sortDir: PlayersUI.window === 'later' && isDynasty() ? 1 : -1, rowClass: r => r._pick ? 'pickline' : (ownerOf[r.p.id] && ownerOf[r.p.id].rosterId === S.myRosterId ? 'mineline' : '') }),
       more)));
 
+  if (isDynasty()) wrap.appendChild(timelineCard(ownerOf));
   wrap.appendChild(waiverCard(ownerOf, me));
   return wrap;
+}
+
+/** Who the market pays for this season, and who it pays for the long run. */
+function timelineCard(ownerOf) {
+  const tls = timelineMap();
+  const rows = Object.keys(tls).map(id => ({ p: S.index[id], t: tls[id], o: ownerOf[id] || null })).filter(x => x.p);
+  const scope = rows.filter(x => PlayersUI.owner === 'mine' ? x.o && x.o.rosterId === S.myRosterId
+    : PlayersUI.owner === 'rostered' ? x.o : PlayersUI.owner === 'fa' ? !x.o : true);
+  const rank = (a, b) => (b.t.strength - a.t.strength) || ((b.p.dvDyn || 0) - (a.p.dvDyn || 0));
+  const now = scope.filter(x => x.t.kind === 'now').sort(rank).slice(0, 8);
+  const later = scope.filter(x => x.t.kind === 'later').sort(rank).slice(0, 8);
+  const rowEl = (x) => {
+    const mineP = x.o && x.o.rosterId === S.myRosterId;
+    return h('div.sigrow',
+      isSimple() ? playerFace(x.p) : posPill(x.p.pos),
+      h('div.sigmain',
+        h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, pname(x.p, { face: false, style: { fontWeight: '640' } }), pipsOf(x.t.strength)),
+        h('div.tiny.muted', `${x.p.pos}${x.p.posRank || ''} · ${x.p.team || 'FA'}${x.p.age ? ' · ' + fmt(x.p.age, 0) + ' yrs' : ''} · ${x.o ? (mineP ? 'yours' : x.o.name) : 'free agent'}`),
+        h('div.tiny.sec.sigwhy', h('span', { class: x.t.kind === 'now' ? 'tlnow' : 'tllater' }, `Redraft #${x.t.redRank}`), ' · ', h('span', { class: x.t.kind === 'now' ? 'tllater' : 'tlnow' }, `Dynasty #${x.t.dynRank}`))),
+      x.o ? h('button.btn.sm', { onclick: () => shopInFinder(x.p.id) }, mineP ? 'Shop him' : 'Get him') : null);
+  };
+  const col = (title, note, list) => h('div.sigcol',
+    h('div.sigh', h('b', title), h('span.tiny.muted', note)),
+    list.length ? h('div.sigrows', list.map(rowEl)) : h('div.tiny.muted.signone', 'Nobody in this view.'));
+  return card('Win now vs rebuild', 'players the market prices differently for this season than for the long run',
+    h('div', { style: { display: 'grid', gap: '14px' } },
+      (now.length || later.length) ? h('div.sigcols',
+        col('Win-now assets', 'worth more in redraft than dynasty — buy if you’re contending, sell if you’re rebuilding', now),
+        col('Rebuild assets', 'worth more in dynasty than redraft — buy if you’re rebuilding, sell if you’re contending', later))
+        : h('div.empty', { style: { padding: '18px' } }, S.redraftPricesMissing
+          ? 'The value feed carried no redraft prices, so there is nothing to compare dynasty against.'
+          : 'No player’s redraft and dynasty prices disagree enough to call.'),
+      h('div.tiny.muted', 'Compared by rank among the players the market prices, so it works whatever the two values’ scales. A player has to rank at least 40% and six places better in one than the other. Follows the Rostered filter above.')));
+}
+/* a strength meter: one to three dots */
+function pipsOf(s) {
+  const n = s >= 0.66 ? 3 : s >= 0.45 ? 2 : 1;
+  return h('span.pips', { title: 'signal strength: ' + (n === 3 ? 'strong' : n === 2 ? 'moderate' : 'mild') }, [1, 2, 3].map(i => h('i' + (i <= n ? '.on' : ''))));
 }
 
 /** The best of what nobody in the league has rostered. Ranked on market value by
@@ -8623,7 +9329,6 @@ async function boot(leagueId, onStep) {
     const app = $('#app');
     if (!S.league) {
       clear(app); app.appendChild(splash());
-      const st = $('.splash .tiny.muted');
       const box = $('.splash .box .bd');
       box.appendChild(h('div', { style: { marginTop: '10px', padding: '9px 11px', border: '1px solid var(--critical)', borderRadius: 'var(--r-sm)', background: 'color-mix(in srgb, var(--critical) 8%, transparent)' } },
         h('b', { style: { color: 'var(--bad-text)' } }, 'Could not load'), h('div.tiny.sec', String(e.message || e)),
@@ -8632,13 +9337,14 @@ async function boot(leagueId, onStep) {
   }
 }
 setTheme(currentTheme());
+setAccent(currentAccent());
 setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer view
 setNameMode(LS.get('names', 'user')); // people know each other by handle, not by team name
 watchViewport();
 const _last = LS.get('last', null);
 render();
 if (_last && /^\d{6,25}$/.test(String(_last))) {
-  const st = $('.splash .tiny.muted');
+  const st = $('.splash .sp-status');
   const bar = $('.splash .loadbar i');
   boot(_last, (m, p) => { if (st) st.textContent = m; if (bar) bar.style.width = (p * 100) + '%'; });
 }

@@ -103,6 +103,60 @@ then visit `http://localhost:8000`.
 
 ---
 
+## Design
+
+One stylesheet at the top of `index.html`, built on tokens (`:root`): a cool neutral
+surface scale, an indigo→violet brand used only for chrome (navigation, primary
+actions, focus), and the `--s1…--s8` / `--seq-*` data palette that charts and position
+pills read from, so a chart never changes meaning with the theme. Light, dark and
+*Auto* all resolve through the same tokens.
+
+- **Default** and **Minimal** views are one switch (`data-ui` on the root). Default is
+  roomier with photos; Minimal tightens table density and drops imagery.
+- Under 900px the sidebar becomes a bottom tab bar (Home · Week · Rosters · Players ·
+  More), with every page one tap behind **More**.
+- **Accent colour** is one hue (`--hue`, set by `data-accent` on the root) from which every
+  brand token — buttons, links, focus, sidebar tint, home banner, landing page — is derived
+  with `oklch()`. Seven themes ship (Indigo, Ocean, Lagoon, Emerald, Sunset, Rose,
+  Graphite); the choice is stored in the visitor's browser. Adding one is a single CSS line
+  plus an entry in `ACCENTS`.
+- Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
+  fonts or other dependencies.
+
+---
+
+## Trade finder
+
+For every partner it builds candidate trades from two sources: an enumeration of
+common shapes (1-for-1, 2-for-1, 1-for-2, and 3-for-1 / 1-for-3 in the shape modes),
+and an assembly step that starts from each side's actual needs (the holes and
+surpluses from GM Scout) and builds 2-for-2 / 3-for-2 packages around them. Each
+candidate must clear four checks, then is ranked:
+
+- **Value balance** — within the chosen tolerance after a stud premium: a package's
+  best player counts in full, each further player for less (picks count in full).
+- **Roster fit** — a side that lands more players than it sends must cut down to its
+  active limit. The cheapest bench players are cut, the cost is priced in, and the
+  card says who goes. A trade with nobody left to cut is dropped.
+- **Both sides gain** on their own objective (contend / rebuild / balanced).
+- **Market angle** — trades that sell a flagged player or buy one rank higher.
+
+**Buy low / sell high.** A player is flagged when his scoring and his price disagree
+by more than week-to-week noise allows (variance for his position, shrinking with
+games played, calibrated against this league's own median), or from an age cliff or
+an injury to a young star. A 30-day value move only reinforces another signal; it
+never flags anyone alone. Each suggestion also lists, in words, why it works.
+
+**On the Players page** the same flags appear as tags beside each name, with Market
+(Buy low / Sell high) and Timeline (Win now / Rebuild) filters, two sortable columns,
+and a *Win now vs rebuild* section. A player is **win now** when his redraft rank is
+at least 40% and six places better than his dynasty rank — worth more this season than
+over the long run — and **rebuild** when it is the other way round. Compared by rank so
+the two prices' scales don't matter. Dynasty leagues only; a redraft league has no long
+run to compare against. The player page explains any flag in words.
+
+---
+
 ## Known limits
 
 - Rotowire's weekly projections barely differ week to week before the season
