@@ -44,6 +44,9 @@
   --brand-grad:linear-gradient(135deg,#4468f5 0%,#6a55f2 55%,#8a5cf6 100%);
   --ring:0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
   --ink:#0e1226; --ink-2:#161b36; --ink-text:#aab0cc; --ink-text-hi:#ffffff;
+  --hero-a:#10143a; --hero-b:#1c2160; --hero-c:#2d2078;
+  --glow-a:rgba(168,108,255,.5); --glow-b:rgba(70,118,255,.42);
+  --title-a:#9fb0ff; --title-b:#d2a6ff; --nav-on:#b9c2ff;
   --shadow-xs: 0 1px 2px rgba(18,22,48,.06);
   --shadow: 0 1px 2px rgba(18,22,48,.04), 0 10px 28px -12px rgba(18,22,48,.12);
   --shadow-lg: 0 2px 4px rgba(18,22,48,.05), 0 24px 56px -16px rgba(18,22,48,.22);
@@ -82,6 +85,47 @@
   --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
   --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px -12px rgba(0,0,0,.6);
   --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 28px 60px -16px rgba(0,0,0,.75);
+}
+
+/* ---- accent themes ----
+   The brand is one hue. Everything that is "brand" — buttons, links, focus, the
+   sidebar's tint, the home banner, the landing page — is derived from --hue, so a
+   theme is a single number (plus --cs, how saturated: 0 is graphite). The hex
+   values above are what a browser without oklch() keeps: the original indigo. */
+:root{--hue:278;--cs:1}
+:root[data-accent="blue"]{--hue:252}
+:root[data-accent="teal"]{--hue:200}
+:root[data-accent="green"]{--hue:157}
+:root[data-accent="orange"]{--hue:48}
+:root[data-accent="rose"]{--hue:8}
+:root[data-accent="graphite"]{--hue:265;--cs:.12}
+@supports (color: oklch(50% .1 200)){
+  :root{
+    --brand:oklch(53% calc(.21*var(--cs)) var(--hue));
+    --brand-2:oklch(57% calc(.2*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(58% calc(.2*var(--cs)) calc(var(--hue) - 14)) 0%,var(--brand) 55%,var(--brand-2) 100%);
+    --ink:oklch(15.5% calc(.04*var(--cs)) var(--hue)); --ink-2:oklch(20.5% calc(.052*var(--cs)) var(--hue));
+    --hero-a:oklch(19% calc(.075*var(--cs)) var(--hue)); --hero-b:oklch(27% calc(.125*var(--cs)) var(--hue)); --hero-c:oklch(31% calc(.14*var(--cs)) calc(var(--hue) + 24));
+    --glow-a:oklch(62% calc(.2*var(--cs)) calc(var(--hue) + 36) / .5); --glow-b:oklch(60% calc(.2*var(--cs)) calc(var(--hue) - 6) / .42);
+    --title-a:oklch(82% calc(.11*var(--cs)) var(--hue)); --title-b:oklch(84% calc(.12*var(--cs)) calc(var(--hue) + 40));
+    --nav-on:oklch(84% calc(.09*var(--cs)) var(--hue));
+  }
+}
+@supports (color: oklch(50% .1 200)){
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+      --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+      --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+      --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+    }
+  }
+  :root[data-theme="dark"]{
+    --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+    --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+    --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+  }
 }
 
 *{box-sizing:border-box}
@@ -130,7 +174,7 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .navbtn.on::before{content:'';position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--brand-grad)}
 .navbtn .ic{width:18px;height:18px;flex:none;display:grid;place-items:center;opacity:.8}
 .navbtn .ic svg{width:18px;height:18px}
-.navbtn.on .ic{opacity:1;color:#b9c2ff}
+.navbtn.on .ic{opacity:1;color:var(--nav-on)}
 .side .spacer{flex:1;min-height:12px}
 .side .foot{padding:12px 11px 2px;border-top:1px solid rgba(255,255,255,.08);margin-top:10px;font-size:11px;color:rgba(170,176,204,.7);line-height:1.6}
 
@@ -145,7 +189,7 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .topbar .grow{flex:1}
 .topbar .btn .bl{display:inline}
 .live{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:99px;font-size:11.5px;font-weight:700;letter-spacing:.01em;
-  color:var(--s1);background:color-mix(in srgb, var(--s1) 11%, var(--surface-1));border:1px solid color-mix(in srgb, var(--s1) 30%, transparent)}
+  color:var(--brand);background:color-mix(in srgb, var(--brand) 11%, var(--surface-1));border:1px solid color-mix(in srgb, var(--brand) 32%, transparent)}
 .live i{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor;animation:pulse 1.8s ease-out infinite}
 .live.idle{color:var(--text-secondary);background:var(--surface-1);border-color:var(--border-strong)}
 .live.idle i{animation:none;opacity:.55}
@@ -196,7 +240,7 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .btn.lgpick{width:100%;justify-content:flex-start;text-align:left;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 13px}
 .btn.lgpick div:first-child{font-weight:650}
 .btn.pri{background:var(--brand-grad);border-color:transparent;color:#fff;
-  box-shadow:0 1px 2px rgba(20,24,80,.25), 0 8px 18px -8px color-mix(in srgb, var(--brand) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.22)}
+  box-shadow:0 1px 2px rgba(10,12,40,.25), 0 8px 18px -8px color-mix(in srgb, var(--brand) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.22)}
 .btn.pri:hover{filter:brightness(1.07);background:var(--brand-grad)}
 .btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 .btn.sm{padding:4px 10px;min-height:28px;font-size:12px;border-radius:8px}
@@ -315,9 +359,9 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .splash{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:var(--plane)}
 .sp-art{position:relative;overflow:hidden;color:#fff;padding:56px clamp(32px,5vw,84px);display:flex;flex-direction:column;justify-content:center;gap:28px;
   background:
-    radial-gradient(620px 420px at 12% 8%, rgba(120,140,255,.55), transparent 70%),
-    radial-gradient(560px 460px at 92% 96%, rgba(168,108,255,.5), transparent 70%),
-    linear-gradient(150deg,#0e1230 0%,#171c4f 52%,#2a1f6b 100%)}
+    radial-gradient(620px 420px at 12% 8%, var(--glow-b), transparent 70%),
+    radial-gradient(560px 460px at 92% 96%, var(--glow-a), transparent 70%),
+    linear-gradient(150deg,var(--hero-a) 0%,var(--hero-b) 52%,var(--hero-c) 100%)}
 .sp-art::before{content:'';position:absolute;inset:0;opacity:.5;pointer-events:none;
   background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
   background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 30% 40%,#000 0%,transparent 72%);mask-image:radial-gradient(ellipse at 30% 40%,#000 0%,transparent 72%)}
@@ -327,7 +371,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .sp-logo .mark svg{width:23px;height:23px;color:#fff}
 .sp-logo b{font-size:16px;letter-spacing:-.02em}
 .sp-art h1{font-size:clamp(30px,3.6vw,50px);line-height:1.04;letter-spacing:-.035em;font-weight:750;max-width:15em;margin:0}
-.sp-art h1 span{background:linear-gradient(90deg,#9fb0ff,#d2a6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-art h1 span{background:linear-gradient(90deg,var(--title-a),var(--title-b));-webkit-background-clip:text;background-clip:text;color:transparent}
 .sp-art p{margin:0;color:rgba(226,230,255,.78);font-size:15.5px;line-height:1.6;max-width:34em}
 .sp-feats{display:flex;flex-wrap:wrap;gap:8px;max-width:38em}
 .sp-feats span{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:99px;font-size:12.5px;font-weight:580;color:#e7eaff;
@@ -416,6 +460,12 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .menupanel .seg button{flex:1;text-align:center}
 .menupanel hr{border:0;border-top:1px solid var(--border);margin:0}
 .menupanel .btn{width:100%;justify-content:center}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;padding:4px 3px}
+.swatch{width:30px;height:30px;border-radius:50%;border:0;padding:0;cursor:pointer;position:relative;flex:none;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28),var(--shadow-xs);transition:transform .15s var(--ease),box-shadow .15s}
+.swatch:hover{transform:scale(1.1)}
+.swatch.on{box-shadow:0 0 0 2.5px var(--surface-1),0 0 0 4.5px var(--text-primary)}
+.swatch.on::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:11px;margin:-6.5px 0 0 -3px;border:solid #fff;border-width:0 2.2px 2.2px 0;transform:rotate(45deg) translate(-1px,-1px);filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 @media (max-width:560px){ .menupanel{width:min(320px,calc(100vw - 28px))} }
 
 /* imagery — only ever used in simple mode */
@@ -445,9 +495,9 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .banner{position:relative;overflow:hidden;display:flex;align-items:center;gap:22px;padding:28px 30px;color:#fff;
   border-radius:calc(var(--r) + 4px);box-shadow:var(--shadow-lg);
   background:
-    radial-gradient(520px 280px at 100% 0%, rgba(168,108,255,.5), transparent 70%),
-    radial-gradient(460px 280px at 0% 110%, rgba(70,118,255,.42), transparent 70%),
-    linear-gradient(135deg,#10143a 0%,#1c2160 55%,#2d2078 100%)}
+    radial-gradient(520px 280px at 100% 0%, var(--glow-a), transparent 70%),
+    radial-gradient(460px 280px at 0% 110%, var(--glow-b), transparent 70%),
+    linear-gradient(135deg,var(--hero-a) 0%,var(--hero-b) 55%,var(--hero-c) 100%)}
 .banner::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
   background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
   background-size:40px 40px;-webkit-mask-image:linear-gradient(100deg,transparent 30%,#000 100%);mask-image:linear-gradient(100deg,transparent 30%,#000 100%)}
@@ -528,8 +578,8 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 /* ---- players page ---- */
 tr.pickline td{background:color-mix(in srgb, #eda100 7%, transparent)}
 tr.pickline td:first-child{box-shadow:inset 3px 0 0 #eda100}
-tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
-.mine-own{color:var(--s1);font-weight:700}
+tr.mineline td{background:color-mix(in srgb, var(--brand) 7%, transparent)}
+.mine-own{color:var(--brand);font-weight:700}
 .tag.fa{border-color:var(--good);color:var(--good-text);font-weight:660}
 .wirebest{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-sm);
   border:1px solid color-mix(in srgb, var(--good) 40%, var(--border));background:color-mix(in srgb, var(--good) 6%, transparent)}
@@ -568,7 +618,7 @@ tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
 .pod .nm{font-weight:660;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .pod .pododds{font-size:11.5px;color:var(--text-secondary)}
 .pod .pododds b{color:var(--s1)}
-.pod.mine .podtop .nm{color:var(--s1)}
+.pod.mine .podtop .nm{color:var(--brand)}
 .pod .form{justify-content:center}
 .pod.p1 .nm{font-size:14.5px}
 .pod .block{width:100%;border-radius:8px 8px 0 0;display:grid;place-items:end center;padding-bottom:7px;
@@ -614,8 +664,8 @@ tr.mineline td{background:color-mix(in srgb, var(--s1) 6%, transparent)}
   padding:9px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid transparent}
 .lgrow:hover{background:var(--surface-2);border-color:var(--border)}
 .lgrow:focus-visible{outline:2px solid var(--s1);outline-offset:-2px}
-.lgrow.mine{background:color-mix(in srgb, var(--s1) 7%, transparent)}
-.lgrow.mine:hover{background:color-mix(in srgb, var(--s1) 12%, transparent)}
+.lgrow.mine{background:color-mix(in srgb, var(--brand) 8%, transparent)}
+.lgrow.mine:hover{background:color-mix(in srgb, var(--brand) 13%, transparent)}
 .lgrow .rk{font-size:13px;font-weight:700;color:var(--text-muted);text-align:center;font-variant-numeric:tabular-nums}
 .lgrow .who{display:flex;align-items:center;gap:10px;min-width:0}
 .lgrow .who .avatar{width:34px;height:34px;border-radius:10px}
@@ -3173,7 +3223,7 @@ function ico(name) {
   return h('span.ic', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>' });
 }
 /* the football from the favicon, for the brand mark */
-const MARK_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-32 32 32)"><ellipse cx="32" cy="32" rx="19" ry="12" fill="#fff"/><path d="M14 32h36" stroke="#5463f2" stroke-width="1.6" opacity=".5"/><path d="M24 32h16" stroke="#5463f2" stroke-width="2.6" stroke-linecap="round"/><path d="M27 28.4v7.2M31 28.4v7.2M35 28.4v7.2" stroke="#5463f2" stroke-width="2.3" stroke-linecap="round"/></g></svg>';
+const MARK_SVG = '<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-32 32 32)"><ellipse cx="32" cy="32" rx="19" ry="12" fill="#fff"/><path d="M14 32h36" style="stroke:var(--brand)" stroke-width="1.6" opacity=".5"/><path d="M24 32h16" style="stroke:var(--brand)" stroke-width="2.6" stroke-linecap="round"/><path d="M27 28.4v7.2M31 28.4v7.2M35 28.4v7.2" style="stroke:var(--brand)" stroke-width="2.3" stroke-linecap="round"/></g></svg>';
 
 const VIEWS = [
   { k: 'home', ic: 'home', label: 'Home', grp: 'Overview' },
@@ -3202,6 +3252,24 @@ function setTheme(t) {
   LS.set('theme', t);
 }
 function currentTheme() { return LS.get('theme', 'system'); }
+/* Accent colour: one hue drives every brand token (see "accent themes" in the
+   stylesheet). The hexes are only the swatches' faces. */
+const ACCENTS = [
+  { k: 'indigo', label: 'Indigo', a: '#4f6bf2', b: '#8a5cf6' },
+  { k: 'blue', label: 'Ocean', a: '#2b6ae8', b: '#3d9be9' },
+  { k: 'teal', label: 'Lagoon', a: '#0a8fb0', b: '#1fb6a6' },
+  { k: 'green', label: 'Emerald', a: '#0f9d63', b: '#37b86a' },
+  { k: 'orange', label: 'Sunset', a: '#d9560a', b: '#ef8a1e' },
+  { k: 'rose', label: 'Rose', a: '#d81f4d', b: '#e5498f' },
+  { k: 'graphite', label: 'Graphite', a: '#3b4254', b: '#6a7186' }
+];
+function currentAccent() { const a = LS.get('accent', 'indigo'); return ACCENTS.some(x => x.k === a) ? a : 'indigo'; }
+function setAccent(k) {
+  if (!ACCENTS.some(x => x.k === k)) k = 'indigo';
+  if (k === 'indigo') document.documentElement.removeAttribute('data-accent');
+  else document.documentElement.setAttribute('data-accent', k);
+  LS.set('accent', k);
+}
 
 /* One menu for everything that changes how the app looks rather than what it
    says. It survives a render so a click inside it does not close it, and one
@@ -3236,6 +3304,14 @@ function settingsMenu() {
       useUsernames()
         ? 'Sleeper handles, everywhere. Team names show underneath.'
         : 'Team names, everywhere. Usernames show underneath.'),
+    group('Accent colour',
+      h('div.swatches', { role: 'radiogroup', 'aria-label': 'Accent colour' }, ACCENTS.map(a =>
+        h('button.swatch' + (currentAccent() === a.k ? '.on' : ''), {
+          title: a.label, 'aria-label': a.label, role: 'radio', 'aria-checked': currentAccent() === a.k ? 'true' : 'false',
+          style: { background: `linear-gradient(135deg,${a.a},${a.b})` },
+          onclick: () => { setAccent(a.k); render(); }
+        }))),
+      (ACCENTS.find(a => a.k === currentAccent()) || ACCENTS[0]).label + ' — the colour of buttons, links, the sidebar and the home banner.'),
     S.league ? group('League type',
       segmented([{ k: 'auto', label: 'Auto' }, { k: 'dynasty', label: 'Dynasty' }, { k: 'redraft', label: 'Redraft' }],
         leagueTypeChoice(), m => { setLeagueType(m); render(); }),
@@ -8861,6 +8937,7 @@ async function boot(leagueId, onStep) {
   }
 }
 setTheme(currentTheme());
+setAccent(currentAccent());
 setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer view
 setNameMode(LS.get('names', 'user')); // people know each other by handle, not by team name
 watchViewport();

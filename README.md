@@ -115,6 +115,11 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
   roomier with photos; Minimal tightens table density and drops imagery.
 - Under 900px the sidebar becomes a bottom tab bar (Home · Week · Rosters · Players ·
   More), with every page one tap behind **More**.
+- **Accent colour** is one hue (`--hue`, set by `data-accent` on the root) from which every
+  brand token — buttons, links, focus, sidebar tint, home banner, landing page — is derived
+  with `oklch()`. Seven themes ship (Indigo, Ocean, Lagoon, Emerald, Sunset, Rose,
+  Graphite); the choice is stored in the visitor's browser. Adding one is a single CSS line
+  plus an entry in `ACCENTS`.
 - Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
   fonts or other dependencies.
 
