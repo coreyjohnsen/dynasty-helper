@@ -143,9 +143,10 @@ candidate must clear four checks, then is ranked:
 
 **Buy low / sell high.** A player is flagged when his scoring and his price disagree
 by more than week-to-week noise allows (variance for his position, shrinking with
-games played, calibrated against this league's own median), or from an age cliff or
-an injury to a young star. A 30-day value move only reinforces another signal; it
-never flags anyone alone. Each suggestion also lists, in words, why it works.
+games played, calibrated against this league's own median), or from an age cliff. A 30-day
+value move only reinforces another signal; it never flags anyone alone. Players who
+are out, doubtful, suspended or on injured reserve are never flagged: their price is
+explained by the injury, and they cannot help this season. Each suggestion also lists, in words, why it works.
 
 **On the Players page** the same flags appear as tags beside each name, with Market
 (Buy low / Sell high) and Timeline (Win now / Rebuild) filters, two sortable columns,

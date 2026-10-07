@@ -468,6 +468,20 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tlnow{color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));font-weight:650}
 .tllater{color:var(--s1);font-weight:650}
 
+/* a card whose body folds away: one slim bar when closed */
+.card.collapsible .chd{display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:0;background:none;text-align:left;cursor:pointer;border-radius:var(--r);color:inherit;transition:background .15s}
+.card.collapsible .chd:hover{background:var(--surface-2)}
+.card.collapsible .chd:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.chd-t{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;flex:1;min-width:0}
+.chd-t h3{font-size:15.5px;font-weight:680}
+.chd-t .note{color:var(--text-muted);font-size:12.5px}
+.chd-hint{font-size:12px;font-weight:620;color:var(--text-muted);flex:none}
+.chev{display:grid;place-items:center;color:var(--text-muted);transition:transform .2s var(--ease);flex:none}
+.chev svg{width:18px;height:18px}
+.card.collapsible.open .chev{transform:rotate(180deg)}
+.card.collapsible.open .chd{border-bottom:1px solid var(--grid);border-radius:var(--r) var(--r) 0 0}
+@media (max-width:560px){ .card.collapsible .chd{padding:13px 14px} .chd-hint{display:none} }
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -1800,7 +1814,7 @@ function applyOwnership(moves, pickMoves) {
       .map(pk => Object.assign({}, pk, { rosterId: t.rosterId }));
   });
   computeStrength();
-  S._fa = null; S._depth = null;
+  S._fa = null; S._depth = null; S._sig = null;
   S.sim = null; SimUI.res = null; SimUI.replay = null; FinderUI.results = null; TradeUI.result = null;
 }
 function draftRounds() {
@@ -4363,7 +4377,7 @@ function tradeResult(R) {
 }
 
 /* ================= 5. TRADE FINDER ================= */
-const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false };
+const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false, boardOpen: false };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
   { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
@@ -4475,7 +4489,7 @@ function viewFinder() {
     h('button.btn.pri', { onclick: () => { run(); render(); } }, 'Find trades')
   )));
 
-  wrap.appendChild(signalBoard(T, (id) => { FinderUI.focus = id; FinderUI.partners = []; FinderUI.autorun = true; render(); window.scrollTo(0, 0); }));
+  wrap.appendChild(signalBoard(T, (id) => { FinderUI.focus = id; FinderUI.partners = []; FinderUI.autorun = true; FinderUI.boardOpen = false; render(); window.scrollTo(0, 0); }));
 
   if (FinderUI.results) {
     const res = FinderUI.results;
@@ -4591,7 +4605,6 @@ function computeSignal(x, cal) {
   if (tr <= -0.08 && (p.age || 99) <= 27) { buy += 0.2; rb.push(`value down ${Math.round(-tr * 100)}% in 30 days`); }
   if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days — close to a peak`); }
   if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos} — values fall away from here`); }
-  if (['Out', 'IR', 'PUP'].includes(p.injury) && p.dv >= 2000 && (p.age || 99) <= 28) { buy += 0.4; rb.push(`injured (${p.injury}), so his price is depressed`); }
   if (Math.max(buy, sell) < 0.35) return null;
   const kind = buy > sell ? 'buy' : 'sell';
   return { kind, strength: Math.min(1, Math.max(buy, sell)), reasons: kind === 'buy' ? rb : rs, actual, expected, games: n };
@@ -4602,9 +4615,18 @@ function signalMap() {
   const rank = {};
   POS4.forEach(pos => Object.values(S.index).filter(p => p.pos === pos && (p.dv || 0) > 0)
     .sort((a, b) => b.dv - a.dv).forEach((p, i) => { rank[p.id] = i + 1; }));
+  /* A player who is out, doubtful or parked in an IR slot is not mispriced: his price is
+     low because he is hurt, and a season-ending injury means he cannot help this year
+     either. His recent scoring is also unreliable (partial games drag it down). So he is
+     left out of the board altogether, in both directions. */
+  const hurt = new Set(); S.teams.forEach(t => t.ir.forEach(id => hurt.add(id)));
+  // Sleeper often records a long-term injury only in the player's status, leaving the
+  // injury tag empty, so the status is read too
+  const unavailable = (p) => hurt.has(p.id) || OUT_TAGS.includes(p.injury) || p.injury === 'Doubtful'
+    || /injured|physically|suspended|retired/i.test(((S.players[p.id] || {}).st) || '');
   const info = {};
   Object.values(S.index).forEach(p => {
-    if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id]) return;
+    if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id] || unavailable(p)) return;
     const games = playerGameLog(p.id).filter(g => g.state === 'final' && g.pts !== null && g.pts > 0);
     // a young player is not expected to produce what his future is priced at
     const youth = p.age ? clamp(0.78 + (p.age - 21) * 0.07, 0.78, 1) : 1;
@@ -4982,16 +5004,25 @@ function signalBoard(T, shop) {
     h('div.sigh', h('b', title), h('span.tiny.muted', note)),
     list.length ? h('div.sigrows', list.map(x => rowEl(x, verb, where))) : h('div.tiny.muted.signone', 'Nothing flagged.'));
   const any = sells.length || buys.length || holds.length;
-  return card('Buy low / sell high', 'where a player’s price and his production disagree',
-    h('div', { style: { display: 'grid', gap: '14px' } },
+  // the totals, not just what fits on screen, so the closed bar still says how much is in it
+  const nSell = mine.filter(x => x.s.kind === 'sell').length, nHold = mine.filter(x => x.s.kind === 'buy').length;
+  const nBuy = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').length;
+  const summary = any ? [nSell ? nSell + ' to sell' : null, nBuy ? nBuy + ' to buy' : null, nHold ? nHold + ' to hold' : null].filter(Boolean).join(' · ') : 'nothing flagged right now';
+  const open = FinderUI.boardOpen;
+  return h('div.card.collapsible' + (open ? '.open' : ''),
+    h('button.chd', { 'aria-expanded': open ? 'true' : 'false', onclick: () => { FinderUI.boardOpen = !FinderUI.boardOpen; render(); } },
+      h('div.chd-t', h('h3', 'Buy low / sell high ideas'), h('span.note', summary)),
+      h('span.chd-hint', open ? 'Hide' : 'Show'), h('span.chev', ico('chev'))),
+    open ? h('div.bd', { style: { display: 'grid', gap: '14px', paddingTop: '4px' } },
+      h('div.tiny.muted', 'Where a player’s price and his production disagree. Pick one to build a trade search around him.'),
       any ? h('div.sigcols',
         col('Sell high', 'yours — the market is paying more than the production earns', sells, 'Shop him', false),
         col('Buy low', 'on other rosters — price is ahead of production, or temporarily down', buys, 'Get him', true),
         holds.length ? col('Don’t sell yet', 'yours — scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
         : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
       h('div.tiny.muted', S.lastWeek
-        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend, age and injuries add to the read.`
-        : 'No games have been played yet, so flags come only from age cliffs and injuries to young stars. Production-based flags appear once the season starts.')));
+        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out: their price is explained by the injury.`
+        : 'No games have been played yet, so flags come only from age cliffs. Production-based flags appear once the season starts.')) : null);
 }
 
 function tradeCardRow(r, T, i) {
