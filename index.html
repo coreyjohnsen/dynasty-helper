@@ -468,6 +468,20 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tlnow{color:color-mix(in srgb, var(--s2) 82%, var(--text-primary));font-weight:650}
 .tllater{color:var(--s1);font-weight:650}
 
+/* a card whose body folds away: one slim bar when closed */
+.card.collapsible .chd{display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;border:0;background:none;text-align:left;cursor:pointer;border-radius:var(--r);color:inherit;transition:background .15s}
+.card.collapsible .chd:hover{background:var(--surface-2)}
+.card.collapsible .chd:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.chd-t{display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap;flex:1;min-width:0}
+.chd-t h3{font-size:15.5px;font-weight:680}
+.chd-t .note{color:var(--text-muted);font-size:12.5px}
+.chd-hint{font-size:12px;font-weight:620;color:var(--text-muted);flex:none}
+.chev{display:grid;place-items:center;color:var(--text-muted);transition:transform .2s var(--ease);flex:none}
+.chev svg{width:18px;height:18px}
+.card.collapsible.open .chev{transform:rotate(180deg)}
+.card.collapsible.open .chd{border-bottom:1px solid var(--grid);border-radius:var(--r) var(--r) 0 0}
+@media (max-width:560px){ .card.collapsible .chd{padding:13px 14px} .chd-hint{display:none} }
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -4363,7 +4377,7 @@ function tradeResult(R) {
 }
 
 /* ================= 5. TRADE FINDER ================= */
-const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false };
+const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false, boardOpen: false };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
   { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
@@ -4475,7 +4489,7 @@ function viewFinder() {
     h('button.btn.pri', { onclick: () => { run(); render(); } }, 'Find trades')
   )));
 
-  wrap.appendChild(signalBoard(T, (id) => { FinderUI.focus = id; FinderUI.partners = []; FinderUI.autorun = true; render(); window.scrollTo(0, 0); }));
+  wrap.appendChild(signalBoard(T, (id) => { FinderUI.focus = id; FinderUI.partners = []; FinderUI.autorun = true; FinderUI.boardOpen = false; render(); window.scrollTo(0, 0); }));
 
   if (FinderUI.results) {
     const res = FinderUI.results;
@@ -4982,8 +4996,17 @@ function signalBoard(T, shop) {
     h('div.sigh', h('b', title), h('span.tiny.muted', note)),
     list.length ? h('div.sigrows', list.map(x => rowEl(x, verb, where))) : h('div.tiny.muted.signone', 'Nothing flagged.'));
   const any = sells.length || buys.length || holds.length;
-  return card('Buy low / sell high', 'where a player’s price and his production disagree',
-    h('div', { style: { display: 'grid', gap: '14px' } },
+  // the totals, not just what fits on screen, so the closed bar still says how much is in it
+  const nSell = mine.filter(x => x.s.kind === 'sell').length, nHold = mine.filter(x => x.s.kind === 'buy').length;
+  const nBuy = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').length;
+  const summary = any ? [nSell ? nSell + ' to sell' : null, nBuy ? nBuy + ' to buy' : null, nHold ? nHold + ' to hold' : null].filter(Boolean).join(' · ') : 'nothing flagged right now';
+  const open = FinderUI.boardOpen;
+  return h('div.card.collapsible' + (open ? '.open' : ''),
+    h('button.chd', { 'aria-expanded': open ? 'true' : 'false', onclick: () => { FinderUI.boardOpen = !FinderUI.boardOpen; render(); } },
+      h('div.chd-t', h('h3', 'Buy low / sell high ideas'), h('span.note', summary)),
+      h('span.chd-hint', open ? 'Hide' : 'Show'), h('span.chev', ico('chev'))),
+    open ? h('div.bd', { style: { display: 'grid', gap: '14px', paddingTop: '4px' } },
+      h('div.tiny.muted', 'Where a player’s price and his production disagree. Pick one to build a trade search around him.'),
       any ? h('div.sigcols',
         col('Sell high', 'yours — the market is paying more than the production earns', sells, 'Shop him', false),
         col('Buy low', 'on other rosters — price is ahead of production, or temporarily down', buys, 'Get him', true),
@@ -4991,7 +5014,7 @@ function signalBoard(T, shop) {
         : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
       h('div.tiny.muted', S.lastWeek
         ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend, age and injuries add to the read.`
-        : 'No games have been played yet, so flags come only from age cliffs and injuries to young stars. Production-based flags appear once the season starts.')));
+        : 'No games have been played yet, so flags come only from age cliffs and injuries to young stars. Production-based flags appear once the season starts.')) : null);
 }
 
 function tradeCardRow(r, T, i) {
