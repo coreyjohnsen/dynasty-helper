@@ -1814,7 +1814,7 @@ function applyOwnership(moves, pickMoves) {
       .map(pk => Object.assign({}, pk, { rosterId: t.rosterId }));
   });
   computeStrength();
-  S._fa = null; S._depth = null;
+  S._fa = null; S._depth = null; S._sig = null;
   S.sim = null; SimUI.res = null; SimUI.replay = null; FinderUI.results = null; TradeUI.result = null;
 }
 function draftRounds() {
@@ -4605,7 +4605,6 @@ function computeSignal(x, cal) {
   if (tr <= -0.08 && (p.age || 99) <= 27) { buy += 0.2; rb.push(`value down ${Math.round(-tr * 100)}% in 30 days`); }
   if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days — close to a peak`); }
   if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos} — values fall away from here`); }
-  if (['Out', 'IR', 'PUP'].includes(p.injury) && p.dv >= 2000 && (p.age || 99) <= 28) { buy += 0.4; rb.push(`injured (${p.injury}), so his price is depressed`); }
   if (Math.max(buy, sell) < 0.35) return null;
   const kind = buy > sell ? 'buy' : 'sell';
   return { kind, strength: Math.min(1, Math.max(buy, sell)), reasons: kind === 'buy' ? rb : rs, actual, expected, games: n };
@@ -4616,9 +4615,18 @@ function signalMap() {
   const rank = {};
   POS4.forEach(pos => Object.values(S.index).filter(p => p.pos === pos && (p.dv || 0) > 0)
     .sort((a, b) => b.dv - a.dv).forEach((p, i) => { rank[p.id] = i + 1; }));
+  /* A player who is out, doubtful or parked in an IR slot is not mispriced: his price is
+     low because he is hurt, and a season-ending injury means he cannot help this year
+     either. His recent scoring is also unreliable (partial games drag it down). So he is
+     left out of the board altogether, in both directions. */
+  const hurt = new Set(); S.teams.forEach(t => t.ir.forEach(id => hurt.add(id)));
+  // Sleeper often records a long-term injury only in the player's status, leaving the
+  // injury tag empty, so the status is read too
+  const unavailable = (p) => hurt.has(p.id) || OUT_TAGS.includes(p.injury) || p.injury === 'Doubtful'
+    || /injured|physically|suspended|retired/i.test(((S.players[p.id] || {}).st) || '');
   const info = {};
   Object.values(S.index).forEach(p => {
-    if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id]) return;
+    if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id] || unavailable(p)) return;
     const games = playerGameLog(p.id).filter(g => g.state === 'final' && g.pts !== null && g.pts > 0);
     // a young player is not expected to produce what his future is priced at
     const youth = p.age ? clamp(0.78 + (p.age - 21) * 0.07, 0.78, 1) : 1;
@@ -5013,8 +5021,8 @@ function signalBoard(T, shop) {
         holds.length ? col('Don’t sell yet', 'yours — scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
         : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
       h('div.tiny.muted', S.lastWeek
-        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend, age and injuries add to the read.`
-        : 'No games have been played yet, so flags come only from age cliffs and injuries to young stars. Production-based flags appear once the season starts.')) : null);
+        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out: their price is explained by the injury.`
+        : 'No games have been played yet, so flags come only from age cliffs. Production-based flags appear once the season starts.')) : null);
 }
 
 function tradeCardRow(r, T, i) {
