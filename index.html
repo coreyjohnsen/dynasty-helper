@@ -664,6 +664,26 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tray-empty.a{--c:var(--s1);display:grid;width:100%}
 @media (max-width:900px){ .slhead{grid-template-columns:minmax(0,1fr)} }
 
+/* ---- trade finder results ---- */
+.dealitem.compact{padding:8px 10px 8px 12px;gap:10px}
+.dealitem.compact .face.lg,.dealitem.compact .pickface{width:36px;height:36px;border-radius:11px}
+.dealitem.compact .dealval{font-size:14px}
+.tcard{padding:14px 16px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
+.tc-hd{display:flex;justify-content:space-between;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:12px}
+.tc-who{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
+.tav-s{width:30px;height:30px;border-radius:9px;object-fit:cover;background:var(--surface-3);flex:none}
+.tc-nm{font-size:15px;letter-spacing:-.01em}
+.tc-act{display:flex;align-items:center;gap:10px}
+.balchip{display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:660;background:var(--surface-1);border:1px solid var(--border-strong);color:var(--text-secondary)}
+.balchip i{width:8px;height:8px;border-radius:50%}
+.tmini{--c:var(--s1);background:var(--surface-1);border:1px solid var(--border);border-top:3px solid var(--c);border-radius:var(--r-sm);padding:10px 10px 10px;min-width:0}
+.tmini.b{--c:var(--s2)}
+.tmini-hd{display:flex;align-items:center;gap:8px;padding:0 4px 8px;font-size:13px}
+.tmini-hd .tray-dot{width:9px;height:9px}
+.tmini-sum{margin-left:auto;font-weight:730;font-size:16px;letter-spacing:-.02em;color:var(--c)}
+.tmini-items{display:grid;gap:7px}
+.tcard .tcols{align-items:start}
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -4407,10 +4427,10 @@ function assetFace(a) {
 /** A chosen asset, large enough to read: face, name, position, where he plays, value. */
 function assetCard(a, o) {
   o = o || {};
-  return h('div.dealitem',
+  return h('div.dealitem' + (o.compact ? '.compact' : ''),
     assetFace(a),
     h('div.dealmain',
-      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null, o.extra || null),
       h('div.tiny.muted.dealmeta', o.meta || assetMeta(a))),
     h('span.dealval.mono', o.value !== undefined ? o.value : kfmt(Math.round(a.dv))),
     o.onRemove ? h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: o.onRemove }, ico('close')) : null);
@@ -4712,7 +4732,7 @@ function tradeResult(R) {
 }
 
 /* ================= 5. TRADE FINDER ================= */
-const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false, boardOpen: false };
+const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false, boardOpen: false, pickOpen: false, pickTab: 'mine', pst: { q: '', pos: 'all', limit: 30 } };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
   { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
@@ -4756,15 +4776,29 @@ function viewFinder() {
     id: focusP.id, player: focusP, owner: focusOwner,
     side: focusOwner.rosterId === T.rosterId ? 'give' : 'get'
   } : null;
-  const focusSel = h('select', {
-    style: { width: '100%', maxWidth: '420px' },
-    onchange: e => { FinderUI.focus = e.target.value || null; dirty(); render(); }
-  }, [h('option', { value: '' }, '— nobody in particular —')].concat(
-    S.teams.slice().sort((a, b) => (a.rosterId === T.rosterId ? -1 : b.rosterId === T.rosterId ? 1 : a.name.localeCompare(b.name)))
-      .map(t => h('optgroup', { label: t.rosterId === T.rosterId ? t.name + ' (yours — sell)' : t.name + ' (buy from)' },
-        t.players.slice().sort((a, b) => (b.dv || 0) - (a.dv || 0)).filter(p => (p.dv || 0) > 0)
-          .map(p => h('option', { value: p.id, selected: FinderUI.focus === p.id },
-            `${p.name} · ${p.pos}${p.posRank || ''} · ${kfmt(Math.round(p.dv || 0))}`))))));
+  const focusSel = (() => {
+    const box = h('div', { style: { display: 'grid', gap: '10px' } });
+    if (focus) box.appendChild(assetCard(assetOfPlayer(focusP), {
+      compact: true, onRemove: () => { FinderUI.focus = null; dirty(); render(); },
+      meta: focus.side === 'give' ? 'yours — shopping him' : 'on ' + focusOwner.name + ' — going to get him'
+    }));
+    box.appendChild(h('div.row', h('button.btn', { onclick: () => { FinderUI.pickOpen = !FinderUI.pickOpen; render(); } },
+      ico(FinderUI.pickOpen ? 'chevup' : 'finder'), FinderUI.pickOpen ? 'Close the list' : focus ? 'Choose a different player' : 'Choose a player')));
+    if (FinderUI.pickOpen) {
+      const tab = FinderUI.pickTab === 'others' ? 'others' : 'mine';
+      const pool = tab === 'mine' ? T.players : S.teams.filter(t => t.rosterId !== T.rosterId).reduce((x, t) => x.concat(t.players), []);
+      box.appendChild(assetBrowser({
+        id: 'fbrowse', color: tab === 'mine' ? 'a' : 'b', st: FinderUI.pst, picks: false, posOpts: ['all', 'QB', 'RB', 'WR', 'TE'],
+        title: tab === 'mine' ? 'Shop one of yours' : 'Go and get someone', note: 'tap a player to build every suggestion around him',
+        tabs: [{ k: 'mine', color: 'a', label: 'Your roster · sell' }, { k: 'others', color: 'b', label: 'Rest of the league · buy' }], tab,
+        onTab: k => { FinderUI.pickTab = k; FinderUI.pst.pos = 'all'; FinderUI.pst.limit = 30; render(); },
+        assets: pool.filter(p => (p.dv || 0) > 0).map(assetOfPlayer).sort((x, y) => y.dv - x.dv), chosen: new Set(focus ? [focus.id] : []),
+        meta: a => (tab === 'others' && ownerOf[a.id] ? ownerOf[a.id].short + ' · ' : '') + assetMeta(a), placeholder: 'Search players…',
+        onToggle: (a, inDeal) => { FinderUI.focus = inDeal ? null : a.id; FinderUI.pickOpen = false; dirty(); render(); }, onChange: () => render()
+      }));
+    }
+    return box;
+  })();
   const focusBlurb = !focus
     ? 'Pick anyone in the league and every suggestion will be built around them — one of yours to shop, or someone else’s to go and get.'
     : focus.side === 'give'
@@ -4780,9 +4814,8 @@ function viewFinder() {
 
   wrap.appendChild(card('What are you trying to do?', 'the filters below are all optional', h('div', { style: { display: 'grid', gap: '14px' } },
     h('div.row', { style: { gap: '14px' } },
-      h('label.fld', { style: { minWidth: '240px' } }, 'Your team',
-        h('select', { onchange: e => { FinderUI.team = +e.target.value; FinderUI.partners = []; dirty(); render(); } },
-          teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, t.name)))),
+      h('div', { style: { flex: '1 1 300px', maxWidth: '440px', display: 'flex' } },
+        teamCard('a', T, { key: 'finder', label: 'Your team', onPick: id => { FinderUI.team = id; FinderUI.partners = []; dirty(); render(); } })),
       dynOnly(h('label.fld', 'Strategy', segmented(modeOpts, FinderUI.mode, m => { FinderUI.mode = m; dirty(); render(); }))),
       h('label.fld', 'Value tolerance',
         h('select', { onchange: e => { FinderUI.tol = +e.target.value; dirty(); } },
@@ -5369,20 +5402,22 @@ function tradeCardRow(r, T, i) {
     const label = side === 'give' ? (s.kind === 'sell' ? 'Sell high' : 'Selling low') : (s.kind === 'buy' ? 'Buy low' : 'Buying high');
     return h('span.sigtag.' + (good ? 'good' : 'warn'), { title: s.reasons.join(' · ') }, label);
   };
-  const chip = (a, side) => h('div.asset', { style: { cursor: 'default' } },
-    posPill(a.pos),
-    a.kind === 'pick' ? h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name)
-      : pname(a.ref, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
-    angle(a, side),
-    h('span.v', kfmt(Math.round(a.dv))));
   const shapeTag = r.give.length > r.get.length ? 'uptier' : r.get.length > r.give.length ? 'downtier' : null;
-  return h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '10px 12px', background: 'var(--surface-2)' } },
-    h('div.row', { style: { justifyContent: 'space-between', marginBottom: '8px' } },
-      h('div.row', { style: { gap: '7px' } }, h('b.mono.tiny', '#' + (i + 1)), h('b', 'with ' + r.partner.name),
+  const verdict = tradeVerdict(r.fair);
+  const tray = (arr, which, title) => h('div.tmini.' + which,
+    h('div.tmini-hd', h('span.tray-dot'), h('b', title), h('span.tmini-sum.mono', kfmt(Math.round(sum(arr.map(a => a.dv)))))),
+    h('div.tmini-items', arr.map(a => assetCard(a, { compact: true, extra: angle(a, which === 'a' ? 'give' : 'get') }))));
+  return h('div.tcard',
+    h('div.tc-hd',
+      h('div.tc-who',
+        h('b.mono.tiny.tc-n', '#' + (i + 1)),
+        r.partner.avatar ? h('img.tav-s', { src: r.partner.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.tav-s'),
+        h('b.tc-nm', 'with ' + r.partner.name),
         r.partner.window ? h('span.tag', r.partner.window) : null,
         shapeTag ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, shapeTag) : null),
-      h('div.row', { style: { gap: '10px' } },
-        h('span.tiny.muted', { title: 'Value of each side after counting the best piece in full and each extra player for less' }, 'balance ' + pct(r.fair, 0)),
+      h('div.tc-act',
+        h('span.balchip', { title: 'Value of each side after counting the best piece in full and each extra player for less' },
+          h('i', { style: { background: verdict[1] } }), pct(r.fair, 0) + ' balance'),
         h('button.btn.sm', {
           onclick: () => {
             TradeUI.a = T.rosterId; TradeUI.b = r.partner.rosterId;
@@ -5391,20 +5426,17 @@ function tradeCardRow(r, T, i) {
             S.view = 'trade'; render(); window.scrollTo(0, 0);
           }
         }, 'Open in calculator'))),
-    h('div.tcols',
-      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You send'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.give.map(a => chip(a, 'give')))),
-      h('div.swap', '⇄'),
-      h('div', { style: { minWidth: 0 } }, h('div.tiny.muted', { style: { marginBottom: '3px' } }, 'You get'), h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, r.get.map(a => chip(a, 'get'))))),
+    h('div.tcols', tray(r.give, 'a', 'You send'), h('div.swap', '⇄'), tray(r.get, 'b', 'You get')),
     r.why && r.why.length ? h('div.why', h('div.whyh', 'Why this works'),
       h('ul', r.why.slice(0, 5).map(w => h('li.w-' + w.k, w.t)))) : null,
-    r.fa && r.fa.length ? h('div', { style: { marginTop: '9px', borderTop: '1px dashed var(--border)', paddingTop: '7px' } },
-      h('div.tiny.muted', { style: { marginBottom: '5px' } },
+    r.fa && r.fa.length ? h('div', { style: { marginTop: '10px', borderTop: '1px dashed var(--border)', paddingTop: '8px' } },
+      h('div.tiny.muted', { style: { marginBottom: '6px' } },
         (r.freed > 1 ? r.freed + ' roster spots open up' : 'A roster spot opens up') + ' — best free agent to sign with it:'),
       h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } }, r.fa.map((f, ix) =>
         h('div.asset', { style: { cursor: 'default', opacity: ix ? 0.62 : 1 } }, posPill(f.p.pos),
           pname(f.p, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
           h('span.v', f.gain > 0.05 ? '+' + f.gain.toFixed(1) + ' pts/wk' : kfmt(Math.round(f.p.dv || 0))))))) : null,
-    h('div.row', { style: { marginTop: '9px', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '7px' } },
+    h('div.row', { style: { marginTop: '10px', gap: '6px 16px', borderTop: '1px solid var(--border)', paddingTop: '9px' } },
       h('span.tiny.sec', 'Your lineup ', deltaTag(r.myAfter.now - r.myBase.now, 1, ' pts/wk')),
       dynOnly(h('span.tiny.sec', 'Your future ', deltaTag(r.myAfter.future - r.myBase.future, 1))),
       dynOnly(h('span.tiny.sec', 'Pick capital ', deltaTag(r.myAfter.pickCapital - r.myBase.pickCapital, 0))),
