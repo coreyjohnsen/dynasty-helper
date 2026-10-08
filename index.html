@@ -632,6 +632,30 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .tpick-meta{white-space:nowrap;font-size:11.5px}
 }
 
+/* ---- head to head ---- */
+.h2hweek{display:flex;gap:10px 18px;align-items:flex-end;flex-wrap:wrap;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-xs)}
+.h2hhero{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,300px) minmax(0,1fr);gap:16px;align-items:center;padding:22px 24px;background:var(--surface-1);border:1px solid var(--border);border-radius:calc(var(--r) + 2px);box-shadow:var(--shadow)}
+.h2hside{display:grid;justify-items:center;text-align:center;gap:3px;--c:var(--s1);min-width:0;opacity:.78;transition:opacity .2s}
+.h2hside.b{--c:var(--s2)}
+.h2hside.fav{opacity:1}
+.h2hav{width:56px;height:56px;border-radius:16px;object-fit:cover;background:var(--surface-3);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.h2hnm{font-weight:680;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px}
+.h2hpct{font-size:52px;font-weight:740;letter-spacing:-.04em;line-height:1.05;color:var(--c)}
+.h2hside.fav .h2hpct{text-shadow:0 6px 28px color-mix(in srgb,var(--c) 35%,transparent)}
+.h2hmid{display:grid;gap:10px;justify-items:center;text-align:center}
+.h2hbar{display:flex;gap:3px;width:100%;height:12px}
+.h2hbar i{display:block;transition:flex .35s var(--ease)}
+.h2hbar i.a{background:var(--s1);border-radius:99px 4px 4px 99px}
+.h2hbar i.b{background:var(--s2);border-radius:4px 99px 99px 4px}
+.h2hmargin{display:grid;gap:2px}
+.h2hmargin b{font-size:17px;letter-spacing:-.02em}
+@media (max-width:900px){
+  .h2hhero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:18px 14px;gap:14px 10px}
+  .h2hmid{grid-column:1/-1;grid-row:2}
+  .h2hpct{font-size:40px}
+  .h2hav{width:46px;height:46px;border-radius:13px}
+}
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -7456,27 +7480,23 @@ function viewH2H() {
   const wk = H2HUI.week;
   const isLive = wk === S.liveWeek;
 
-  wrap.appendChild(card('Pick two teams', null, h('div.row', { style: { gap: '14px' } },
-    h('label.fld', { style: { minWidth: '210px' } }, 'Team A',
-      h('select', { onchange: e => { H2HUI.a = +e.target.value; H2HUI.res = null; render(); } },
-        teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === A.rosterId }, t.name)))),
-    h('label.fld', { style: { minWidth: '210px' } }, 'Team B',
-      h('select', { onchange: e => { H2HUI.b = +e.target.value; H2HUI.res = null; render(); } },
-        teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === B.rosterId }, t.name)))),
-    h('label.fld', meet.length ? (meet.length === 1 ? 'They meet once' : 'They meet ' + meet.length + ' times') : 'Neutral week',
+  wrap.appendChild(matchupBar({
+    key: 'h2h', aId: A.rosterId, bId: B.rosterId,
+    onPick: (w, id) => { H2HUI[w] = id; H2HUI.res = null; render(); },
+    onSwap: () => { const t = H2HUI.a; H2HUI.a = H2HUI.b; H2HUI.b = t; H2HUI.res = null; render(); }
+  }));
+  wrap.appendChild(h('div.h2hweek',
+    h('label.fld', { style: { minWidth: '210px' } }, meet.length ? (meet.length === 1 ? 'They meet once' : 'They meet ' + meet.length + ' times') : 'Neutral week',
       h('select', { onchange: e => { H2HUI.week = +e.target.value; H2HUI.res = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === wk },
           'Week ' + w + (w <= S.lastWeek ? ' (played)' : w === next ? ' (next meeting)' : ''))))),
-    h('label.fld', ' ', h('button.btn', { onclick: () => { const t = H2HUI.a; H2HUI.a = H2HUI.b; H2HUI.b = t; H2HUI.res = null; render(); } }, '⇄ Swap')),
-    h('span', { style: { flex: 1 } }),
     meet.length
-      ? h('span.tiny.muted', { style: { maxWidth: '300px' } },
+      ? h('span.tiny.muted', { style: { maxWidth: '420px' } },
         meet.length === 1
           ? 'Week ' + meet[0] + ' is the only week these two play each other.'
           : 'Weeks ' + meet.slice(0, -1).join(', ') + ' and ' + meet[meet.length - 1] + ' are the only weeks these two play each other.')
-      : h('span.tiny.muted', { style: { maxWidth: '320px', color: 'var(--text-secondary)' } },
-        A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.')
-  )));
+      : h('span.tiny.muted', { style: { maxWidth: '440px', color: 'var(--text-secondary)' } },
+        A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.')));
   if (A.rosterId === B.rosterId) return wrap.appendChild(card(null, null, h('div.empty', 'Pick two different teams.'))), wrap;
 
   /* ---- the headline: this week, straight up ---- */
@@ -7485,10 +7505,20 @@ function viewH2H() {
   }
   const r = H2HUI.res;
   const favA = r.pA >= r.pB;
+  // the answer first: who is favoured, by how much, and what the odds are, as a scoreboard
+  const side = (T, w, p, m) => h('div.h2hside.' + w + (p >= 0.5 ? '.fav' : ''),
+    T.avatar ? h('img.h2hav', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.h2hav'),
+    h('div.h2hnm', T.name),
+    h('div.h2hpct.mono', pct(p, 0)),
+    h('div.tiny.muted', 'to win · ' + (isLive ? 'live ' : 'projected ') + fmt(m, 1) + ' pts'));
+  wrap.appendChild(h('div.h2hhero',
+    side(A, 'a', r.pA, r.meanA),
+    h('div.h2hmid',
+      h('div.h2hbar', { 'aria-hidden': 'true' }, h('i.a', { style: { flex: String(Math.max(r.pA, 0.02)) } }), h('i.b', { style: { flex: String(Math.max(r.pB, 0.02)) } })),
+      h('div.h2hmargin', h('span.tiny.muted', 'Typical margin'), h('b', (favA ? A.short : B.short) + ' by ' + fmt(Math.abs(r.medMargin), 1))),
+      h('div.tiny.muted', 'median across ' + kfmt(r.n) + ' runs')),
+    side(B, 'b', r.pB, r.meanB)));
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
-    kpi(A.short + ' win', pct(r.pA, 0), (isLive ? 'live ' : 'projected ') + fmt(r.meanA, 1) + ' pts'),
-    kpi(B.short + ' win', pct(r.pB, 0), (isLive ? 'live ' : 'projected ') + fmt(r.meanB, 1) + ' pts'),
-    kpi('Typical margin', (favA ? A.short : B.short) + ' by ' + fmt(Math.abs(r.medMargin), 1), 'median across ' + kfmt(r.n) + ' runs'),
     kpi('One-score game', pct(r.closeGame, 0), 'within 10 points'),
     kpi('Blowout', pct(Math.max(r.blowoutA, r.blowoutB), 0), (r.blowoutA > r.blowoutB ? A.short : B.short) + ' by 30+')
   ));
