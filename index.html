@@ -491,6 +491,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tpick{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border);border-top:3px solid var(--c);border-radius:var(--r);box-shadow:var(--shadow)}
 .tav{width:48px;height:48px;border-radius:14px;object-fit:cover;background:var(--surface-3);flex:none}
 .tpick-main{min-width:0;flex:1;display:grid;gap:2px}
+.tpick-name{font-size:17px;font-weight:700;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tpick-lbl{font-size:10.5px;font-weight:720;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
 .tpick select{border:0;background:transparent;box-shadow:none;padding:0 4px 0 0;min-height:0;width:100%;font-size:17px;font-weight:700;letter-spacing:-.02em;text-overflow:ellipsis;cursor:pointer}
 .tpick select:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px}
@@ -4319,7 +4320,7 @@ function fairness(aVal, bVal) {
    rather than noise, and it runs in about a second — so there is nothing left
    for the user to choose, only a button to press. */
 const TRADE_SIMS = 5000;
-const TradeUI = { a: null, b: null, aOut: [], bOut: [], q1: '', q2: '', result: null, sig: null, running: false, tab: 'a', pos: 'all', limit: 30 };
+const TradeUI = { a: null, b: null, aOut: [], bOut: [], result: null, sig: null, running: false, tab: 'a', st: { q: '', pos: 'all', limit: 30 } };
 /** What the current proposal is, so a repeat render does not re-run the sim. */
 function tradeSig() {
   return [TradeUI.a, TradeUI.b, TradeUI.aOut.map(a => a.id).join(','), TradeUI.bOut.map(a => a.id).join(',')].join('|');
@@ -4332,6 +4333,121 @@ function tradeRunNow() {
   TradeUI.sig = tradeSig();
   return TradeUI.result;
 }
+/* ================= desk components =================
+   The pieces the trade calculator is made of, kept apart so any page that pairs
+   two teams, shows what each side holds, or lets you pick things from a roster
+   can use the same ones and look like the same app. */
+
+/** A selectable team as a card in its side's colour ('a' blue, 'b' orange). */
+function teamCard(which, T, o) {
+  o = o || {};
+  const teams = o.teams || S.teams, id = o.id || ('tsel-' + which + '-' + (o.key || 'x'));
+  return h('div.tpick.' + which,
+    T.avatar ? h('img.tav', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.tav'),
+    h('div.tpick-main',
+      h('label.tpick-lbl', { for: id }, o.label || (T.rosterId === S.myRosterId ? 'Your team' : which === 'a' ? 'Team A' : 'Team B')),
+      o.onPick ? h('select', { id, onchange: e => o.onPick(+e.target.value) },
+        teams.map(t => h('option', { value: t.rosterId, selected: T.rosterId === t.rosterId, disabled: t.rosterId === o.disabledId }, t.name)))
+        : h('div.tpick-name', T.name),
+      h('div.tpick-meta', h('span', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power`),
+        isDynasty() ? h('span.tpx', `· ${ord(T.futureRank)} future`) : null,
+        T.window ? h('span.tag.tpx', T.window) : null)));
+}
+/** Two teams side by side with a swap button between them. */
+function matchupBar(o) {
+  const A = S.teamById[o.aId], B = S.teamById[o.bId];
+  return h('div.tdesk-head',
+    teamCard('a', A, { key: o.key, teams: o.teams, disabledId: o.bId, label: o.labelA, onPick: id => o.onPick('a', id) }),
+    o.onSwap ? h('button.btn.tswap', { title: 'Swap the two teams', 'aria-label': 'Swap the two teams', onclick: o.onSwap }, ico('swap')) : h('span'),
+    teamCard('b', B, { key: o.key, teams: o.teams, disabledId: o.aId, label: o.labelB, onPick: id => o.onPick('b', id) }));
+}
+
+/** The same shape the app uses for tradeable things, for a bare player. */
+function assetOfPlayer(p) { return { id: p.id, name: p.name, pos: p.pos, dv: p.dv || 0, ref: p, kind: 'player' }; }
+function assetMeta(a) {
+  return a.kind === 'pick'
+    ? (a.ref.slotLabel ? `Draft pick · projects ${a.ref.slotLabel}` + (a.ref.tier ? ' (' + a.ref.tier + ')' : '') : 'Draft pick')
+    : [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + ' yrs' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' pts/wk' : null].filter(Boolean).join(' · ');
+}
+function assetFace(a) {
+  return a.kind === 'pick' ? h('div.pickface', ico('draft')) : (isSimple() ? playerFace(a.ref, { lg: true }) : null);
+}
+/** A chosen asset, large enough to read: face, name, position, where he plays, value. */
+function assetCard(a, o) {
+  o = o || {};
+  return h('div.dealitem',
+    assetFace(a),
+    h('div.dealmain',
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+      h('div.tiny.muted.dealmeta', o.meta || assetMeta(a))),
+    h('span.dealval.mono', o.value !== undefined ? o.value : kfmt(Math.round(a.dv))),
+    o.onRemove ? h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: o.onRemove }, ico('close')) : null);
+}
+/** One side's tray: a coloured header with a total, its items, and a dashed target when empty. */
+function deskTray(o) {
+  return h('div.tray.' + (o.which || 'a'),
+    h('div.tray-hd',
+      h('div.tray-t', h('span.tray-dot'), h('b', o.title)),
+      o.total !== undefined && o.total !== null ? h('span.tray-sum.mono', o.total) : null),
+    o.items && o.items.length
+      ? h('div.tray-items', o.items,
+        h('div.tray-foot', h('span.tiny.muted', o.count || (o.items.length + (o.items.length === 1 ? ' item' : ' items'))),
+          o.onClear ? h('button.btn.sm', { onclick: o.onClear }, 'Clear') : null))
+      : h('button.tray-empty', { onclick: o.onEmpty || null },
+        h('span.tray-plus', ico('plus')), h('b', o.emptyTitle || 'Add something'), h('span.tiny.muted', o.emptySub || '')));
+}
+/**
+ * A roster to choose from: tabs, search, position filters, and a grid of cards that
+ * toggle in and out of the deal. The page owns the state (`o.st` holds the query, the
+ * position and how many are shown); typing filters the grid in place without a re-render.
+ */
+function assetBrowser(o) {
+  const st = o.st, step = o.step || 30, color = o.color || 'a';
+  const chosen = o.chosen || new Set();
+  const matches = (q) => o.assets.filter(a => (st.pos === 'all' || a.pos === st.pos)
+    && (!q || (a.name + ' ' + (a.ref && a.ref.team || '')).toLowerCase().includes(q.toLowerCase())));
+  const list = h('div.bgrid'), more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
+  const item = (a) => {
+    const inDeal = chosen.has(a.id), face = assetFace(a);
+    return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', onclick: () => o.onToggle(a, inDeal) },
+      face ? h('span.bface', face) : null,
+      h('span.bmain',
+        h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+        h('span.tiny.muted.bmeta', o.meta ? o.meta(a) : assetMeta(a))),
+      h('span.bval.mono', o.val ? o.val(a) : kfmt(Math.round(a.dv))),
+      h('span.badd', ico(inDeal ? 'check' : 'plus')));
+  };
+  const fill = (q) => {
+    const ms = matches(q), shown = ms.slice(0, st.limit);
+    clear(list); clear(more);
+    if (!ms.length) list.appendChild(h('div.empty', { style: { gridColumn: '1/-1', padding: '28px' } }, 'Nothing matches.'));
+    shown.forEach(a => list.appendChild(item(a)));
+    if (ms.length > shown.length) more.appendChild(h('button.btn', { onclick: () => { st.limit += step; fill(st.q); } },
+      'Show ' + Math.min(step, ms.length - shown.length) + ' more · ' + (ms.length - shown.length) + ' left'));
+  };
+  fill(st.q);
+  const posOpts = o.posOpts || ['all', 'QB', 'RB', 'WR', 'TE'].concat(isDynasty() && o.picks !== false ? ['PICK'] : []);
+  const tabs = o.tabs && o.tabs.length > 1 ? h('div.btabs', o.tabs.map(t =>
+    h('button.btab.' + t.color + (o.tab === t.k ? '.on' : ''), { onclick: () => o.onTab(t.k) },
+      h('span.btab-dot'), h('span.btab-nm', t.label), t.n ? h('span.btab-n', t.n + (o.tabNote || ' in deal')) : null))) : null;
+  return h('div.card.tbrowse.t' + color, { id: o.id },
+    h('div.bhd', h('h3', o.title || 'Add to the deal'), o.note ? h('span.note', o.note) : null),
+    h('div.bd', tabs,
+      h('div.bbar',
+        h('div.bsearch', ico('finder'), h('input', {
+          type: 'search', placeholder: o.placeholder || 'Search…', value: st.q, 'aria-label': 'Search',
+          oninput: e => { st.q = e.target.value; st.limit = step; fill(e.target.value); }
+        })),
+        h('div.chipwrap', posOpts.map(p => h('button.chip' + (st.pos === p ? '.on' : ''), {
+          onclick: () => { st.pos = p; st.limit = step; o.onChange(); }
+        }, p === 'all' ? 'All' : p === 'PICK' ? 'Picks' : p)))),
+      list, more));
+}
+/** The bar that rides above the tab bar on a phone: a headline, a sub line, and the action. */
+function dealBar(head, sub, action) {
+  return h('div.dealbar', h('div.dealbar-l', head, sub || null), action);
+}
+
 /** The words and colour for a value balance. */
 function tradeVerdict(f) {
   return f >= 0.93 ? ['Even trade', 'var(--good)'] : f >= 0.82 ? ['Slightly lopsided', 'var(--warning)'] : f >= 0.68 ? ['Lopsided', 'var(--serious)'] : ['Very lopsided', 'var(--critical)'];
@@ -4360,57 +4476,26 @@ function viewTrade() {
   const who = (T) => T.rosterId === S.myRosterId ? 'You' : T.name;
 
   /* ---- who is trading ---- */
-  const teamPick = (which) => {
-    const T = T_OF[which], other = which === 'a' ? 'b' : 'a';
-    return h('div.tpick.' + which,
-      T.avatar ? h('img.tav', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.tav'),
-      h('div.tpick-main',
-        h('label.tpick-lbl', { for: 'tsel-' + which }, T.rosterId === S.myRosterId ? 'Your team' : which === 'a' ? 'Team A' : 'Team B'),
-        h('select', {
-          id: 'tsel-' + which, onchange: e => { TradeUI[which] = +e.target.value; TradeUI[which + 'Out'] = []; TradeUI.result = null; TradeUI.q1 = ''; render(); }
-        }, teams.map(t => h('option', { value: t.rosterId, selected: TradeUI[which] === t.rosterId, disabled: t.rosterId === TradeUI[other] }, t.name))),
-        h('div.tpick-meta', h('span', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power`),
-          isDynasty() ? h('span.tpx', `· ${ord(T.futureRank)} future`) : null,
-          T.window ? h('span.tag.tpx', T.window) : null)));
-  };
-  wrap.appendChild(h('div.tdesk-head',
-    teamPick('a'),
-    h('button.btn.tswap', {
-      title: 'Swap the two teams', 'aria-label': 'Swap the two teams',
-      onclick: () => {
-        const t = TradeUI.a; TradeUI.a = TradeUI.b; TradeUI.b = t;
-        const o = TradeUI.aOut; TradeUI.aOut = TradeUI.bOut; TradeUI.bOut = o;
-        TradeUI.tab = TradeUI.tab === 'a' ? 'b' : 'a'; TradeUI.result = null; render();
-      }
-    }, ico('swap')),
-    teamPick('b')));
+  wrap.appendChild(matchupBar({
+    key: 'trade', aId: TradeUI.a, bId: TradeUI.b,
+    onPick: (which, id) => { TradeUI[which] = id; TradeUI[which + 'Out'] = []; TradeUI.result = null; TradeUI.st.q = ''; render(); },
+    onSwap: () => {
+      const t = TradeUI.a; TradeUI.a = TradeUI.b; TradeUI.b = t;
+      const o = TradeUI.aOut; TradeUI.aOut = TradeUI.bOut; TradeUI.bOut = o;
+      TradeUI.tab = TradeUI.tab === 'a' ? 'b' : 'a'; TradeUI.result = null; render();
+    }
+  }));
 
   /* ---- what each side sends ---- */
-  const metaOf = (a) => a.kind === 'pick'
-    ? (a.ref.slotLabel ? `Draft pick · projects ${a.ref.slotLabel}` + (a.ref.tier ? ' (' + a.ref.tier + ')' : '') : 'Draft pick')
-    : [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + ' yrs' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' pts/wk' : null].filter(Boolean).join(' · ');
-  const face = (a) => a.kind === 'pick' ? h('div.pickface', ico('draft'))
-    : (isSimple() ? playerFace(a.ref, { lg: true }) : null);
-  const dealItem = (a, which) => h('div.dealitem',
-    face(a),
-    h('div.dealmain',
-      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
-      h('div.tiny.muted.dealmeta', metaOf(a))),
-    h('span.dealval.mono', kfmt(Math.round(a.dv))),
-    h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: () => setOut(which, outOf(which).filter(x => x.id !== a.id)) }, ico('close')));
   const tray = (which) => {
     const T = T_OF[which], out = outOf(which), total = which === 'a' ? sumA : sumB;
-    return h('div.tray.' + which,
-      h('div.tray-hd',
-        h('div.tray-t', h('span.tray-dot'), h('b', who(T) === 'You' ? 'You send' : T.name + ' sends')),
-        h('span.tray-sum.mono', kfmt(Math.round(total)))),
-      out.length
-        ? h('div.tray-items', out.map(a => dealItem(a, which)),
-          h('div.tray-foot', h('span.tiny.muted', out.length + (out.length === 1 ? ' asset' : ' assets')),
-            h('button.btn.sm', { onclick: () => setOut(which, []) }, 'Clear')))
-        : h('button.tray-empty', {
-          onclick: () => { TradeUI.tab = which; render(); setTimeout(() => { const el = $('#tbrowse'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30); }
-        }, h('span.tray-plus', ico('plus')), h('b', 'Add what ' + (who(T) === 'You' ? 'you send' : T.short + ' sends')), h('span.tiny.muted', 'Pick players and draft picks from the roster below')));
+    return deskTray({
+      which, title: who(T) === 'You' ? 'You send' : T.name + ' sends', total: kfmt(Math.round(total)),
+      items: out.map(a => assetCard(a, { onRemove: () => setOut(which, outOf(which).filter(x => x.id !== a.id)) })),
+      count: out.length + (out.length === 1 ? ' asset' : ' assets'), onClear: () => setOut(which, []),
+      emptyTitle: 'Add what ' + (who(T) === 'You' ? 'you send' : T.short + ' sends'), emptySub: 'Pick players and draft picks from the roster below',
+      onEmpty: () => { TradeUI.tab = which; render(); setTimeout(() => { const el = $('#tbrowse'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30); }
+    });
   };
 
   /* ---- is it fair, and what next ---- */
@@ -4459,59 +4544,20 @@ function viewTrade() {
 
   /* ---- the roster to choose from ---- */
   const bw = TradeUI.tab === 'b' ? 'b' : 'a', BT = T_OF[bw];
-  const chosen = new Set(outOf(bw).map(a => a.id));
-  const all = assetsOf(BT).sort((x, y) => y.dv - x.dv);
-  const posOpts = ['all', 'QB', 'RB', 'WR', 'TE'].concat(isDynasty() ? ['PICK'] : []);
-  const matches = (q) => all.filter(a => (TradeUI.pos === 'all' || a.pos === TradeUI.pos)
-    && (!q || (a.name + ' ' + (a.ref.team || '')).toLowerCase().includes(q.toLowerCase())));
-  const list = h('div.bgrid');
-  const more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
-  const bitem = (a) => {
-    const inDeal = chosen.has(a.id);
-    return h('button.bitem' + (inDeal ? '.in' : ''), {
-      'aria-pressed': inDeal ? 'true' : 'false',
-      onclick: () => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a]))
-    },
-      face(a) ? h('span.bface', face(a)) : null,
-      h('span.bmain',
-        h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
-        h('span.tiny.muted.bmeta', metaOf(a))),
-      h('span.bval.mono', kfmt(Math.round(a.dv))),
-      h('span.badd', ico(inDeal ? 'check' : 'plus')));
-  };
-  const fill = (q) => {
-    const ms = matches(q), shown = ms.slice(0, TradeUI.limit);
-    clear(list); clear(more);
-    if (!ms.length) list.appendChild(h('div.empty', { style: { gridColumn: '1/-1', padding: '28px' } }, 'Nothing matches.'));
-    shown.forEach(a => list.appendChild(bitem(a)));
-    if (ms.length > shown.length) more.appendChild(h('button.btn', { onclick: () => { TradeUI.limit += 30; fill(TradeUI.q1); } },
-      'Show ' + Math.min(30, ms.length - shown.length) + ' more · ' + (ms.length - shown.length) + ' left'));
-  };
-  fill(TradeUI.q1);
-  const tabBtn = (w) => {
-    const T = T_OF[w], n = outOf(w).length;
-    return h('button.btab.' + w + (bw === w ? '.on' : ''), { onclick: () => { TradeUI.tab = w; TradeUI.pos = 'all'; TradeUI.limit = 30; render(); } },
-      h('span.btab-dot'), h('span.btab-nm', who(T) === 'You' ? 'Your roster' : T.name), n ? h('span.btab-n', n + ' in deal') : null);
-  };
-  wrap.appendChild(h('div.card.tbrowse.t' + bw, { id: 'tbrowse' },
-    h('div.bhd', h('h3', 'Add to the deal'), h('span.note', 'tap an asset to add it to what ' + (who(BT) === 'You' ? 'you send' : BT.short + ' sends') + ' · tap again to take it out')),
-    h('div.bd',
-      h('div.btabs', tabBtn('a'), tabBtn('b')),
-      h('div.bbar',
-        h('div.bsearch', ico('finder'), h('input', {
-          type: 'search', placeholder: 'Search ' + BT.short + ' assets…', value: TradeUI.q1, 'aria-label': 'Search assets',
-          oninput: e => { TradeUI.q1 = e.target.value; TradeUI.limit = 30; fill(e.target.value); }
-        })),
-        h('div.chipwrap', posOpts.map(p => h('button.chip' + (TradeUI.pos === p ? '.on' : ''), {
-          onclick: () => { TradeUI.pos = p; TradeUI.limit = 30; render(); }
-        }, p === 'all' ? 'All' : p === 'PICK' ? 'Picks' : p)))),
-      list, more)));
+  wrap.appendChild(assetBrowser({
+    id: 'tbrowse', color: bw, st: TradeUI.st,
+    title: 'Add to the deal', note: 'tap an asset to add it to what ' + (who(BT) === 'You' ? 'you send' : BT.short + ' sends') + ' · tap again to take it out',
+    tabs: ['a', 'b'].map(w => ({ k: w, color: w, label: who(T_OF[w]) === 'You' ? 'Your roster' : T_OF[w].name, n: outOf(w).length })), tab: bw,
+    onTab: k => { TradeUI.tab = k; TradeUI.st.pos = 'all'; TradeUI.st.limit = 30; render(); },
+    assets: assetsOf(BT).sort((x, y) => y.dv - x.dv), chosen: new Set(outOf(bw).map(a => a.id)),
+    placeholder: 'Search ' + BT.short + ' assets…',
+    onToggle: (a, inDeal) => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a])),
+    onChange: () => render()
+  }));
 
   // on a phone the balance and the button ride above the tab bar, so what each tap did stays in view
-  if (canRun) wrap.appendChild(h('div.dealbar',
-    h('div.dealbar-l', h('b.mono', pct(f, 0)), h('span.bal-v', h('i', { style: { background: verdict[1] } }), verdict[0])),
-    h('div.dealbar-sums.tiny.muted.mono', kfmt(Math.round(sumA)) + ' ⇄ ' + kfmt(Math.round(sumB))),
-    runBtn()));
+  if (canRun) wrap.appendChild(dealBar(
+    h('b.mono', pct(f, 0)), h('span.bal-v', h('i', { style: { background: verdict[1] } }), verdict[0]), runBtn()));
   return wrap;
 }
 function tradeResult(R) {
