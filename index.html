@@ -656,6 +656,14 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .h2hav{width:46px;height:46px;border-radius:13px}
 }
 
+/* ---- start / sit ---- */
+.slhead{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:12px;align-items:stretch}
+.card.collapsible>.tbrowse{border:0;box-shadow:none;background:transparent;border-radius:0 0 var(--r) var(--r)}
+.cmpbtn{width:32px;padding:0}
+.cmpbtn svg{width:15px;height:15px}
+.tray-empty.a{--c:var(--s1);display:grid;width:100%}
+@media (max-width:900px){ .slhead{grid-template-columns:minmax(0,1fr)} }
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -6585,7 +6593,7 @@ function pBeats(a, b, wk) {
 }
 
 /* ================= 10. START / SIT ================= */
-const LineupUI = { team: null, week: null, compare: [], openSlot: null };
+const LineupUI = { team: null, week: null, compare: [], openSlot: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
 function viewLineup() {
   const wrap = h('div.grid');
   const teams = S.teams;
@@ -6607,17 +6615,17 @@ function viewLineup() {
   const lr = isLive ? liveRoster(T, wk) : null;
 
   const weeks = []; for (let w = 1; w <= S.regEnd; w++) weeks.push(w);
-  wrap.appendChild(card('Week ' + wk, null, h('div.row', { style: { gap: '14px' } },
-    h('label.fld', { style: { minWidth: '230px' } }, 'Team',
-      h('select', { onchange: e => { LineupUI.team = +e.target.value; LineupUI.compare = []; render(); } },
-        teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, t.name)))),
-    h('label.fld', 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; render(); } },
-      weeks.map(w => h('option', { value: w, selected: w === wk },
-        'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
-    h('span', { style: { flex: 1 } }),
-    isLive ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } },
-      '● Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
-      : played ? h('span.tag', 'Already played — real scores, green where they beat the projection') : null)));
+  wrap.appendChild(h('div.slhead',
+    teamCard('a', T, {
+      key: 'lineup', label: T.rosterId === S.myRosterId ? 'Your team' : 'Team',
+      onPick: id => { LineupUI.team = id; LineupUI.compare = []; render(); }
+    }),
+    h('div.h2hweek', { style: { alignSelf: 'stretch', alignItems: 'center' } },
+      h('label.fld', { style: { minWidth: '170px' } }, 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; render(); } },
+        weeks.map(w => h('option', { value: w, selected: w === wk },
+          'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
+      isLive ? h('span.live', h('i'), 'Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
+        : played ? h('span.tag', 'Already played — real scores, green where they beat the projection') : null)));
 
   // ---- the optimal lineup ----
   const byes = act.filter(p => onBye(p, wk));
@@ -6679,9 +6687,9 @@ function viewLineup() {
           : h('span.muted.tiny', '—')
     },
     {
-      k: 'cmp', h: '', sortable: false, f: r => r.p ? h('button.btn.sm', {
-        onclick: () => { toggleCompare(r.p.id); render(); }
-      }, LineupUI.compare.includes(r.p.id) ? '✓' : '+') : null
+      k: 'cmp', h: '', sortable: false, f: r => r.p ? h('button.btn.sm.cmpbtn', {
+        title: 'Compare', 'aria-label': 'Compare ' + r.p.name, onclick: () => { toggleCompare(r.p.id); render(); }
+      }, ico(LineupUI.compare.includes(r.p.id) ? 'check' : 'plus')) : null
     }
   ];
   wrap.appendChild(card(isLive ? 'Your lineup — week ' + wk : 'Optimal lineup — week ' + wk,
@@ -6718,12 +6726,28 @@ function viewLineup() {
 
   // ---- head-to-head comparison tray ----
   const chosen = LineupUI.compare.map(id => S.index[id]).filter(Boolean);
+  const browseOpen = LineupUI.browseOpen === undefined ? chosen.length < 2 : LineupUI.browseOpen;
+  const rosterAssets = act.map(assetOfPlayer).sort((x, y) => val(y.ref) - val(x.ref));
+  const outlookLine = (a) => { const o = weekOutlook(a.ref, wk); return (startIds.has(a.id) ? 'Starting' : 'Bench') + ' · ' + (o.bye ? 'on bye' : o.zero ? 'not expected to play' : (o.opp ? 'vs ' + o.opp : 'no opponent')); };
   wrap.appendChild(card('Compare players', chosen.length
     ? 'floor is the 10th percentile of the weekly distribution, ceiling the 90th'
-    : 'add players from the tables with + to line them up side by side',
-    h('div', { style: { display: 'grid', gap: '12px' } },
-      chosen.length ? compareGrid(chosen, wk) : h('div.empty', 'Nothing selected yet.'),
-      chosen.length ? h('div.row', h('button.btn.sm', { onclick: () => { LineupUI.compare = []; render(); } }, 'Clear comparison')) : null)));
+    : 'line up to four players side by side',
+    h('div', { style: { display: 'grid', gap: '14px' } },
+      chosen.length
+        ? compareGrid(chosen, wk)
+        : h('button.tray-empty.a', { style: { margin: 0 }, onclick: () => { LineupUI.browseOpen = true; render(); } },
+          h('span.tray-plus', ico('plus')), h('b', 'Who are you deciding between?'), h('span.tiny.muted', 'Pick two or more of your players below to see them side by side')),
+      chosen.length ? h('div.row', h('button.btn.sm', { onclick: () => { LineupUI.compare = []; render(); } }, 'Clear comparison')) : null,
+      h('div.card.collapsible' + (browseOpen ? '.open' : ''), { style: { boxShadow: 'none', background: 'var(--surface-2)' } },
+        h('button.chd', { 'aria-expanded': browseOpen ? 'true' : 'false', onclick: () => { LineupUI.browseOpen = !browseOpen; render(); } },
+          h('div.chd-t', h('h3', 'Add players to compare'), h('span.note', chosen.length + ' of 4 chosen')),
+          h('span.chd-hint', browseOpen ? 'Hide' : 'Show'), h('span.chev', ico('chev'))),
+        browseOpen ? assetBrowser({
+          id: 'lbrowse', color: 'a', st: LineupUI.st, title: T.rosterId === S.myRosterId ? 'Your roster' : T.name, note: 'tap to add or remove · four at most',
+          assets: rosterAssets, chosen: new Set(LineupUI.compare), picks: false,
+          val: a => fmt(val(a.ref), 1), meta: outlookLine, placeholder: 'Search ' + T.short + ' players…',
+          onToggle: (a) => { toggleCompare(a.id); render(); }, onChange: () => render()
+        }) : null))));
 
   // ---- the bench ----
   const benchRows = bench.map(p => {
@@ -6755,7 +6779,7 @@ function viewLineup() {
     },
     { k: 'range', prio: 2, h: 'Floor–ceiling', num: true, sort: r => r.o.ceil, f: r => r.o.bye || r.o.final ? h('span.muted', '—') : h('span.tiny.mono.muted', fmt(r.o.floor, 0) + '–' + fmt(r.o.ceil, 0)) },
     { k: 'behind', prio: 2, h: 'Behind starter', num: true, sort: r => r.behind === null ? 999 : r.behind, f: r => r.behind === null ? '—' : h('span.mono', { class: r.behind < 2.5 ? 'down' : 'muted' }, '−' + fmt(r.behind, 1)) },
-    { k: 'cmp', h: '', sortable: false, f: r => h('button.btn.sm', { onclick: () => { toggleCompare(r.p.id); render(); } }, LineupUI.compare.includes(r.p.id) ? '✓' : '+') }
+    { k: 'cmp', h: '', sortable: false, f: r => h('button.btn.sm.cmpbtn', { title: 'Compare', 'aria-label': 'Compare ' + r.p.name, onclick: () => { toggleCompare(r.p.id); render(); } }, ico(LineupUI.compare.includes(r.p.id) ? 'check' : 'plus')) }
   ].filter(Boolean), benchRows, { sortKey: 'proj', sortDir: -1 })));
   return wrap;
 }
