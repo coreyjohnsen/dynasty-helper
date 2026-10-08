@@ -571,6 +571,8 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .bface .face.lg,.bface .pickface{width:40px;height:40px;border-radius:12px}
 .bmain{min-width:0;flex:1;display:grid;gap:3px}
 .bnm{font-weight:630;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bmain>.row{min-width:0;overflow:hidden}
+.bmain>.row>.tag,.bmain>.row>.pill,.bmain>.row>.inj{flex:none}
 .bmeta{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bval{font-weight:700;flex:none}
 .badd{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface-3);color:var(--text-secondary);transition:background .15s,color .15s}
@@ -668,6 +670,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .dealitem.compact{padding:8px 10px 8px 12px;gap:10px}
 .dealitem.compact .face.lg,.dealitem.compact .pickface{width:36px;height:36px;border-radius:11px}
 .dealitem.compact .dealval{font-size:14px}
+@media(max-width:620px){.dealitem.compact .dealmeta{white-space:normal}.dealitem.compact .btn.sm{padding:5px 8px}}
 .tcard{padding:14px 16px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
 .tc-hd{display:flex;justify-content:space-between;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:12px}
 .tc-who{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
@@ -5811,27 +5814,38 @@ function stockTeamLines(t, teamSer) {
 }
 
 /* ================= 8. STOCK MODE ================= */
-const StockUI = { kind: 'player', id: null, q: '', range: 90, lines: 'index' };
+const StockUI = { kind: 'player', id: null, q: '', range: 90, lines: 'index', pickOpen: false, pst: { q: '', pos: 'all', limit: 24 } };
 function viewStock() {
   const wrap = h('div.grid');
   const isTeam = StockUI.kind === 'team';
-  const rostered = new Set(); S.teams.forEach(t => t.players.forEach(p => rostered.add(p.id)));
   const universe = Object.values(S.index).filter(p => p.dv > 200).sort((a, b) => b.dv - a.dv);
   if (StockUI.id === null) StockUI.id = isTeam ? S.teams[0].rosterId : (universe[0] || {}).id;
 
-  wrap.appendChild(card('Pick a ticker', null, h('div.row', { style: { gap: '14px' } },
-    h('label.fld', 'Type', segmented([{ k: 'player', label: 'Players' }, { k: 'team', label: 'Teams' }], StockUI.kind,
-      k => { StockUI.kind = k; StockUI.id = k === 'team' ? S.teams[0].rosterId : universe[0].id; render(); })),
-    isTeam
-      ? h('label.fld', { style: { minWidth: '260px' } }, 'Team', h('select', { onchange: e => { StockUI.id = +e.target.value; render(); } },
-        S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === StockUI.id }, t.name))))
-      : h('label.fld', { style: { minWidth: '300px' } }, 'Player', h('select', { onchange: e => { StockUI.id = e.target.value; render(); } },
-        universe.slice(0, 500).map(p => h('option', { value: p.id, selected: p.id === StockUI.id },
-          `${p.name} · ${p.pos}${p.posRank || ''}${rostered.has(p.id) ? '' : ' (FA)'}`)))),
-    h('label.fld', 'Window', segmented([{ k: 30, label: '30d' }, { k: 90, label: '90d' }, { k: 180, label: '6m' }], StockUI.range, r => { StockUI.range = r; render(); })),
-    h('span', { style: { flex: 1 } }),
-    isTeam ? null : h('label.fld', ' ', h('button.btn.sm', { onclick: () => openPlayer(StockUI.id, 'stock') }, 'Player page →'))
-  )));
+  const ownerOfP = {}; S.teams.forEach(t => t.players.forEach(p => ownerOfP[p.id] = t));
+  const pickedP = isTeam ? null : S.index[StockUI.id];
+  const playerPick = isTeam ? null : h('div', { style: { display: 'grid', gap: '10px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%', gridTemplateColumns: 'minmax(0,1fr)' } },
+    pickedP ? assetCard(assetOfPlayer(pickedP), {
+      compact: true, meta: (ownerOfP[pickedP.id] ? ownerOfP[pickedP.id].short : 'Free agent') + ' · ' + assetMeta(assetOfPlayer(pickedP)),
+      action: h('button.btn.sm', { onclick: () => { StockUI.pickOpen = !StockUI.pickOpen; render(); } },
+        isNarrow() ? null : ico(StockUI.pickOpen ? 'chevup' : 'finder'), StockUI.pickOpen ? 'Close' : 'Change')
+    }) : null);
+  wrap.appendChild(card('Pick a ticker', null, h('div', { style: { display: 'grid', gap: '14px', gridTemplateColumns: 'minmax(0,1fr)' } },
+    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+      h('label.fld', 'Type', segmented([{ k: 'player', label: 'Players' }, { k: 'team', label: 'Teams' }], StockUI.kind,
+        k => { StockUI.kind = k; StockUI.pickOpen = false; StockUI.id = k === 'team' ? S.teams[0].rosterId : universe[0].id; render(); })),
+      isTeam
+        ? h('label.fld', { style: { minWidth: '260px' } }, 'Team', h('select', { onchange: e => { StockUI.id = +e.target.value; render(); } },
+          S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === StockUI.id }, t.name))))
+        : playerPick,
+      h('label.fld', 'Window', segmented([{ k: 30, label: '30d' }, { k: 90, label: '90d' }, { k: 180, label: '6m' }], StockUI.range, r => { StockUI.range = r; render(); })),
+      isTeam ? null : h('label.fld', ' ', h('button.btn.sm', { onclick: () => openPlayer(StockUI.id, 'stock') }, 'Player page →'))),
+    !isTeam && StockUI.pickOpen ? assetBrowser({
+      id: 'sbrowse', color: 'a', st: StockUI.pst, step: 24, picks: false, posOpts: ['all', 'QB', 'RB', 'WR', 'TE'],
+      title: 'Choose a player', note: 'tap anyone to chart their trade value',
+      assets: universe.map(assetOfPlayer), chosen: new Set([StockUI.id]),
+      meta: a => (ownerOfP[a.id] ? ownerOfP[a.id].short : 'FA') + ' · ' + assetMeta(a), placeholder: 'Search players…',
+      onToggle: a => { StockUI.id = a.id; StockUI.pickOpen = false; render(); }, onChange: () => render()
+    }) : null)));
 
   const series = isTeam ? teamSeries(StockUI.id, StockUI.range) : playerSeries(StockUI.id, StockUI.range);
   const subject = isTeam ? S.teamById[StockUI.id] : S.index[StockUI.id];
