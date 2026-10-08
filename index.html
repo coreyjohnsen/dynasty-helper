@@ -684,6 +684,12 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tmini-items{display:grid;gap:7px}
 .tcard .tcols{align-items:start}
 
+.tav-s.sm{width:24px;height:24px;border-radius:8px}
+.tmini-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tmini-lbl{font-size:10px;font-weight:720;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);padding:0 4px 5px}
+.tmini.won{box-shadow:0 0 0 1px color-mix(in srgb,var(--good) 40%,transparent)}
+.thist{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start}
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -4417,12 +4423,14 @@ function matchupBar(o) {
 /** The same shape the app uses for tradeable things, for a bare player. */
 function assetOfPlayer(p) { return { id: p.id, name: p.name, pos: p.pos, dv: p.dv || 0, ref: p, kind: 'player' }; }
 function assetMeta(a) {
+  if (a.kind === 'faab') return 'Waiver budget';
+  const sl = a.ref ? a.ref.slotLabel : a.slotLabel, tier = a.ref ? a.ref.tier : null;
   return a.kind === 'pick'
-    ? (a.ref.slotLabel ? `Draft pick · projects ${a.ref.slotLabel}` + (a.ref.tier ? ' (' + a.ref.tier + ')' : '') : 'Draft pick')
+    ? (sl ? `Draft pick · projects ${sl}` + (tier ? ' (' + tier + ')' : '') : 'Draft pick')
     : [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + ' yrs' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' pts/wk' : null].filter(Boolean).join(' · ');
 }
 function assetFace(a) {
-  return a.kind === 'pick' ? h('div.pickface', ico('draft')) : (isSimple() ? playerFace(a.ref, { lg: true }) : null);
+  return a.kind === 'pick' || a.kind === 'faab' ? h('div.pickface', ico('draft')) : (isSimple() && a.ref ? playerFace(a.ref, { lg: true }) : null);
 }
 /** A chosen asset, large enough to read: face, name, position, where he plays, value. */
 function assetCard(a, o) {
@@ -4430,7 +4438,7 @@ function assetCard(a, o) {
   return h('div.dealitem' + (o.compact ? '.compact' : ''),
     assetFace(a),
     h('div.dealmain',
-      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null, o.extra || null),
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' && a.ref ? injuryTag(a.ref.injury) : null, o.extra || null),
       h('div.tiny.muted.dealmeta', o.meta || assetMeta(a))),
     h('span.dealval.mono', o.value !== undefined ? o.value : kfmt(Math.round(a.dv))),
     o.onRemove ? h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: o.onRemove }, ico('close')) : null);
@@ -7154,29 +7162,34 @@ function viewTrades() {
     }, g);
   };
 
-  const cards = trades.map(tr => h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '12px 14px', background: 'var(--surface-2)' } },
-    h('div.row', { style: { justifyContent: 'space-between', marginBottom: '9px' } },
+  // a trade asset is priced at `value`; the shared card reads `dv`
+  const asAsset = (a) => Object.assign({}, a, { dv: a.value || 0 });
+  const sideTray = (tr, s, ix) => {
+    const which = ix % 2 ? 'b' : 'a', T = s.team;
+    return h('div.tmini.' + which + (tr.winner === s ? '.won' : ''),
+      h('div.tmini-hd',
+        T && T.avatar ? h('img.tav-s.sm', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('span.tray-dot'),
+        h('b.tmini-nm', T ? T.name : 'roster ' + s.rosterId),
+        tr.winner === s ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'won') : null,
+        h('span', { style: { marginLeft: 'auto' } }, gradeChip(s.grade))),
+      h('div.tmini-lbl', 'Received · ' + kfmt(Math.round(s.gotValue))),
+      h('div.tmini-items', s.got.length ? s.got.map(a => assetCard(asAsset(a), { compact: true, value: a.value ? kfmt(Math.round(a.value)) : '—' })) : h('span.tiny.muted', 'nothing')),
+      h('div.tmini-lbl', { style: { marginTop: '10px' } }, 'Gave up · ' + kfmt(Math.round(s.sentValue))),
+      h('div', { style: { display: 'grid', gap: '4px' } }, s.sent.length ? s.sent.map(a => assetChip(a, true)) : h('span.tiny.muted', 'nothing')),
+      h('div.row', { style: { gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '10px' } },
+        h('span.tiny.sec', 'Value ', deltaTag(s.net, 0)),
+        h('span.tiny.sec', 'Need fit ', h('b', { class: s.needFit > 0.1 ? 'up' : s.needFit < -0.1 ? 'down' : 'flat' },
+          s.needFit > 0.35 ? 'strong' : s.needFit > 0.1 ? 'good' : s.needFit < -0.35 ? 'poor' : s.needFit < -0.1 ? 'weak' : 'neutral'))));
+  };
+  const cards = trades.map(tr => h('div.tcard',
+    h('div.tc-hd',
       h('div.row', { style: { gap: '8px' } },
-        h('b.tiny', tr.when ? tr.when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'date unknown'),
+        h('b', tr.when ? tr.when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'date unknown'),
         tr.week ? h('span.tag', 'week ' + tr.week) : null),
       tr.winner
         ? h('span.tiny', h('b', tr.winner.team ? tr.winner.team.name : '?'), ' comes out ahead')
         : h('span.tiny.muted', 'too close to call')),
-    h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '12px' } },
-      tr.sides.map(s => h('div', { style: { minWidth: 0, display: 'grid', gap: '7px' } },
-        h('div.row', { style: { justifyContent: 'space-between', gap: '8px' } },
-          h('div.row', { style: { gap: '7px', minWidth: 0 } },
-            h('b', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, s.team ? s.team.name : 'roster ' + s.rosterId),
-            tr.winner === s ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'won') : null),
-          gradeChip(s.grade)),
-        h('div', h('div.lbl', { style: { fontSize: '10px' } }, 'received · ' + kfmt(Math.round(s.gotValue))),
-          h('div', { style: { display: 'grid', gap: '4px', marginTop: '3px' } }, s.got.length ? s.got.map(a => assetChip(a)) : h('span.tiny.muted', 'nothing'))),
-        h('div', h('div.lbl', { style: { fontSize: '10px' } }, 'gave up · ' + kfmt(Math.round(s.sentValue))),
-          h('div', { style: { display: 'grid', gap: '4px', marginTop: '3px' } }, s.sent.length ? s.sent.map(a => assetChip(a, true)) : h('span.tiny.muted', 'nothing'))),
-        h('div.row', { style: { gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '6px' } },
-          h('span.tiny.sec', 'Value ', deltaTag(s.net, 0)),
-          h('span.tiny.sec', 'Need fit ', h('b', { class: s.needFit > 0.1 ? 'up' : s.needFit < -0.1 ? 'down' : 'flat' },
-            s.needFit > 0.35 ? 'strong' : s.needFit > 0.1 ? 'good' : s.needFit < -0.35 ? 'poor' : s.needFit < -0.1 ? 'weak' : 'neutral'))))))));
+    h('div.thist', tr.sides.map((s, ix) => sideTray(tr, s, ix)))));
   wrap.appendChild(card('Every completed trade', trades.length + ' in this league, newest first', h('div', { style: { display: 'grid', gap: '10px' } }, cards)));
 
   // ---- manager table ----
