@@ -124,6 +124,12 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
   sends with the balance and the Evaluate button between them, and one shared roster browser
   (tabs per team, search, position filters, tap to add or remove) below. Results sit directly
   under the deal. On a phone the balance and button ride above the tab bar.
+- The calculator's parts are shared components (`teamCard`, `matchupBar`, `assetCard`,
+  `deskTray`, `assetBrowser`, `dealBar`) and the same look runs through **Head to Head** (matchup
+  bar and headline hero), **Start / Sit** (compare tray plus a collapsible browser),
+  **Trade Finder** (team card, player picker, two-tray result cards with a balance chip),
+  **Trade History** (a tray per side), the **Hypothetical** editor (roster as cards, acquire pool
+  as the browser) and **Stock Mode** (searchable player picker instead of a long dropdown).
 - Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
   fonts or other dependencies.
 
