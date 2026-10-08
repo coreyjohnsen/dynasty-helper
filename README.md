@@ -120,6 +120,10 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
   with `oklch()`. Seven themes ship (Indigo, Ocean, Lagoon, Emerald, Sunset, Rose,
   Graphite); the choice is stored in the visitor's browser. Adding one is a single CSS line
   plus an entry in `ACCENTS`.
+- **Trade calculator** is laid out as a desk: a matchup bar, two trays showing what each side
+  sends with the balance and the Evaluate button between them, and one shared roster browser
+  (tabs per team, search, position filters, tap to add or remove) below. Results sit directly
+  under the deal. On a phone the balance and button ride above the tab bar.
 - Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
   fonts or other dependencies.
 
