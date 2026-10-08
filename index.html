@@ -482,6 +482,155 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .card.collapsible.open .chd{border-bottom:1px solid var(--grid);border-radius:var(--r) var(--r) 0 0}
 @media (max-width:560px){ .card.collapsible .chd{padding:13px 14px} .chd-hint{display:none} }
 
+/* ---- trade calculator ---- */
+.tdesk{display:grid;gap:18px}
+.tdesk>*{min-width:0}
+.tdesk-head{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
+.tpick,.tray,.tbrowse.ta,.tbrowse.tb{--c:var(--s1)}
+.tpick.b,.tray.b,.tbrowse.tb{--c:var(--s2)}
+.tpick{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--surface-1);border:1px solid var(--border);border-top:3px solid var(--c);border-radius:var(--r);box-shadow:var(--shadow)}
+.tav{width:48px;height:48px;border-radius:14px;object-fit:cover;background:var(--surface-3);flex:none}
+.tpick-main{min-width:0;flex:1;display:grid;gap:2px}
+.tpick-lbl{font-size:10.5px;font-weight:720;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.tpick select{border:0;background:transparent;box-shadow:none;padding:0 4px 0 0;min-height:0;width:100%;font-size:17px;font-weight:700;letter-spacing:-.02em;text-overflow:ellipsis;cursor:pointer}
+.tpick select:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:6px}
+.tpick-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text-muted)}
+.tswap{width:44px;height:44px;padding:0;border-radius:50%;flex:none}
+.tswap svg{width:19px;height:19px}
+
+.deal{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,260px) minmax(0,1fr);gap:16px;align-items:stretch}
+.tray{display:flex;flex-direction:column;min-height:270px;background:var(--surface-1);border:1px solid var(--border);border-top:3px solid var(--c);border-radius:var(--r);box-shadow:var(--shadow)}
+.tray-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:15px 18px 9px}
+.tray-t{display:flex;align-items:center;gap:9px;font-size:15px;min-width:0}
+.tray-dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.tray-sum{font-size:24px;font-weight:730;letter-spacing:-.03em;color:var(--c)}
+.tray-items{display:grid;gap:8px;align-content:start;padding:4px 14px 14px;flex:1}
+.dealitem{display:flex;align-items:center;gap:12px;padding:11px 12px 11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);animation:rise .28s var(--ease) both}
+.dealmain{min-width:0;flex:1}
+.dealnm{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dealmeta{margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dealval{font-weight:700;font-size:15px;flex:none}
+.dealx{width:30px;height:30px;border-radius:50%;border:0;background:transparent;color:var(--text-muted);cursor:pointer;display:grid;place-items:center;flex:none;transition:background .15s,color .15s}
+.dealx:hover{background:color-mix(in srgb,var(--critical) 13%,transparent);color:var(--critical)}
+.dealx svg{width:16px;height:16px}
+.pickface{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;flex:none;background:color-mix(in srgb,#f0b020 22%,var(--surface-3));color:#a66a00}
+:root[data-theme="dark"] .pickface{color:#f3c36b}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .pickface{color:#f3c36b} }
+.pickface svg{width:22px;height:22px}
+.tray-foot{display:flex;justify-content:space-between;align-items:center;padding:2px 2px 0}
+.tray-empty{flex:1;margin:4px 14px 14px;padding:26px 18px;border:1.5px dashed var(--border-strong);border-radius:var(--r);background:transparent;cursor:pointer;display:grid;place-content:center;justify-items:center;gap:7px;text-align:center;color:inherit;transition:border-color .15s,background .15s}
+.tray-empty:hover{border-color:var(--c);background:color-mix(in srgb,var(--c) 5%,transparent)}
+.tray-empty:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.tray-plus{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c)}
+.tray-plus svg{width:21px;height:21px}
+
+.dealmid{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:20px 18px;text-align:center;background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.bal-pct{display:grid;gap:5px;justify-items:center}
+.bal-pct .hero{font-size:46px;line-height:1}
+.bal-v{display:inline-flex;align-items:center;gap:7px;font-weight:680;font-size:13px}
+.bal-v i{width:9px;height:9px;border-radius:50%;flex:none}
+.balbar{display:flex;gap:2px;height:10px}
+.balbar i{display:block;min-width:5px;transition:flex .35s var(--ease)}
+.balbar i.a{background:var(--s1);border-radius:99px 3px 3px 99px}
+.balbar i.b{background:var(--s2);border-radius:3px 99px 99px 3px}
+.bal-line{line-height:1.4}
+.bal-empty{display:grid;gap:10px;justify-items:center;color:var(--text-secondary);padding:6px 0}
+.bal-empty .ic svg{width:34px;height:34px;opacity:.55}
+.trun{width:100%;min-height:44px;font-size:14.5px}
+.trun-note{min-height:16px;line-height:1.35}
+.balhelp{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 16px;border:1px dashed var(--border-strong);border-radius:var(--r);background:color-mix(in srgb,var(--brand) 4%,transparent)}
+.balhelp .chip .tiny{margin-left:2px}
+
+.tbrowse .bhd{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap;padding:20px 24px 0}
+.tbrowse .bhd h3{font-size:17px}
+.tbrowse .bhd .note{color:var(--text-muted);font-size:13px}
+.tbrowse .bd{display:grid;gap:14px;padding:16px 24px 24px}
+.btabs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btab{display:flex;align-items:center;gap:10px;min-width:0;padding:12px 16px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface-2);color:var(--text-secondary);font-weight:650;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.btab:hover{background:var(--surface-3)}
+.btab-dot{width:10px;height:10px;border-radius:50%;flex:none}
+.btab.a .btab-dot{background:var(--s1)}
+.btab.b .btab-dot{background:var(--s2)}
+.btab.on{background:var(--surface-1);color:var(--text-primary);box-shadow:var(--shadow-xs)}
+.btab.a.on{border-color:var(--s1)}
+.btab.b.on{border-color:var(--s2)}
+.btab-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btab-n{margin-left:auto;flex:none;padding:1px 9px;border-radius:99px;font-size:11px;font-weight:720;background:var(--surface-3);color:var(--text-secondary)}
+.bbar{display:flex;gap:12px 16px;align-items:center;flex-wrap:wrap}
+.bsearch{position:relative;flex:1 1 260px;min-width:200px}
+.bsearch .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;display:grid}
+.bsearch .ic svg{width:16px;height:16px}
+.bsearch input{width:100%;padding-left:36px}
+.bgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.bitem{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;text-align:left;color:inherit;transition:border-color .15s,background .15s,transform .15s}
+.bitem:hover{border-color:var(--c);background:var(--surface-2);transform:translateY(-1px)}
+.bitem:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.bitem.in{border-color:var(--c);background:color-mix(in srgb,var(--c) 8%,var(--surface-1))}
+.bface{flex:none;line-height:0}
+.bface .face.lg,.bface .pickface{width:40px;height:40px;border-radius:12px}
+.bmain{min-width:0;flex:1;display:grid;gap:3px}
+.bnm{font-weight:630;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bmeta{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bval{font-weight:700;flex:none}
+.badd{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface-3);color:var(--text-secondary);transition:background .15s,color .15s}
+.badd .ic,.badd svg{width:15px;height:15px;display:grid}
+.bitem:hover .badd{background:var(--c);color:#fff}
+.bitem.in .badd{background:var(--c);color:#fff}
+
+.dealbar{display:none}
+#tresult{scroll-margin-top:84px}
+.helps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.helpbox{padding:14px 16px;border-radius:var(--r-sm);border:1px solid var(--border);border-left:4px solid var(--c);background:var(--surface-2);display:grid;gap:3px}
+.helpbox.a{--c:var(--s1)}
+.helpbox.b{--c:var(--s2)}
+.helpbox .hb-n{font-size:12.5px;font-weight:650;color:var(--text-secondary)}
+.helpbox .hb-v{font-size:26px;font-weight:730;letter-spacing:-.03em;line-height:1.15}
+.helpbox .hb-s{font-size:12px;color:var(--text-muted)}
+@media (max-width:900px){
+  .tdesk{padding-bottom:88px;gap:14px}
+  .tdesk-head{grid-template-columns:minmax(0,1fr)}
+  .tswap{justify-self:center;transform:rotate(90deg);margin:-8px 0}
+  .deal{grid-template-columns:minmax(0,1fr)}
+  .dealmid{display:none}
+  .tray{min-height:0}
+  .tray-empty{padding:20px 16px}
+  .tbrowse .bhd{padding:16px 16px 0}
+  .tbrowse .bd{padding:14px 16px 18px}
+  .bgrid{grid-template-columns:minmax(0,1fr)}
+  .btab{padding:11px 12px}
+  .btab-n{display:none}
+  .dealbar{display:flex;align-items:center;gap:12px;position:fixed;left:10px;right:10px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:45;padding:10px 12px;border-radius:16px;background:var(--surface-1);border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);animation:rise .25s var(--ease) both}
+  .dealbar-l{display:grid;gap:1px;flex:1;min-width:0}
+  .dealbar-l b{font-size:22px;line-height:1.05;letter-spacing:-.03em}
+  .dealbar-sums{display:none}
+  .dealbar .trun{width:auto;flex:none;padding:0 20px}
+}
+
+.helpbox .hb-v{display:flex;align-items:baseline;gap:8px}
+.helpbox .hb-tri{font-size:12px;order:-1;align-self:center}
+.helpbox .hb-u{font-size:12.5px;font-weight:600;color:var(--text-muted);letter-spacing:0}
+.recv{display:grid;gap:9px}
+.recv-row{display:grid;grid-template-columns:minmax(120px,190px) 1fr auto;gap:12px;align-items:center;font-size:13px}
+.recv-l{color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recv-track{height:10px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.recv-track i{display:block;height:100%;border-radius:99px}
+.recv-track i.a{background:var(--s1)}
+.recv-track i.b{background:var(--s2)}
+@media (max-width:900px){
+  .tdesk-head{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}
+  .tswap{transform:none;margin:0;width:38px;height:38px}
+  .tpick{padding:10px 12px;gap:9px}
+  .tav{width:34px;height:34px;border-radius:10px}
+  .tpick select{font-size:15px}
+  .tpick-meta .tpx{display:none}
+  .recv-row{grid-template-columns:1fr auto;gap:4px 10px}
+  .recv-track{grid-column:1/-1;grid-row:2}
+}
+@media (max-width:560px){
+  .tav{display:none}
+  .tpick-meta{white-space:nowrap;font-size:11.5px}
+}
+
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -3274,7 +3423,10 @@ const ICON = {
   sliders: '<path d="M4 7h8.5M17 7h3M4 17h3M11.5 17H20"/><circle cx="14.8" cy="7" r="2.2"/><circle cx="9.2" cy="17" r="2.2"/>',
   refresh: '<path d="M20 11.5A8 8 0 0 0 5.6 7.2L4 9"/><path d="M4 4.5V9h4.5"/><path d="M4 12.5a8 8 0 0 0 14.4 4.3L20 15"/><path d="M20 19.5V15h-4.5"/>',
   swap: '<path d="M4 8h14l-3.4-3.4M20 16H6l3.4 3.4"/>',
-  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>'
+  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>'
 };
 function ico(name) {
   return h('span.ic', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>' });
@@ -4167,7 +4319,7 @@ function fairness(aVal, bVal) {
    rather than noise, and it runs in about a second — so there is nothing left
    for the user to choose, only a button to press. */
 const TRADE_SIMS = 5000;
-const TradeUI = { a: null, b: null, aOut: [], bOut: [], q1: '', q2: '', result: null, sig: null, running: false };
+const TradeUI = { a: null, b: null, aOut: [], bOut: [], q1: '', q2: '', result: null, sig: null, running: false, tab: 'a', pos: 'all', limit: 30 };
 /** What the current proposal is, so a repeat render does not re-run the sim. */
 function tradeSig() {
   return [TradeUI.a, TradeUI.b, TradeUI.aOut.map(a => a.id).join(','), TradeUI.bOut.map(a => a.id).join(',')].join('|');
@@ -4180,107 +4332,208 @@ function tradeRunNow() {
   TradeUI.sig = tradeSig();
   return TradeUI.result;
 }
+/** The words and colour for a value balance. */
+function tradeVerdict(f) {
+  return f >= 0.93 ? ['Even trade', 'var(--good)'] : f >= 0.82 ? ['Slightly lopsided', 'var(--warning)'] : f >= 0.68 ? ['Lopsided', 'var(--serious)'] : ['Very lopsided', 'var(--critical)'];
+}
+
+/* ================= TRADE CALCULATOR =================
+   Built like a desk, in the order you think: who is trading, what each side
+   sends, is it fair, and only then the long list of things you could add. The
+   two trays sit side by side with the balance between them, so every tap on the
+   roster below shows its effect on the deal at once. */
 function viewTrade() {
   const teams = S.teams;
   if (TradeUI.a === null) TradeUI.a = (S.myRosterId || teams[0].rosterId);
   if (TradeUI.b === null) TradeUI.b = teams.find(t => t.rosterId !== TradeUI.a).rosterId;
   if (TradeUI.a === TradeUI.b) TradeUI.b = teams.find(t => t.rosterId !== TradeUI.a).rosterId;
   const A = S.teamById[TradeUI.a], B = S.teamById[TradeUI.b];
-  const wrap = h('div.grid');
+  const T_OF = { a: A, b: B };
+  const wrap = h('div.tdesk');
 
-  const sel = (which) => h('select', {
-    onchange: e => { TradeUI[which] = +e.target.value; TradeUI[which + 'Out'] = []; TradeUI.result = null; render(); }
-  }, teams.map(t => h('option', { value: t.rosterId, selected: TradeUI[which] === t.rosterId }, t.name)));
-
-  const side = (T, which, q) => {
-    const out = TradeUI[which + 'Out'];
-    const chosen = new Set(out.map(a => a.id));
-    const all = assetsOf(T).sort((x, y) => y.dv - x.dv);
-    const filtered = all.filter(a => !chosen.has(a.id) && (!q || a.name.toLowerCase().includes(q.toLowerCase())));
-    const box = h('div.tradebox', out.length ? out.map(a => h('div.asset', { onclick: () => { TradeUI[which + 'Out'] = out.filter(x => x.id !== a.id); TradeUI.result = null; render(); } },
-      isSimple() && a.kind === 'player' && a.ref ? playerFace(a.ref, { sm: true }) : null,
-      posPill(a.pos), h('span', a.name), h('span.v', kfmt(Math.round(a.dv))), h('span.x', '×')))
-      : h('div.tiny.muted', { style: { padding: '18px 6px', textAlign: 'center' } }, 'Click players below to add them'));
-    const search = h('input', {
-      placeholder: 'Search ' + T.short + ' assets…', value: q, style: { width: '100%' },
-      oninput: e => { TradeUI[which === 'a' ? 'q1' : 'q2'] = e.target.value; const p = e.target.closest('.card'); refreshPicker(p, which, e.target.value); }
-    });
-    const picker = h('div.picker');
-    const fill = (list) => { clear(picker); if (!list.length) picker.appendChild(h('div.tiny.muted', { style: { padding: '10px' } }, 'Nothing matches')); list.slice(0, 90).forEach(a => picker.appendChild(assetRow(a, which))); };
-    fill(filtered);
-    picker._fill = fill; picker._all = all; picker._chosen = chosen;
-    return card(null, null, h('div', { style: { display: 'grid', gap: '9px' } },
-      h('label.fld', which === 'a' ? 'Team A gives' : 'Team B gives', sel(which)),
-      h('div.row', { style: { justifyContent: 'space-between' } },
-        h('span.tiny.muted', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power` + (isDynasty() ? ` · ${ord(T.futureRank)} future` : '')),
-        T.window ? h('span.tag', T.window) : null),
-      box,
-      h('div.row', { style: { justifyContent: 'space-between' } },
-        h('b.mono', kfmt(Math.round(sum(out.map(a => a.dv)))) + ' out'),
-        out.length ? h('button.btn.sm', { onclick: () => { TradeUI[which + 'Out'] = []; TradeUI.result = null; render(); } }, 'Clear') : null),
-      search, picker));
-  };
-  function assetRow(a, which) {
-    return h('div.asset.pickable', {
-      onclick: () => { TradeUI[which + 'Out'] = TradeUI[which + 'Out'].concat([a]); TradeUI.result = null; render(); }
-    }, isSimple() && a.kind === 'player' && a.ref ? playerFace(a.ref, { sm: true }) : null,
-      posPill(a.pos), h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, a.name),
-      a.kind === 'pick' && a.ref.slotLabel
-        ? bindTT(h('span.tiny.muted', { tabindex: 0, style: { flex: 'none' } }, 'proj ' + a.ref.slotLabel),
-          `<div class="k">Projected slot</div>${a.ref.origTeam || ''}Currently projects as pick <b>${a.ref.slotLabel}</b> (${a.ref.tier}) because its original owner projects to finish around ${ord(Math.round(a.ref.ownerRank))}.`)
-        : (a.ref.age ? h('span.tiny.muted', fmt(a.ref.age, 0) + 'y') : null),
-      h('span.v', kfmt(Math.round(a.dv))));
-  }
-  function refreshPicker(cardEl, which, q) {
-    const picker = $('.picker', cardEl); if (!picker || !picker._fill) return;
-    picker._fill(picker._all.filter(a => !picker._chosen.has(a.id) && (!q || a.name.toLowerCase().includes(q.toLowerCase()))));
-  }
-
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))' } },
-    side(A, 'a', TradeUI.q1), side(B, 'b', TradeUI.q2)));
-
+  const outOf = (w) => TradeUI[w + 'Out'];
+  const setOut = (w, arr) => { TradeUI[w + 'Out'] = arr; TradeUI.result = null; render(); };
+  const sumA = sum(TradeUI.aOut.map(a => a.dv)), sumB = sum(TradeUI.bOut.map(a => a.dv));
   const canRun = TradeUI.aOut.length || TradeUI.bOut.length;
-  const sig = tradeSig();
-  const fresh = TradeUI.result && TradeUI.sig === sig;
-  if (!canRun) { TradeUI.result = null; TradeUI.sig = null; }
+  const f = canRun ? fairness(sumA, sumB) : 1;
+  const verdict = tradeVerdict(f);
+  const who = (T) => T.rosterId === S.myRosterId ? 'You' : T.name;
 
-  // Ten thousand simulated seasons is not something to spend on every click, so
-  // it waits to be asked. The button says whether it would be telling you
-  // something new, and the run happens a frame later so "Simulating…" paints.
+  /* ---- who is trading ---- */
+  const teamPick = (which) => {
+    const T = T_OF[which], other = which === 'a' ? 'b' : 'a';
+    return h('div.tpick.' + which,
+      T.avatar ? h('img.tav', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.tav'),
+      h('div.tpick-main',
+        h('label.tpick-lbl', { for: 'tsel-' + which }, T.rosterId === S.myRosterId ? 'Your team' : which === 'a' ? 'Team A' : 'Team B'),
+        h('select', {
+          id: 'tsel-' + which, onchange: e => { TradeUI[which] = +e.target.value; TradeUI[which + 'Out'] = []; TradeUI.result = null; TradeUI.q1 = ''; render(); }
+        }, teams.map(t => h('option', { value: t.rosterId, selected: TradeUI[which] === t.rosterId, disabled: t.rosterId === TradeUI[other] }, t.name))),
+        h('div.tpick-meta', h('span', `${T.wins}-${T.losses} · ${ord(T.powerRank)} power`),
+          isDynasty() ? h('span.tpx', `· ${ord(T.futureRank)} future`) : null,
+          T.window ? h('span.tag.tpx', T.window) : null)));
+  };
+  wrap.appendChild(h('div.tdesk-head',
+    teamPick('a'),
+    h('button.btn.tswap', {
+      title: 'Swap the two teams', 'aria-label': 'Swap the two teams',
+      onclick: () => {
+        const t = TradeUI.a; TradeUI.a = TradeUI.b; TradeUI.b = t;
+        const o = TradeUI.aOut; TradeUI.aOut = TradeUI.bOut; TradeUI.bOut = o;
+        TradeUI.tab = TradeUI.tab === 'a' ? 'b' : 'a'; TradeUI.result = null; render();
+      }
+    }, ico('swap')),
+    teamPick('b')));
+
+  /* ---- what each side sends ---- */
+  const metaOf = (a) => a.kind === 'pick'
+    ? (a.ref.slotLabel ? `Draft pick · projects ${a.ref.slotLabel}` + (a.ref.tier ? ' (' + a.ref.tier + ')' : '') : 'Draft pick')
+    : [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + ' yrs' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' pts/wk' : null].filter(Boolean).join(' · ');
+  const face = (a) => a.kind === 'pick' ? h('div.pickface', ico('draft'))
+    : (isSimple() ? playerFace(a.ref, { lg: true }) : null);
+  const dealItem = (a, which) => h('div.dealitem',
+    face(a),
+    h('div.dealmain',
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+      h('div.tiny.muted.dealmeta', metaOf(a))),
+    h('span.dealval.mono', kfmt(Math.round(a.dv))),
+    h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: () => setOut(which, outOf(which).filter(x => x.id !== a.id)) }, ico('close')));
+  const tray = (which) => {
+    const T = T_OF[which], out = outOf(which), total = which === 'a' ? sumA : sumB;
+    return h('div.tray.' + which,
+      h('div.tray-hd',
+        h('div.tray-t', h('span.tray-dot'), h('b', who(T) === 'You' ? 'You send' : T.name + ' sends')),
+        h('span.tray-sum.mono', kfmt(Math.round(total)))),
+      out.length
+        ? h('div.tray-items', out.map(a => dealItem(a, which)),
+          h('div.tray-foot', h('span.tiny.muted', out.length + (out.length === 1 ? ' asset' : ' assets')),
+            h('button.btn.sm', { onclick: () => setOut(which, []) }, 'Clear')))
+        : h('button.tray-empty', {
+          onclick: () => { TradeUI.tab = which; render(); setTimeout(() => { const el = $('#tbrowse'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30); }
+        }, h('span.tray-plus', ico('plus')), h('b', 'Add what ' + (who(T) === 'You' ? 'you send' : T.short + ' sends')), h('span.tiny.muted', 'Pick players and draft picks from the roster below')));
+  };
+
+  /* ---- is it fair, and what next ---- */
   const run = () => {
     if (!canRun || TradeUI.running) return;
     TradeUI.running = true; render();
     setTimeout(() => {
       try { tradeRunNow(); } catch (e) { console.error(e); }
       TradeUI.running = false; render();
+      setTimeout(() => { const el = $('#tresult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
     }, 16);
   };
-  const runBtn = h('button.btn.pri', { disabled: !canRun || TradeUI.running, onclick: run },
-    TradeUI.running ? 'Simulating…' : !canRun ? 'Add at least one asset' : fresh ? 'Re-evaluate' : 'Evaluate trade');
-  wrap.appendChild(h('div.row', { style: { justifyContent: 'center', gap: '12px', minHeight: '22px' } }, runBtn,
-    h('span.tiny.muted', TradeUI.running ? kfmt(TRADE_SIMS) + ' seasons, with and without the trade'
-      : fresh ? kfmt(TRADE_SIMS) + ' seasons simulated both ways, same random draws in each'
-        : canRun ? kfmt(TRADE_SIMS) + ' simulated seasons, about a second' : '')));
+  const sig = tradeSig();
+  const fresh = TradeUI.result && TradeUI.sig === sig;
+  if (!canRun) { TradeUI.result = null; TradeUI.sig = null; }
+  const runBtn = () => h('button.btn.pri.trun', { disabled: !canRun || TradeUI.running, onclick: run },
+    TradeUI.running ? h('span', h('span.spin'), ' Simulating…') : !canRun ? 'Add an asset to start' : fresh ? 'Re-evaluate' : 'Evaluate trade');
+  const gap = Math.abs(sumA - sumB), overpay = sumA > sumB ? A : B;
+  const balanceBody = () => !canRun
+    ? [h('div.bal-empty', ico('trade'), h('div', h('b', 'Nothing in the deal yet'), h('div.tiny.muted', 'Add assets to either side and the balance appears here.')))]
+    : [
+      h('div.bal-pct', h('span.hero.mono', pct(f, 0)), h('span.bal-v', h('i', { style: { background: verdict[1] } }), verdict[0])),
+      h('div.balbar', { 'aria-hidden': 'true' },
+        h('i.a', { style: { flex: String(Math.max(sumA, 1)) } }), h('i.b', { style: { flex: String(Math.max(sumB, 1)) } })),
+      h('div.tiny.sec.bal-line', f >= 0.995 ? 'Dead even' : `${who(overpay)} ${overpay.rosterId === S.myRosterId ? 'are' : 'is'} sending ${kfmt(Math.round(gap))} more in trade value`)];
+  wrap.appendChild(h('div.deal',
+    tray('a'),
+    h('div.dealmid', balanceBody(), runBtn(),
+      h('div.tiny.muted.trun-note', TradeUI.running ? kfmt(TRADE_SIMS) + ' seasons, with and without the trade'
+        : fresh ? kfmt(TRADE_SIMS) + ' seasons simulated both ways, same random draws in each'
+          : canRun ? kfmt(TRADE_SIMS) + ' simulated seasons, about a second' : '')),
+    tray('b')));
+
+  // how to even it out: the side that is sending less could add the asset closest to the gap
+  if (canRun && f < 0.93) {
+    const short = sumA < sumB ? A : B, sw = short === A ? 'a' : 'b';
+    const taken = new Set(outOf(sw).map(a => a.id));
+    const picks = assetsOf(short).filter(a => !taken.has(a.id) && a.dv > 100)
+      .sort((x, y) => Math.abs(x.dv - gap) - Math.abs(y.dv - gap)).slice(0, 3);
+    if (picks.length) wrap.appendChild(h('div.balhelp',
+      h('span.tiny.sec', `To even it out, ${who(short) === 'You' ? 'you' : short.name} could add:`),
+      picks.map(a => h('button.chip', { onclick: () => setOut(sw, outOf(sw).concat([a])) }, posPill(a.pos), a.name, h('span.tiny.muted', kfmt(Math.round(a.dv)))))));
+  }
 
   if (fresh) wrap.appendChild(tradeResult(TradeUI.result));
-  else if (canRun) {
-    const quick = fairness(sum(TradeUI.aOut.map(a => a.dv)), sum(TradeUI.bOut.map(a => a.dv)));
-    wrap.appendChild(card('Value check', 'market prices — press Evaluate for the full picture',
-      h('div.row', { style: { justifyContent: 'space-around', textAlign: 'center' } },
-        h('div', h('div.tiny.muted', A.name + ' sends'), h('div.big.mono', kfmt(Math.round(sum(TradeUI.aOut.map(a => a.dv)))))),
-        h('div', h('div.tiny.muted', 'Fairness'), h('div.big.mono', pct(quick, 0))),
-        h('div', h('div.tiny.muted', B.name + ' sends'), h('div.big.mono', kfmt(Math.round(sum(TradeUI.bOut.map(a => a.dv)))))))));
-  }
+
+  /* ---- the roster to choose from ---- */
+  const bw = TradeUI.tab === 'b' ? 'b' : 'a', BT = T_OF[bw];
+  const chosen = new Set(outOf(bw).map(a => a.id));
+  const all = assetsOf(BT).sort((x, y) => y.dv - x.dv);
+  const posOpts = ['all', 'QB', 'RB', 'WR', 'TE'].concat(isDynasty() ? ['PICK'] : []);
+  const matches = (q) => all.filter(a => (TradeUI.pos === 'all' || a.pos === TradeUI.pos)
+    && (!q || (a.name + ' ' + (a.ref.team || '')).toLowerCase().includes(q.toLowerCase())));
+  const list = h('div.bgrid');
+  const more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
+  const bitem = (a) => {
+    const inDeal = chosen.has(a.id);
+    return h('button.bitem' + (inDeal ? '.in' : ''), {
+      'aria-pressed': inDeal ? 'true' : 'false',
+      onclick: () => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a]))
+    },
+      face(a) ? h('span.bface', face(a)) : null,
+      h('span.bmain',
+        h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+        h('span.tiny.muted.bmeta', metaOf(a))),
+      h('span.bval.mono', kfmt(Math.round(a.dv))),
+      h('span.badd', ico(inDeal ? 'check' : 'plus')));
+  };
+  const fill = (q) => {
+    const ms = matches(q), shown = ms.slice(0, TradeUI.limit);
+    clear(list); clear(more);
+    if (!ms.length) list.appendChild(h('div.empty', { style: { gridColumn: '1/-1', padding: '28px' } }, 'Nothing matches.'));
+    shown.forEach(a => list.appendChild(bitem(a)));
+    if (ms.length > shown.length) more.appendChild(h('button.btn', { onclick: () => { TradeUI.limit += 30; fill(TradeUI.q1); } },
+      'Show ' + Math.min(30, ms.length - shown.length) + ' more · ' + (ms.length - shown.length) + ' left'));
+  };
+  fill(TradeUI.q1);
+  const tabBtn = (w) => {
+    const T = T_OF[w], n = outOf(w).length;
+    return h('button.btab.' + w + (bw === w ? '.on' : ''), { onclick: () => { TradeUI.tab = w; TradeUI.pos = 'all'; TradeUI.limit = 30; render(); } },
+      h('span.btab-dot'), h('span.btab-nm', who(T) === 'You' ? 'Your roster' : T.name), n ? h('span.btab-n', n + ' in deal') : null);
+  };
+  wrap.appendChild(h('div.card.tbrowse.t' + bw, { id: 'tbrowse' },
+    h('div.bhd', h('h3', 'Add to the deal'), h('span.note', 'tap an asset to add it to what ' + (who(BT) === 'You' ? 'you send' : BT.short + ' sends') + ' · tap again to take it out')),
+    h('div.bd',
+      h('div.btabs', tabBtn('a'), tabBtn('b')),
+      h('div.bbar',
+        h('div.bsearch', ico('finder'), h('input', {
+          type: 'search', placeholder: 'Search ' + BT.short + ' assets…', value: TradeUI.q1, 'aria-label': 'Search assets',
+          oninput: e => { TradeUI.q1 = e.target.value; TradeUI.limit = 30; fill(e.target.value); }
+        })),
+        h('div.chipwrap', posOpts.map(p => h('button.chip' + (TradeUI.pos === p ? '.on' : ''), {
+          onclick: () => { TradeUI.pos = p; TradeUI.limit = 30; render(); }
+        }, p === 'all' ? 'All' : p === 'PICK' ? 'Picks' : p)))),
+      list, more)));
+
+  // on a phone the balance and the button ride above the tab bar, so what each tap did stays in view
+  if (canRun) wrap.appendChild(h('div.dealbar',
+    h('div.dealbar-l', h('b.mono', pct(f, 0)), h('span.bal-v', h('i', { style: { background: verdict[1] } }), verdict[0])),
+    h('div.dealbar-sums.tiny.muted.mono', kfmt(Math.round(sumA)) + ' ⇄ ' + kfmt(Math.round(sumB))),
+    runBtn()));
   return wrap;
 }
 function tradeResult(R) {
   const { A, B, aAfter, bAfter, aBefore, bBefore } = R;
   const f = fairness(R.aGives, R.bGives);
-  const verdict = f >= 0.93 ? ['Even trade', 'var(--good)'] : f >= 0.82 ? ['Slightly lopsided', 'var(--warning)'] : f >= 0.68 ? ['Lopsided', 'var(--serious)'] : ['Very lopsided', 'var(--critical)'];
+  const verdict = tradeVerdict(f);
   const winner = R.delta > 0 ? A : R.delta < 0 ? B : null;
-  const wrap = h('div.grid');
+  const wrap = h('div.grid', { id: 'tresult' });
+  // who it helps, in the units people care about: championship and playoff odds
+  const dOdds = (T, k) => R.simBefore && R.simAfter ? (R.simAfter.by[T.rosterId][k] - R.simBefore.by[T.rosterId][k]) * 100 : null;
+  const helpBox = (T, which, before, after) => {
+    const dt = dOdds(T, 'title'), dp = dOdds(T, 'playoff');
+    return h('div.helpbox.' + which,
+      h('div.hb-n', T.rosterId === S.myRosterId ? 'You' : T.name),
+      dt !== null ? h('div.hb-v.mono', h('span', { class: Math.abs(dt) < 0.05 ? 'flat' : dt > 0 ? 'up' : 'down' }, sgn(dt, 1) + 'pp'), Math.abs(dt) >= 0.05 ? h('span.hb-tri', { class: dt > 0 ? 'up' : 'down', 'aria-hidden': 'true' }, dt > 0 ? '▲' : '▼') : null, h('span.hb-u', 'title odds'))
+        : h('div.hb-v.mono', h('span', { class: after.now - before.now >= 0 ? 'up' : 'down' }, sgn(after.now - before.now, 1)), h('span.hb-u', 'pts/wk')),
+      h('div.hb-s', [dp !== null ? 'playoff odds ' + sgn(dp, 1) + 'pp' : null,
+        'lineup ' + sgn(after.now - before.now, 1) + ' pts/wk'].filter(Boolean).join(' · ')));
+  };
 
-  wrap.appendChild(card('Verdict', null, h('div', { style: { display: 'grid', gap: '14px' } },
+  wrap.appendChild(card('Verdict', null, h('div', { style: { display: 'grid', gap: '16px' } },
+    h('div.helps', helpBox(A, 'a', aBefore, aAfter), helpBox(B, 'b', bBefore, bAfter)),
     h('div.row', { style: { justifyContent: 'space-between', alignItems: 'flex-end' } },
       h('div', h('div.hero', pct(f, 0)), h('div.tiny.muted', 'value balance — 100% is a dead-even swap')),
       h('div', { style: { textAlign: 'right' } },
@@ -4288,10 +4541,14 @@ function tradeResult(R) {
           h('span', { style: { width: '9px', height: '9px', borderRadius: '50%', background: verdict[1], display: 'inline-block' } }),
           h('b', verdict[0])),
         winner ? h('div.tiny.sec', `${winner.name} gains ${kfmt(Math.abs(Math.round(R.delta)))} in trade value`) : h('div.tiny.sec', 'Perfectly balanced'))),
-    divBar([
-      { label: A.name + ' receives', v: R.bGives, vl: kfmt(Math.round(R.bGives)) },
-      { label: B.name + ' receives', v: R.aGives, vl: kfmt(Math.round(R.aGives)) }
-    ], { labelW: '170px' }),
+    (() => {
+      const mx = Math.max(R.aGives, R.bGives, 1);
+      const row = (T, w, v) => h('div.recv-row',
+        h('span.recv-l', T.rosterId === S.myRosterId ? 'You receive' : T.name + ' receives'),
+        h('div.recv-track', h('i.' + w, { style: { width: Math.max(2, v / mx * 100) + '%' } })),
+        h('b.mono', kfmt(Math.round(v))));
+      return h('div.recv', row(A, 'a', R.bGives), row(B, 'b', R.aGives));
+    })(),
     h('div.tiny.muted', 'Values are live FantasyCalc ' + valueWord() + ' values for this league’s exact format. Balance alone does not make a trade good — the impact tables below are what matter.')
   )));
 
