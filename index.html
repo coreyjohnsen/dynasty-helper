@@ -209,6 +209,118 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .content.enter>*:nth-child(n+5){animation-delay:.16s}
 @media (prefers-reduced-motion:reduce){ .content.enter>*{animation:none} .live i{animation:none} *{transition-duration:.01ms!important} }
 
+/* ============ player tiers ============ */
+:root{
+  --m-diamond-a:#7de8ff; --m-diamond-b:#a98bff; --m-diamond-c:#ff9ad5;
+  --m-gold-a:#ffe27a; --m-gold-b:#f2a900; --m-gold-c:#fff0b0;
+  --m-silver-a:#e9edf5; --m-silver-b:#9aa5ba; --m-silver-c:#ffffff;
+  --m-bronze-a:#e0a070; --m-bronze-b:#a8622f; --m-bronze-c:#f2c299;
+}
+.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(125,232,255,.16);--m-edge:#8fb6ff}
+.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.14);--m-edge:#e8a800}
+.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(154,165,186,.16);--m-edge:#a3adc0}
+.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,98,47,.13);--m-edge:#c07840}
+.mring{display:inline-flex;flex:none;padding:3px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
+.mring.lg{padding:3px;border-radius:17px}
+.mring.mhero{padding:4px;border-radius:17px}
+.mring.mhero>*{border-radius:13px!important;display:block}
+.mring.xs,.mring.sm{padding:2px}
+.lupface .mring.lg{border-radius:50%;padding:3px}
+.lupface .mring>.face.lg{border-width:0}
+.mring>.face{box-shadow:0 0 0 1px var(--surface-1)}
+.mring:not(.anim){background-size:100% 100%}
+.mring.diamond{box-shadow:0 0 10px -1px rgba(125,232,255,.55)}
+.mring.gold{box-shadow:0 0 9px -2px rgba(242,169,0,.5)}
+.pcard.medal,.card.medal.mhero{position:relative;overflow:hidden;border-color:var(--m-edge);
+  background:linear-gradient(100deg,var(--m-tint),transparent 62%),var(--surface-1)}
+.pcard.medal::after,.card.medal.mhero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);background-size:250% 100%;background-position:150% 0}
+.pcard.medal.diamond::after,.pcard.medal.gold::after,.card.medal.mhero.diamond::after,.card.medal.mhero.gold::after{opacity:.5}
+.card.medal.mhero{box-shadow:var(--shadow),0 0 0 1px var(--m-edge) inset}
+  color:#1a1405;background:var(--m-grad);background-size:300% 100%;vertical-align:middle}
+@keyframes medal-flow{to{background-position:-300% 0}}
+@keyframes medal-sweep{0%,55%{background-position:150% 0}100%{background-position:-50% 0}}
+.mring.anim.diamond{animation:medal-flow 5s linear infinite}
+.mring.anim.gold{animation:medal-flow 8s linear infinite}
+.mring.anim.silver{animation:medal-flow 14s linear infinite}
+.pcard.medal.anim.diamond::after,.card.medal.mhero.anim.diamond::after{animation:medal-sweep 4.5s ease-in-out infinite}
+.pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
+.pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
+@media (max-width:760px){ .mring.anim.silver,.pcard.medal.anim.gold::after{animation:none} }
+@media (prefers-reduced-motion:reduce){ .mring,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
+:root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}
+:root[data-theme="dark"] .medal.diamond{--m-tint:rgba(125,232,255,.1)}
+:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.12)}
+:root[data-theme="dark"] .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%} }
+
+/* ---- trading card ---- */
+.pcxstage{display:grid;justify-items:center;gap:12px;padding:10px 0 4px}
+.pcxcard{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;--hx:0%;--hy:0%;position:relative;width:min(300px,86vw);aspect-ratio:5/7;border-radius:20px;padding:6px;
+  transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease),box-shadow .3s;touch-action:pan-y;
+  background:var(--pcx-frame);box-shadow:0 18px 40px -14px rgba(18,22,48,.5),0 2px 6px rgba(18,22,48,.2);background-size:260% 260%;background-position:calc(50% + var(--hx)*.85) calc(50% + var(--hy)*.85)}
+.pcxcard.pcxon{transition:transform .08s linear,box-shadow .3s;box-shadow:0 30px 50px -16px rgba(18,22,48,.55),0 2px 6px rgba(18,22,48,.2)}
+.pcxcard.none{--pcx-frame:linear-gradient(140deg,#c9cfdf,#8d95ad 50%,#c9cfdf);--pcx-bg:linear-gradient(170deg,#f4f6fb,#dfe3ee);--pcx-art:linear-gradient(160deg,#cdd3e4,#e8ebf4)}
+.pcxcard.bronze{--pcx-frame:linear-gradient(140deg,#e0a070,#a8622f 50%,#e8b186);--pcx-bg:linear-gradient(170deg,#fff4ea,#f0d3b8);--pcx-art:linear-gradient(160deg,#e9c3a0,#f8e4d1)}
+.pcxcard.silver{--pcx-frame:linear-gradient(140deg,#f2f5fa,#9aa5ba 45%,#fff 70%,#aab4c8);--pcx-bg:linear-gradient(170deg,#fbfcff,#dde2ee);--pcx-art:linear-gradient(160deg,#cdd5e6,#eef1f8)}
+.pcxcard.gold{--pcx-frame:linear-gradient(140deg,#fff0b0,#f2a900 40%,#ffe27a 65%,#d99200);--pcx-bg:linear-gradient(170deg,#fffaf0,#fbe9bd);--pcx-art:linear-gradient(160deg,#ffe9a8,#fff6dc)}
+.pcxcard.diamond{--pcx-frame:linear-gradient(140deg,#7de8ff,#a98bff 40%,#ff9ad5 65%,#7de8ff);--pcx-bg:linear-gradient(170deg,#f6fcff,#e4e2ff);--pcx-art:linear-gradient(160deg,#c4efff,#e2d6ff 55%,#ffd9ee)}
+.pcxcard.diamond{box-shadow:0 18px 44px -12px rgba(125,150,255,.55),0 2px 6px rgba(18,22,48,.2)}
+.pcxcard.gold{box-shadow:0 18px 44px -12px rgba(242,169,0,.5),0 2px 6px rgba(18,22,48,.2)}
+.pcxface{position:relative;height:100%;border-radius:15px;overflow:hidden;background:var(--pcx-bg);color:#14182c;display:flex;flex-direction:column;padding:11px 11px 10px;gap:8px}
+.pcxtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pcxname{font-weight:780;font-size:19px;letter-spacing:-.02em;line-height:1.1;min-width:0}
+.pcxrank{font-size:11px;font-weight:700;color:#5a6180;white-space:nowrap}
+.pcxart{position:relative;flex:1;min-height:0;border-radius:11px;overflow:hidden;background:var(--pcx-art);box-shadow:inset 0 0 0 1px rgba(18,22,48,.14)}
+.pcxart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.pcxpos{position:absolute;left:-4px;bottom:-14px;font-size:92px;font-weight:900;letter-spacing:-.05em;color:rgba(18,22,48,.1);line-height:1;pointer-events:none}
+.pcxteam{position:absolute;right:7px;bottom:6px;display:flex;align-items:center;gap:5px;padding:2px 8px 2px 4px;border-radius:99px;background:rgba(255,255,255,.88);font-size:11px;font-weight:700;color:#14182c}
+.pcxteam .tlogo{width:18px;height:18px}
+.pcxmeta{font-size:11px;font-weight:650;color:#4a5170;letter-spacing:.02em;text-align:center}
+.pcxstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pcxs{background:rgba(255,255,255,.7);border:1px solid rgba(18,22,48,.12);border-radius:9px;padding:5px 4px 4px;text-align:center;min-width:0}
+.pcxk{font-size:9px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:#5a6180}
+.pcxv{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.2;white-space:nowrap}
+.pcxsub{font-size:9.5px;color:#6a7089;line-height:1.1;min-height:10px}
+/* the shine: a glare that follows the pointer, and a foil that slides under it */
+.pcxglare,.pcxholo{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+.pcxglare{background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.55),transparent 48%);opacity:0;transition:opacity .3s;mix-blend-mode:soft-light}
+.pcxcard.pcxon .pcxglare{opacity:1}
+.pcxholo{opacity:0;transition:opacity .3s;mix-blend-mode:color-dodge;border-radius:inherit;background-size:220% 220%;background-position:calc(50% + var(--hx)) calc(50% + var(--hy))}
+.pcxcard.diamond .pcxholo{background-image:repeating-linear-gradient(115deg,#ff7ad9 0%,#ffd86b 12%,#7dffa8 24%,#6bd6ff 36%,#a98bff 48%,#ff7ad9 60%);opacity:.38}
+.pcxcard.diamond.pcxon .pcxholo{opacity:.62}
+.pcxcard.gold .pcxholo{background-image:linear-gradient(115deg,transparent 20%,rgba(255,236,150,.95) 40%,rgba(255,255,255,.9) 50%,rgba(255,200,60,.9) 60%,transparent 80%);opacity:.2}
+.pcxcard.gold.pcxon .pcxholo{opacity:.5}
+.pcxcard.silver .pcxholo{background-image:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.9) 50%,transparent 75%);opacity:0}
+.pcxcard.silver.pcxon .pcxholo{opacity:.35}
+.pcxcard.anim.diamond:not(.pcxon){animation:pcx-frame 7s ease-in-out infinite alternate}
+.pcxcard.anim.gold:not(.pcxon){animation:pcx-frame 9s ease-in-out infinite alternate}
+@keyframes pcx-frame{from{background-position:30% 30%}to{background-position:70% 70%}}
+.pcxcard.anim.diamond .pcxholo{animation:pcx-drift 6s ease-in-out infinite alternate}
+.pcxcard.anim.gold .pcxholo{animation:pcx-drift 8s ease-in-out infinite alternate}
+.pcxcard.pcxon .pcxholo{animation:none}
+@keyframes pcx-drift{from{background-position:20% 20%}to{background-position:80% 80%}}
+.pcxcap{text-align:center}
+@media (prefers-reduced-motion:reduce){ .pcxcard{transform:none!important;transition:none} .pcxholo{animation:none!important} }
+
+/* ---- small cards: the home line-up and the roster deck ---- */
+.pcxfit{position:relative;flex:none}
+.pcxscale{position:absolute;left:0;top:0;width:300px;height:420px;transform:scale(var(--k,1));transform-origin:0 0}
+.pcxscale .pcxcard{width:300px}
+.pcxlink{cursor:pointer;border-radius:20px}
+.pcxlink:focus-visible{outline:2px solid var(--s1);outline-offset:4px}
+.pcxhand{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 8px}
+.pcxhandi{display:grid;justify-items:center;gap:6px}
+.pcxdeck{display:flex;align-items:flex-end;padding:44px 26px 12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:0}
+.pcxdeck .pcxfit{margin-left:-82px;transition:transform .38s var(--ease),margin .38s var(--ease),filter .3s}
+.pcxdeck .pcxfit:first-child{margin-left:0}
+.pcxdeck .pcxfit:hover,.pcxdeck .pcxfit:focus-visible{transform:translateY(-34px) scale(1.07);z-index:5}
+.pcxdeck:hover .pcxfit:not(:hover){filter:brightness(.97)}
+.pcxdeck .pcxfit:hover~.pcxfit{transform:translateX(46px)}
+.pcxdeck .pcxfit:nth-child(n){z-index:auto}
+@media (prefers-reduced-motion:reduce){ .pcxdeck .pcxfit{transition:none} }
+@media (hover:none){ .pcxdeck .pcxfit{margin-left:-60px} }
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -1286,6 +1398,35 @@ function setUiMode(m) {
   else document.documentElement.removeAttribute('data-ui');
   LS.set('ui', S.ui);
 }
+/* ---- player tiers ----
+   Diamond, gold, silver and bronze are cut by overall rank on the value this
+   league actually trades in, so they follow the dynasty/redraft switch, the
+   superflex adjustment and the hypothetical sandbox. Everyone below the last
+   cut carries no medal at all: a tier only means something if most players
+   do not have one. */
+const MEDALS = [
+  { k: 'diamond', label: 'Diamond', upTo: 12 },
+  { k: 'gold', label: 'Gold', upTo: 48 },
+  { k: 'silver', label: 'Silver', upTo: 120 },
+  { k: 'bronze', label: 'Bronze', upTo: 250 }
+];
+/** 'off' | 'static' | 'animated' — the look is part of the Default view only. */
+function medalMode() { const m = LS.get('medals', 'animated'); return m === 'off' || m === 'static' ? m : 'animated'; }
+function setMedalMode(m) { LS.set('medals', m); }
+function assignMedals(all) {
+  const ranked = Object.values(all).filter(p => p && p.pos !== 'PICK' && (p.dv || 0) > 0).sort((a, b) => b.dv - a.dv);
+  for (const id in all) if (all[id]) all[id].medal = null;
+  ranked.forEach((p, i) => { const m = MEDALS.find(x => i < x.upTo); p.medal = m ? m.k : null; });
+}
+/** The medal to draw for a player right now, or null (off, minimal view, pick, unranked). */
+function medalOf(p) {
+  if (!p || !p.medal || !isSimple() || medalMode() === 'off') return null;
+  return p.medal;
+}
+function medalCls(p) {
+  const m = medalOf(p);
+  return m ? ' medal ' + m + (medalMode() === 'animated' ? ' anim' : '') : '';
+}
 /** Cards that only earn their space in the dense view. */
 function proOnly(node) { return isSimple() ? null : node; }
 
@@ -1339,6 +1480,7 @@ function applyValueMode(idx) {
     p.dv = dyn ? (p.dvDyn || 0) : (p.rv || 0) * (p.injFactor || 1);
     p.fppg = isDynasty() ? (p.fppgDyn !== undefined ? p.fppgDyn : p.ppg) : p.ppg;
   }
+  assignMedals(all);
 }
 /* Whether a franchise is named by its manager or by its team name. Sleeper lets
    people rename a team mid-season and plenty never set one at all, so the
@@ -3275,14 +3417,24 @@ function playerFace(p, opts) {
   const stub = () => h('div' + cls, {
     style: { display: 'grid', placeItems: 'center', fontSize: opts.lg ? '14px' : opts.xs ? '7.5px' : opts.sm ? '8.5px' : '10.5px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.02em' }
   }, initials);
-  if (!/^\d+$/.test(String(p && p.id))) return stub();
+  // a medal draws a ring around the face; the ring is the wrapper, so the
+  // headshot and its fallback keep the layout they always had
+  const ring = el => {
+    const m = medalOf(p);
+    return m ? h('span.mring' + (opts.lg ? '.lg' : opts.xs ? '.xs' : opts.sm ? '.sm' : '') + medalCls(p).replace(' medal', '.medal').replace(/ /g, '.'), { title: medalTitle(p) }, el) : el;
+  };
+  if (!/^\d+$/.test(String(p && p.id))) return ring(stub());
   // a headshot that fails to load is swapped for the initials, so the row keeps
   // its shape whether or not the image arrives
-  return h('img' + cls, {
+  return ring(h('img' + cls, {
     src: 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg',
     alt: '', loading: 'lazy',
     onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
-  });
+  }));
+}
+function medalTitle(p) {
+  const m = MEDALS.find(x => x.k === p.medal);
+  return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
 }
 function teamLogo(abbr) {
   if (!abbr || typeof abbr !== 'string') return null;
@@ -3294,7 +3446,7 @@ function teamLogo(abbr) {
 /** A player line with a face, for simple mode. */
 function playerCard(p, opts) {
   opts = opts || {};
-  return h('div.pcard', { style: opts.style || null },
+  return h('div.pcard' + medalCls(p).replace(/ /g, '.'), { style: opts.style || null },
     playerFace(p),
     h('div.meta',
       h('div.nm', pname(p, { face: false })),
@@ -4060,6 +4212,11 @@ function settingsMenu() {
       + (isDynasty()
         ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
         : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
+    S.ui === 'simple' ? group('Player tiers',
+      segmented([{ k: 'animated', label: 'Animated' }, { k: 'static', label: 'Static' }, { k: 'off', label: 'Off' }], medalMode(),
+        m => { setMedalMode(m); render(); }),
+      MEDALS.map((m, i) => m.label + ' ' + (i ? MEDALS[i - 1].upTo + 1 : 1) + '–' + m.upTo).join(' · ')
+      + ' overall by value. Anyone lower has no tier. Animation stops if your device asks for reduced motion.') : null,
     S.league ? group('Injury return dates',
       segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], INJ.enabled(), v => { setInjuryEstimates(v); render(); }),
       injFeedLine()) : null,
@@ -4257,6 +4414,12 @@ function viewRoster() {
   wrap.appendChild(h('div.row', { style: { justifyContent: 'space-between' } },
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
     t.window ? h('span.tag', t.window) : null));
+
+  // Default view: the roster's best players as a deck; hover one to pull it up
+  if (isSimple()) {
+    const top = t.players.filter(p => (p.dv || 0) > 0 && POS4.includes(p.pos)).sort((a, b) => b.dv - a.dv).slice(0, 12);
+    if (top.length) wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — top players' }, top.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+  }
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(148px,100%),1fr))' } },
     kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), `${ord(t.valueRank)} of ${teams.length} · ${sgn(Math.round((t.totalValue / leagueAvgValue - 1) * 100), 0)}% vs avg`,
@@ -6529,6 +6692,79 @@ function pname(p, opts) {
 
 /* ================= 9. PLAYER PAGE ================= */
 const PlayerUI = { id: null, back: 'roster', range: 90 };
+/* ================= trading card (player page, Default view) ================= */
+/** NFL draft line for the card: "2023 · Rd 1 · #5", a rookie with no record yet, or undrafted. */
+function draftLine(p) {
+  if (p.draft && p.draft.round) return { top: 'Rd ' + p.draft.round + ' · #' + p.draft.pick, sub: String(p.draft.year || '') };
+  return { top: p.exp === 0 ? 'Rookie' : 'Undrafted', sub: p.exp === 0 ? 'class of ' + (S.season || '') : '' };
+}
+function tradingCard(p, opts) {
+  opts = opts || {};
+  const tier = medalOf(p) || 'none';
+  const dl = draftLine(p);
+  const cell = (k, v, sub) => h('div.pcxs', h('div.pcxk', k), h('div.pcxv', v), sub ? h('div.pcxsub', sub) : null);
+  const full = /^\d+$/.test(String(p.id)) ? 'https://sleepercdn.com/content/nfl/players/' + p.id + '.jpg' : null;
+  const art = h('div.pcxart',
+    h('div.pcxpos', p.pos),
+    full ? h('img', {
+      src: full, alt: '',
+      onerror: e => {
+        const im = e.target;
+        if (!im.dataset.fb) { im.dataset.fb = '1'; im.src = 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg'; }
+        else im.style.visibility = 'hidden';
+      }
+    }) : null,
+    h('div.pcxholo'),
+    h('div.pcxteam', p.team ? teamLogo(p.team) : null, h('span', p.team || 'FA')));
+  const face = h('div.pcxface',
+    h('div.pcxtop', h('div.pcxname', p.name),
+      p.rank ? h('div.pcxrank', '#' + p.rank) : null),
+    art,
+    h('div.pcxmeta', p.pos + (p.posRank ? p.posRank : '') + ' · ' + (p.team || 'Free agent') + (p.age ? ' · ' + fmt(p.age, 0) + ' yrs' : '')),
+    h('div.pcxstats',
+      cell('Value', kfmt(Math.round(p.dv || 0)), isDynasty() ? 'dynasty' : 'redraft'),
+      cell('Pts / wk', fmt(p.ppg || 0, 1), 'projected'),
+      cell('Draft', dl.top, dl.sub)),
+    h('div.pcxglare'));
+  const card = h('div.pcxcard.' + tier + (medalMode() === 'animated' ? '.anim' : ''), { title: p.medal ? medalTitle(p) : null }, face);
+  // the card leans toward the pointer; the glare and foil follow the same point
+  const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!still) {
+    const move = e => {
+      const r = card.getBoundingClientRect();
+      const x = clamp((e.clientX - r.left) / r.width, 0, 1), y = clamp((e.clientY - r.top) / r.height, 0, 1);
+      card.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+      card.style.setProperty('--rx', ((0.5 - y) * 18).toFixed(2) + 'deg'); card.style.setProperty('--ry', ((x - 0.5) * 18).toFixed(2) + 'deg');
+      card.style.setProperty('--hx', ((x - 0.5) * 100).toFixed(1) + '%'); card.style.setProperty('--hy', ((y - 0.5) * 100).toFixed(1) + '%');
+    };
+    card.addEventListener('pointerenter', () => { card.classList.add('pcxon'); });
+    card.addEventListener('pointermove', move);
+    card.addEventListener('pointerleave', () => {
+      card.classList.remove('pcxon');
+      ['--mx', '--my', '--rx', '--ry', '--hx', '--hy'].forEach(k => card.style.removeProperty(k));
+    });
+  }
+  if (!opts.w) return card;
+  // a smaller card is the full card scaled down, so its layout never has to be redesigned
+  const k = opts.w / 300;
+  const fit = h('div.pcxfit' + (opts.back ? '.pcxlink' : ''), { style: { width: opts.w + 'px', height: Math.round(420 * k) + 'px' } }, h('div.pcxscale', card));
+  fit.style.setProperty('--k', k.toFixed(4));
+  if (opts.back) {
+    fit.tabIndex = 0; fit.setAttribute('role', 'button'); fit.setAttribute('aria-label', p.name);
+    fit.addEventListener('click', () => openPlayer(p.id, opts.back));
+    fit.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(p.id, opts.back); } });
+  }
+  return fit;
+}
+function tradingCardStage(p, owner) {
+  const bits = [p.college || null, p.exp !== null && p.exp !== undefined ? (p.exp === 0 ? 'rookie' : p.exp + ' yrs exp') : null].filter(Boolean).join(' · ');
+  return h('div.pcxstage',
+    tradingCard(p),
+    h('div.pcxcap',
+      h('div.row', { style: { gap: '8px', justifyContent: 'center', flexWrap: 'wrap' } }, p.injury ? injuryTag(p.injury, p) : null, bits ? h('span.tiny.sec', bits) : null),
+      h('div.tiny.muted', { style: { marginTop: '3px' } },
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')));
+}
 function viewPlayer() {
   const wrap = h('div.grid');
   const p = S.index[PlayerUI.id];
@@ -6551,7 +6787,7 @@ function viewPlayer() {
 
   // ---- header ----
   const headshot = /^\d+$/.test(p.id) ? 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg' : null;
-  wrap.appendChild(card(null, null, h('div.row', { style: { gap: '15px', alignItems: 'center' } },
+  const hdr = card(null, null, h('div.row', { style: { gap: '15px', alignItems: 'center' } },
     headshot ? h('img', {
       src: headshot, alt: '', loading: 'lazy',
       style: { width: '66px', height: '66px', borderRadius: '12px', objectFit: 'cover', background: 'var(--surface-3)', flex: 'none' },
@@ -6567,7 +6803,8 @@ function viewPlayer() {
         p.college || null,
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
-        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')))));
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
+  wrap.appendChild(isSimple() ? tradingCardStage(p, owner) : hdr);
 
   // ---- what the market is saying about him ----
   const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
@@ -9672,6 +9909,19 @@ function myHeadliners(me) {
             : h('span', h('b.sec', fmt(p.ppg || 0, 1)), ' proj')));
   };
 
+  if (isSimple()) {
+    // Default view: the line-up is a hand of cards
+    const hand = p => {
+      const l = live ? liveValue(p, S.liveWeek) : null;
+      return h('div.pcxhandi', tradingCard(p, { w: 144, back: 'home' }),
+        h('div.tiny.muted', { style: { lineHeight: '1.2' } },
+          l && l.state === 'bye' ? 'on bye'
+            : l ? h('span', h('b.sec', fmt(l.used, 1)), ' pts')
+              : h('span', h('b.sec', fmt(p.ppg || 0, 1)), ' proj')));
+    };
+    return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any card for the full page',
+      h('div.pcxhand', best.map(hand)));
+  }
   return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any face for the full page',
     h('div.lineup', best.map(one)));
 }
