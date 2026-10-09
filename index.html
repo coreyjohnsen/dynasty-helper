@@ -209,6 +209,55 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .content.enter>*:nth-child(n+5){animation-delay:.16s}
 @media (prefers-reduced-motion:reduce){ .content.enter>*{animation:none} .live i{animation:none} *{transition-duration:.01ms!important} }
 
+/* ============ player tiers ============ */
+:root{
+  --m-diamond-a:#7de8ff; --m-diamond-b:#a98bff; --m-diamond-c:#ff9ad5;
+  --m-gold-a:#ffe27a; --m-gold-b:#f2a900; --m-gold-c:#fff0b0;
+  --m-silver-a:#e9edf5; --m-silver-b:#9aa5ba; --m-silver-c:#ffffff;
+  --m-bronze-a:#e0a070; --m-bronze-b:#a8622f; --m-bronze-c:#f2c299;
+}
+.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(125,232,255,.16);--m-edge:#8fb6ff}
+.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.14);--m-edge:#e8a800}
+.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(154,165,186,.16);--m-edge:#a3adc0}
+.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,98,47,.13);--m-edge:#c07840}
+.mring{display:inline-flex;flex:none;padding:3px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
+.mring.lg{padding:3px;border-radius:17px}
+.mring.mhero{padding:4px;border-radius:17px}
+.mring.mhero>*{border-radius:13px!important;display:block}
+.mring.xs,.mring.sm{padding:2px}
+.lupface .mring.lg{border-radius:50%;padding:3px}
+.lupface .mring>.face.lg{border-width:0}
+.mring>.face{box-shadow:0 0 0 1px var(--surface-1)}
+.mring:not(.anim),.mgem:not(.anim){background-size:100% 100%}
+.mring.diamond{box-shadow:0 0 10px -1px rgba(125,232,255,.55)}
+.mring.gold{box-shadow:0 0 9px -2px rgba(242,169,0,.5)}
+.pcard.medal,.card.medal.mhero{position:relative;overflow:hidden;border-color:var(--m-edge);
+  background:linear-gradient(100deg,var(--m-tint),transparent 62%),var(--surface-1)}
+.pcard.medal::after,.card.medal.mhero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);background-size:250% 100%;background-position:150% 0}
+.pcard.medal.diamond::after,.pcard.medal.gold::after,.card.medal.mhero.diamond::after,.card.medal.mhero.gold::after{opacity:.5}
+.card.medal.mhero{box-shadow:var(--shadow),0 0 0 1px var(--m-edge) inset}
+.mgem{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap;
+  color:#1a1405;background:var(--m-grad);background-size:300% 100%;vertical-align:middle}
+.mgem.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a))}
+.mgem.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b))}
+.mgem.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b))}
+.mgem.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));color:#fff}
+@keyframes medal-flow{to{background-position:-300% 0}}
+@keyframes medal-sweep{0%,55%{background-position:150% 0}100%{background-position:-50% 0}}
+.mring.anim.diamond,.mgem.anim.diamond{animation:medal-flow 5s linear infinite}
+.mring.anim.gold,.mgem.anim.gold{animation:medal-flow 8s linear infinite}
+.mring.anim.silver,.mgem.anim.silver{animation:medal-flow 14s linear infinite}
+.pcard.medal.anim.diamond::after,.card.medal.mhero.anim.diamond::after{animation:medal-sweep 4.5s ease-in-out infinite}
+.pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
+@media (max-width:760px){ .mring.anim.silver,.mgem.anim.silver,.pcard.medal.anim.gold::after{animation:none} }
+@media (prefers-reduced-motion:reduce){ .mring,.mgem,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
+:root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}
+:root[data-theme="dark"] .medal.diamond{--m-tint:rgba(125,232,255,.1)}
+:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.12)}
+:root[data-theme="dark"] .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%} }
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -1286,6 +1335,35 @@ function setUiMode(m) {
   else document.documentElement.removeAttribute('data-ui');
   LS.set('ui', S.ui);
 }
+/* ---- player tiers ----
+   Diamond, gold, silver and bronze are cut by overall rank on the value this
+   league actually trades in, so they follow the dynasty/redraft switch, the
+   superflex adjustment and the hypothetical sandbox. Everyone below the last
+   cut carries no medal at all: a tier only means something if most players
+   do not have one. */
+const MEDALS = [
+  { k: 'diamond', label: 'Diamond', upTo: 12 },
+  { k: 'gold', label: 'Gold', upTo: 48 },
+  { k: 'silver', label: 'Silver', upTo: 120 },
+  { k: 'bronze', label: 'Bronze', upTo: 250 }
+];
+/** 'off' | 'static' | 'animated' — the look is part of the Default view only. */
+function medalMode() { const m = LS.get('medals', 'animated'); return m === 'off' || m === 'static' ? m : 'animated'; }
+function setMedalMode(m) { LS.set('medals', m); }
+function assignMedals(all) {
+  const ranked = Object.values(all).filter(p => p && p.pos !== 'PICK' && (p.dv || 0) > 0).sort((a, b) => b.dv - a.dv);
+  for (const id in all) if (all[id]) all[id].medal = null;
+  ranked.forEach((p, i) => { const m = MEDALS.find(x => i < x.upTo); p.medal = m ? m.k : null; });
+}
+/** The medal to draw for a player right now, or null (off, minimal view, pick, unranked). */
+function medalOf(p) {
+  if (!p || !p.medal || !isSimple() || medalMode() === 'off') return null;
+  return p.medal;
+}
+function medalCls(p) {
+  const m = medalOf(p);
+  return m ? ' medal ' + m + (medalMode() === 'animated' ? ' anim' : '') : '';
+}
 /** Cards that only earn their space in the dense view. */
 function proOnly(node) { return isSimple() ? null : node; }
 
@@ -1339,6 +1417,7 @@ function applyValueMode(idx) {
     p.dv = dyn ? (p.dvDyn || 0) : (p.rv || 0) * (p.injFactor || 1);
     p.fppg = isDynasty() ? (p.fppgDyn !== undefined ? p.fppgDyn : p.ppg) : p.ppg;
   }
+  assignMedals(all);
 }
 /* Whether a franchise is named by its manager or by its team name. Sleeper lets
    people rename a team mid-season and plenty never set one at all, so the
@@ -3275,14 +3354,30 @@ function playerFace(p, opts) {
   const stub = () => h('div' + cls, {
     style: { display: 'grid', placeItems: 'center', fontSize: opts.lg ? '14px' : opts.xs ? '7.5px' : opts.sm ? '8.5px' : '10.5px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.02em' }
   }, initials);
-  if (!/^\d+$/.test(String(p && p.id))) return stub();
+  // a medal draws a ring around the face; the ring is the wrapper, so the
+  // headshot and its fallback keep the layout they always had
+  const ring = el => {
+    const m = medalOf(p);
+    return m ? h('span.mring' + (opts.lg ? '.lg' : opts.xs ? '.xs' : opts.sm ? '.sm' : '') + medalCls(p).replace(' medal', '.medal').replace(/ /g, '.'), { title: medalTitle(p) }, el) : el;
+  };
+  if (!/^\d+$/.test(String(p && p.id))) return ring(stub());
   // a headshot that fails to load is swapped for the initials, so the row keeps
   // its shape whether or not the image arrives
-  return h('img' + cls, {
+  return ring(h('img' + cls, {
     src: 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg',
     alt: '', loading: 'lazy',
     onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
-  });
+  }));
+}
+function medalTitle(p) {
+  const m = MEDALS.find(x => x.k === p.medal);
+  return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
+}
+/** A small tier mark for the places a ring would be lost; shape as well as colour, so it reads without hue. */
+function medalGem(p) {
+  const m = medalOf(p); if (!m) return null;
+  const glyph = { diamond: '◆', gold: '●', silver: '●', bronze: '●' }[m];
+  return h('span.mgem.' + m + (medalMode() === 'animated' ? '.anim' : ''), { title: medalTitle(p) }, glyph + ' ' + MEDALS.find(x => x.k === m).label);
 }
 function teamLogo(abbr) {
   if (!abbr || typeof abbr !== 'string') return null;
@@ -3294,11 +3389,11 @@ function teamLogo(abbr) {
 /** A player line with a face, for simple mode. */
 function playerCard(p, opts) {
   opts = opts || {};
-  return h('div.pcard', { style: opts.style || null },
+  return h('div.pcard' + medalCls(p).replace(/ /g, '.'), { style: opts.style || null },
     playerFace(p),
     h('div.meta',
       h('div.nm', pname(p, { face: false })),
-      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
+      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null, medalGem(p),
         opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury, p))),
     opts.value !== undefined ? h('div.val', opts.value) : null);
 }
@@ -4060,6 +4155,11 @@ function settingsMenu() {
       + (isDynasty()
         ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
         : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
+    S.ui === 'simple' ? group('Player tiers',
+      segmented([{ k: 'animated', label: 'Animated' }, { k: 'static', label: 'Static' }, { k: 'off', label: 'Off' }], medalMode(),
+        m => { setMedalMode(m); render(); }),
+      MEDALS.map((m, i) => m.label + ' ' + (i ? MEDALS[i - 1].upTo + 1 : 1) + '–' + m.upTo).join(' · ')
+      + ' overall by value. Anyone lower has no tier. Animation stops if your device asks for reduced motion.') : null,
     S.league ? group('Injury return dates',
       segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], INJ.enabled(), v => { setInjuryEstimates(v); render(); }),
       injFeedLine()) : null,
@@ -6551,7 +6651,7 @@ function viewPlayer() {
 
   // ---- header ----
   const headshot = /^\d+$/.test(p.id) ? 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg' : null;
-  wrap.appendChild(card(null, null, h('div.row', { style: { gap: '15px', alignItems: 'center' } },
+  const hdr = card(null, null, h('div.row', { style: { gap: '15px', alignItems: 'center' } },
     headshot ? h('img', {
       src: headshot, alt: '', loading: 'lazy',
       style: { width: '66px', height: '66px', borderRadius: '12px', objectFit: 'cover', background: 'var(--surface-3)', flex: 'none' },
@@ -6567,7 +6667,15 @@ function viewPlayer() {
         p.college || null,
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
-        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')))));
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
+  if (medalOf(p)) {
+    hdr.className += medalCls(p).replace(' medal', ' medal mhero');
+    hdr.querySelector('h2').after(medalGem(p));
+    const pic = hdr.querySelector('.bd > .row > :first-child');
+    const ring = h('span.mring.mhero' + medalCls(p).replace(' medal', '.medal').replace(/ /g, '.'));
+    pic.replaceWith(ring); ring.appendChild(pic);
+  }
+  wrap.appendChild(hdr);
 
   // ---- what the market is saying about him ----
   const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
