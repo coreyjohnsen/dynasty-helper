@@ -355,6 +355,8 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxpop{position:fixed;z-index:1200;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);transition:opacity .18s var(--ease),transform .22s var(--ease);filter:drop-shadow(0 18px 28px rgba(18,22,48,.35))}
 .pcxpop.in{opacity:1;transform:none}
 .pcxpop .pcxcard{transform:none!important}
+.tmini-items.cards.gave .pxm{opacity:.78;filter:saturate(.8)}
+.tmini-items.cards.gave .pxm:hover{opacity:1;filter:none}
 .tray-items.cards,.tmini-items.cards{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
 .tray-items.cards .tray-foot{flex-basis:100%}
 .pxmwrap{display:grid;gap:5px;justify-items:center;align-content:start}
@@ -8327,9 +8329,12 @@ function viewTrades() {
         tr.winner === s ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'won') : null,
         h('span', { style: { marginLeft: 'auto' } }, gradeChip(s.grade))),
       h('div.tmini-lbl', 'Received · ' + kfmt(Math.round(s.gotValue))),
-      h('div.tmini-items', s.got.length ? s.got.map(a => assetCard(asAsset(a), { compact: true, value: a.value ? kfmt(Math.round(a.value)) : '—' })) : h('span.tiny.muted', 'nothing')),
+      // the Default view shows each asset as a card; the Minimal view keeps the compact rows and chips
+      h('div.tmini-items' + (isSimple() ? '.cards' : ''), s.got.length ? s.got.map(a => dealItem(asAsset(a), { compact: true, back: 'trades', value: a.value ? kfmt(Math.round(a.value)) : '—' })) : h('span.tiny.muted', 'nothing')),
       h('div.tmini-lbl', { style: { marginTop: '10px' } }, 'Gave up · ' + kfmt(Math.round(s.sentValue))),
-      h('div', { style: { display: 'grid', gap: '4px' } }, s.sent.length ? s.sent.map(a => assetChip(a, true)) : h('span.tiny.muted', 'nothing')),
+      isSimple()
+        ? h('div.tmini-items.cards.gave', s.sent.length ? s.sent.map(a => dealItem(asAsset(a), { compact: true, back: 'trades', value: a.value ? kfmt(Math.round(a.value)) : '—' })) : h('span.tiny.muted', 'nothing'))
+        : h('div', { style: { display: 'grid', gap: '4px' } }, s.sent.length ? s.sent.map(a => assetChip(a, true)) : h('span.tiny.muted', 'nothing')),
       h('div.row', { style: { gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '10px' } },
         h('span.tiny.sec', 'Value ', deltaTag(s.net, 0)),
         h('span.tiny.sec', 'Need fit ', h('b', { class: s.needFit > 0.1 ? 'up' : s.needFit < -0.1 ? 'down' : 'flat' },
