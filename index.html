@@ -487,6 +487,68 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 }
 @media (prefers-reduced-motion:reduce){ .levdetail{animation:none} .levrow .chev{transition:none} }
 
+/* ---- start / sit: slot cards and the candidate panel ---- */
+.ssgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ssc{all:unset;box-sizing:border-box;display:grid;gap:8px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);cursor:pointer;min-width:0;transition:border-color .15s,transform .15s,box-shadow .15s;position:relative}
+.ssc:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow-xs)}
+.ssc:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ssc.open{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
+.ssc.medal{border-color:var(--m-edge)}
+.ssc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ssc-slot{font-size:11px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:var(--surface-3);color:var(--text-secondary)}
+.ssc-conf{font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;font-variant-numeric:tabular-nums;border:1px solid var(--border-strong);color:var(--text-secondary)}
+.ssc-conf.hi{color:var(--good-text);border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.ssc-conf.mid{color:var(--text-primary);border-color:var(--s4);background:color-mix(in srgb,var(--s4) 12%,transparent)}
+.ssc-conf.lo{color:var(--bad-text);border-color:var(--critical);background:color-mix(in srgb,var(--critical) 8%,transparent)}
+.ssc-conf.solo{font-weight:650;font-size:10.5px;color:var(--text-muted)}
+.ssc-who{display:flex;gap:10px;align-items:center;min-width:0}
+.ssc-id{min-width:0}
+.ssc-nm{font-weight:680;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ssc-bot{display:flex;align-items:center;gap:8px}
+.ssc-pts{font-variant-numeric:tabular-nums}
+.ssc-pts b{font-size:20px;letter-spacing:-.02em}
+.ssc-pts span{font-size:11.5px;color:var(--text-muted)}
+.ssc-bot .chev{margin-left:auto;display:grid;place-items:center;color:var(--text-muted);transition:transform .2s var(--ease)}
+.ssc.open .ssc-bot .chev{transform:rotate(180deg)}
+.ssp{grid-column:1/-1;display:grid;gap:10px;padding:14px;border:1px solid var(--brand);border-radius:var(--r);background:var(--surface-2);animation:rise .25s var(--ease) both}
+.ssp-hd{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.sspc{display:grid;gap:8px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1)}
+.sspc.rec{border-color:color-mix(in srgb,var(--good) 55%,var(--border))}
+.sspc-head{display:flex;gap:10px;align-items:center;min-width:0}
+.sspc-id{flex:1;min-width:0}
+.sspc-rec{border-color:var(--good);color:var(--good-text)}
+.sspc-pct{display:grid;justify-items:end;line-height:1.1}
+.sspc-pct b{font-size:26px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sspc-pct.lead b{color:var(--brand)}
+.sspc-pct span{font-size:11px;color:var(--text-muted)}
+.sspc-bar{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.sspc-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-2))}
+.sspc-src{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.ssrc{display:grid;justify-items:center;gap:1px;padding:6px 4px;border-radius:9px;background:var(--surface-2);border:1px solid transparent;min-width:0}
+.ssrc span{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-muted);text-transform:uppercase;white-space:nowrap}
+.ssrc b{font-size:15px;font-variant-numeric:tabular-nums}
+.ssrc.win{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--surface-2))}
+.ssrc.win b{color:var(--good-text)}
+.ssrc.na b{color:var(--text-muted);font-weight:500}
+.ssrc.avg{background:var(--surface-3)}
+.sstrip{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.sstat{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;padding:2px 9px;border-radius:99px;border:1px solid var(--border);color:var(--text-secondary);cursor:help}
+.sstat i{font-style:normal;font-size:10px}
+.sstat.ok{color:var(--good-text);border-color:var(--good)}
+.sstat.fail{color:var(--bad-text);border-color:var(--critical)}
+.sstat.loading{color:var(--text-muted)}
+.sstat.off,.sstat.idle{color:var(--text-muted);border-style:dashed}
+.sssi input{flex:1;min-width:0;font-size:12.5px;padding:6px 10px}
+@media (max-width:620px){
+  .ssgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .ssc{padding:10px}
+  .ssc-nm{font-size:13px}
+  .sspc-src{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sspc-pct b{font-size:22px}
+}
+@media (max-width:339px){ .ssgrid{grid-template-columns:minmax(0,1fr)} }
+@media (prefers-reduced-motion:reduce){ .ssp{animation:none} .ssc{transition:none} }
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -1832,7 +1894,7 @@ async function loadRedraftValues(cfg) {
 async function loadSleeperPlayers() {
   const rec = await idbGet('players');
   const FRESH = 12 * 3600 * 1000;
-  if (rec && Date.now() - rec.t < FRESH && rec.d && rec.v === 2) return rec.d;
+  if (rec && Date.now() - rec.t < FRESH && rec.d && rec.v === 3) return rec.d;
   try {
     const raw = await getJSON(SLEEPER + '/players/nfl', 1);
     const slim = {};
@@ -1846,7 +1908,8 @@ async function loadSleeperPlayers() {
         p: pos === 'DST' ? 'DEF' : pos, t: p.team || null, a: p.age || null,
         y: p.years_exp === undefined ? null : p.years_exp,
         i: p.injury_status || null, r: p.search_rank || 9999,
-        d: p.depth_chart_order || null, st: p.status || null
+        d: p.depth_chart_order || null, st: p.status || null,
+        e: p.espn_id ? String(p.espn_id) : null          // ESPN's id for him, so ESPN's projections can be matched
       };
       if (p.injury_status) {
         // what the tag does not say: where, how long ago, in whose words, and the
@@ -1855,7 +1918,7 @@ async function loadSleeperPlayers() {
         slim[id].is = p.injury_start_date || null; slim[id].e = p.espn_id || null;
       }
     }
-    await idbSet('players', { t: Date.now(), d: slim, v: 2 });
+    await idbSet('players', { t: Date.now(), d: slim, v: 3 });
     return slim;
   } catch (e) {
     if (rec && rec.d) return rec.d;
@@ -7896,7 +7959,408 @@ function pBeats(a, b, wk) {
 }
 
 /* ================= 10. START / SIT ================= */
-const LineupUI = { team: null, week: null, compare: [], openSlot: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
+
+/* ================= Start / Sit: several projection sources, one confidence =================
+   Five independent readings of the same week, each in this league's own scoring:
+     Sleeper   the Rotowire weekly lines the rest of the app already uses
+     ESPN      ESPN's fantasy projections (fetched live; scaled to this league's scoring)
+     SI        SI Fantasy's weekly spreadsheet, from a link pasted for the week
+     Last 3    the average of his last three games with a recorded score (injured, bye
+               and inactive weeks are skipped)
+     Market    the model built from the market price / positional rank
+   A slot's confidence is how often each candidate comes out ahead across those sources,
+   weighting each source's vote by how decisive its gap is. */
+const PSRC_LIST = [
+  { id: 'sleeper', label: 'Sleeper (Rotowire)', short: 'Sleeper', kind: 'ext' },
+  { id: 'espn', label: 'ESPN', short: 'ESPN', kind: 'ext' },
+  { id: 'si', label: 'SI Fantasy', short: 'SI', kind: 'ext' },
+  { id: 'form', label: 'Last 3 healthy games', short: 'Last 3', kind: 'form' },
+  { id: 'market', label: 'Market model', short: 'Market', kind: 'model' }
+];
+const PSRC = { data: {}, status: {}, pending: {}, espnMap: null, espnScale: {} };
+PSRC_LIST.forEach(x => { PSRC.status[x.id] = { state: 'idle', msg: '', n: 0 }; });
+let _psrcTimer = null;
+function psrcChanged() {
+  clearTimeout(_psrcTimer);
+  _psrcTimer = setTimeout(() => { if (S.view === 'lineup') render(); }, 140);
+}
+function psrcSet(id, state, msg, n, quiet) {
+  PSRC.status[id] = { state, msg: msg || '', n: n || 0 };
+  if (!quiet) psrcChanged();
+}
+
+/** What one source says for one player in one week, before injuries (null = it has no number for him). */
+function psrcRaw(id, p, wk) {
+  if (!p) return null;
+  if (id === 'sleeper') { const r = p.wk && p.wk[wk]; return r ? r.p : null; }
+  if (id === 'market') return POS4.includes(p.pos) && !p.unranked && p.ppgHealthy > 0 ? p.ppgHealthy : null;
+  if (id === 'form') return psrcForm(p, wk).mean;
+  const m = PSRC.data[id] && PSRC.data[id][wk];
+  if (!m) return null;
+  const v = m.get(p.id);
+  return v === undefined ? null : v;
+}
+/** The same, as the app plays it: nothing on a bye, and scaled by the chance he is healthy to play. */
+function psrcPts(id, p, wk) {
+  if (!p) return null;
+  if (onBye(p, wk)) return 0;
+  const v = psrcRaw(id, p, wk);
+  if (v === null) return null;
+  return v * (p.inj ? availability(p, wk) : 1);
+}
+/** Every source's number for a player, and their average. */
+function psrcAll(p, wk) {
+  const per = {};
+  PSRC_LIST.forEach(x => { per[x.id] = psrcPts(x.id, p, wk); });
+  const vals = Object.values(per).filter(v => v !== null);
+  return { per, cons: vals.length ? mean(vals) : null, n: vals.length };
+}
+/** The consensus the lineup is built from; with no source at all, the app's usual weekly number. */
+function consensusPts(p, wk) {
+  const a = psrcAll(p, wk);
+  return a.cons !== null ? a.cons : pw(p, wk);
+}
+
+/* ---- last three healthy games ---- */
+function psrcActuals(p, wk) {
+  const out = [];
+  for (let w = Math.min(S.lastWeek, wk - 1); w >= 1 && out.length < 3; w--) {
+    let v = null;
+    const m = (S.matchups[w] || []).find(x => x.players_points && x.players_points[p.id] !== undefined);
+    if (m) v = m.players_points[p.id];
+    else if (WSTATS.pts[w] && WSTATS.pts[w][p.id] !== undefined) v = WSTATS.pts[w][p.id];
+    if (v !== null && v !== 0) out.push({ week: w, pts: v });     // a recorded, non-zero score means he played
+  }
+  return out;
+}
+function psrcForm(p, wk) {
+  const g = psrcActuals(p, wk);
+  return { mean: g.length ? mean(g.map(x => x.pts)) : null, games: g };
+}
+async function psrcLoadForm(wk, players) {
+  if (!S.lastWeek) { psrcSet('form', 'off', 'No games have been played yet this season.'); return; }
+  const need = [];
+  for (let w = 1; w <= Math.min(S.lastWeek, wk - 1); w++) {
+    const rows = S.matchups[w] || [];
+    if (!WSTATS.state[w] && players.some(p => !rows.some(m => m.players_points && m.players_points[p.id] !== undefined))) need.push(w);
+  }
+  if (need.length) { psrcSet('form', 'loading', 'Loading past weeks…'); await Promise.all(need.map(loadWeekStats)); }
+  const n = players.filter(p => psrcForm(p, wk).games.length).length;
+  psrcSet('form', n ? 'ok' : 'off', n ? n + ' of ' + players.length + ' players have a recent scored game' : 'No recent scored games were found.', n);
+}
+
+/* ---- ESPN ---- */
+function espnParse(j, wk) {
+  if (!PSRC.espnMap) {
+    PSRC.espnMap = new Map();
+    for (const id in S.players) { const e = S.players[id] && S.players[id].e; if (e) PSRC.espnMap.set(String(e), id); }
+  }
+  const list = Array.isArray(j) ? j : (j && (j.players || (j.data && j.data.players))) || [];
+  const raw = new Map();
+  for (const e of list) {
+    const pl = (e && e.player) || e || {};
+    const eid = String(e && e.id !== undefined ? e.id : pl.id);
+    const sid = PSRC.espnMap.get(eid);
+    if (!sid) continue;
+    const stats = pl.stats || [];
+    const s1 = stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk && (x.statSplitTypeId === undefined || x.statSplitTypeId === 1))
+      || stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk);
+    if (!s1) continue;
+    const v = typeof s1.appliedTotal === 'number' ? s1.appliedTotal : null;
+    if (v !== null && isFinite(v)) raw.set(sid, v);
+  }
+  // ESPN scores with its own default league rules, not this one's. Line it up with this league's scale by
+  // position (the median ratio against Sleeper's lines), so a running back and a receiver are comparable.
+  const byPos = {};
+  raw.forEach((v, id) => {
+    const p = S.index[id], sv = p && p.wk && p.wk[wk] ? p.wk[wk].p : 0;
+    if (p && v > 3 && sv > 3) (byPos[p.pos] = byPos[p.pos] || []).push(v / sv);
+  });
+  const scale = {};
+  for (const pos in byPos) {
+    const a = byPos[pos].sort((x, y) => x - y);
+    if (a.length >= 8) { const m = a[a.length >> 1]; if (m < 0.93 || m > 1.07) scale[pos] = clamp(m, 0.5, 2); }
+  }
+  PSRC.espnScale = scale;
+  const out = new Map();
+  raw.forEach((v, id) => { const p = S.index[id]; out.set(id, v / ((p && scale[p.pos]) || 1)); });
+  return out;
+}
+async function psrcLoadEspn(wk) {
+  psrcSet('espn', 'loading', 'Asking ESPN…', 0, true);
+  try {
+    const season = S.season, ck = 'psrc:espn:' + season + ':' + wk;
+    let map = null;
+    const rec = await idbGet(ck);
+    if (rec && rec.d && Date.now() - rec.t < 6 * 3600 * 1000) map = new Map(rec.d);
+    if (!map) {
+      const filter = JSON.stringify({ players: { filterSlotIds: { value: [0, 2, 4, 6, 16, 17, 23] }, limit: 1500, offset: 0, filterStatsForSourceIds: { value: [1] }, filterStatsForSplitTypeIds: { value: [1] }, sortPercOwned: { sortPriority: 1, sortAsc: false } } });
+      let j = null, err = null;
+      for (const host of ['https://lm-api-reads.fantasy.espn.com', 'https://fantasy.espn.com']) {
+        try {
+          const r = await fetch(`${host}/apis/v3/games/ffl/seasons/${season}/segments/0/leaguedefaults/3?scoringPeriodId=${wk}&view=kona_player_info`, { headers: { 'x-fantasy-filter': filter }, cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          j = await r.json(); break;
+        } catch (e) { err = e; }
+      }
+      if (!j) throw err || new Error('no response');
+      map = espnParse(j, wk);
+      if (!map.size) throw new Error('the response had no projections for week ' + wk);
+      idbSet(ck, { t: Date.now(), d: Array.from(map) });
+    }
+    (PSRC.data.espn = PSRC.data.espn || {})[wk] = map;
+    const sc = Object.keys(PSRC.espnScale).map(k => k + ' ×' + fmt(1 / PSRC.espnScale[k], 2)).join(', ');
+    psrcSet('espn', 'ok', map.size + ' players' + (sc ? ' · scaled to this league’s scoring (' + sc + ')' : ''), map.size);
+  } catch (e) {
+    const blocked = e && /Failed to fetch|NetworkError|Load failed|TypeError/i.test(String(e.message || e) + String(e));
+    psrcSet('espn', 'fail', blocked ? 'ESPN did not answer — the browser blocked the request or ESPN is unreachable.' : 'ESPN: ' + (e && e.message || e));
+  }
+}
+
+/* ---- SI Fantasy: a link to the week's published spreadsheet ---- */
+function siKey(wk) { return 'siUrl:' + S.leagueId + ':' + S.season + ':' + wk; }
+function siCsvUrl(u) {
+  u = String(u || '').trim();
+  if (/docs\.google\.com\/spreadsheets/.test(u)) {
+    if (/output=csv|format=csv/.test(u)) return u;
+    if (/\/pubhtml/.test(u)) return u.replace(/\/pubhtml.*$/, '/pub?output=csv' + (/gid=(\d+)/.test(u) ? '&gid=' + u.match(/gid=(\d+)/)[1] : ''));
+    if (/\/pub(\?|$)/.test(u)) return u + (u.includes('?') ? '&' : '?') + 'output=csv';
+    const m = u.match(/\/spreadsheets\/d\/([^/]+)/);
+    if (m) return 'https://docs.google.com/spreadsheets/d/' + m[1] + '/export?format=csv' + (/gid=(\d+)/.test(u) ? '&gid=' + u.match(/gid=(\d+)/)[1] : '');
+  }
+  return u;
+}
+function parseCsv(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += c;
+  }
+  if (cur.length || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim()));
+}
+/** Pull name → points out of whatever columns the sheet has. Returns { map, note } or throws a readable error. */
+function siParse(text, wk) {
+  const rows = parseCsv(text);
+  let hi = rows.findIndex((r, i) => i < 12 && r.some(c => /^(player|name|player name)$/i.test(String(c).trim())));
+  if (hi < 0) throw new Error('could not find a Player column in the sheet');
+  const head = rows[hi].map(c => String(c).trim());
+  const col = re => head.findIndex(c => re.test(c));
+  const iName = col(/^(player|name|player name)$/i), iPos = col(/^pos(ition)?$/i), iTeam = col(/^(team|tm)$/i);
+  const ppr = S.cfg.ppr;
+  const prefs = ppr === 1 ? [/ppr/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i] : ppr === 0.5 ? [/half/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i] : [/(std|standard)/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i];
+  let iPts = -1;
+  for (const re of prefs) { iPts = col(re); if (iPts >= 0) break; }
+  if (iPts < 0) throw new Error('could not find a fantasy-points column (looked for PPR / half / standard / FPts)');
+  // index our players by normalised name
+  const byName = {};
+  Object.values(S.index).forEach(p => { if (p && p.name && p.pos !== 'PICK') (byName[normName(p.name)] = byName[normName(p.name)] || []).push(p); });
+  const out = new Map(); let matched = 0, seen = 0;
+  for (const r of rows.slice(hi + 1)) {
+    const nm = String(r[iName] || '').trim(); if (!nm) continue;
+    const pts = parseFloat(String(r[iPts] || '').replace(/[^0-9.\-]/g, ''));
+    if (!isFinite(pts)) continue;
+    seen++;
+    const cands = byName[normName(nm)] || [];
+    if (!cands.length) continue;
+    let pick = cands[0];
+    if (cands.length > 1) {
+      const pos = iPos >= 0 ? String(r[iPos] || '').toUpperCase().replace('DST', 'DEF') : '';
+      const team = iTeam >= 0 ? String(r[iTeam] || '').toUpperCase() : '';
+      pick = cands.find(p => pos && p.pos === pos && (!team || p.team === team)) || cands.find(p => pos && p.pos === pos) || cands.find(p => team && p.team === team) || cands[0];
+    }
+    out.set(pick.id, pts); matched++;
+  }
+  if (!matched) throw new Error('no player in the sheet matched this league’s players (' + seen + ' rows read)');
+  return { map: out, note: matched + ' of ' + seen + ' rows matched · column “' + head[iPts] + '”' };
+}
+async function psrcLoadSi(wk) {
+  const url = LS.get(siKey(wk), '');
+  if (!url) { psrcSet('si', 'off', 'Paste the link to SI Fantasy’s projections for week ' + wk + ' to include it.', 0, true); return; }
+  psrcSet('si', 'loading', 'Reading the sheet…', 0, true);
+  try {
+    const r = await fetch(siCsvUrl(url), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const txt = await r.text();
+    if (/^\s*<(!doctype|html)/i.test(txt)) throw new Error('that link opened a web page, not a spreadsheet — use the sheet’s “publish to web” (CSV) link');
+    const res = siParse(txt, wk);
+    (PSRC.data.si = PSRC.data.si || {})[wk] = res.map;
+    psrcSet('si', 'ok', res.note, res.map.size);
+  } catch (e) {
+    const blocked = e && /Failed to fetch|NetworkError|Load failed/i.test(String(e.message || e));
+    psrcSet('si', 'fail', blocked ? 'The browser could not read that link (blocked or unreachable).' : 'SI: ' + (e && e.message || e));
+  }
+}
+/** Start whatever each source still needs for this week; each runs once and redraws the page as it lands. */
+function psrcKick(wk, players) {
+  const once = (k, fn) => { if (PSRC.pending[k]) return; PSRC.pending[k] = true; fn(); };
+  once('espn:' + wk, () => psrcLoadEspn(wk));
+  once('si:' + wk + ':' + LS.get(siKey(wk), ''), () => psrcLoadSi(wk));
+  once('form:' + wk + ':' + players.length, () => psrcLoadForm(wk, players));
+  PSRC.status.sleeper = { state: S.wproj && Object.keys(S.wproj).length ? 'ok' : 'off', msg: S.wproj ? 'Rotowire weekly lines via Sleeper' : 'no weekly lines loaded', n: 0 };
+  PSRC.status.market = { state: 'ok', msg: 'built from each player’s market rank and this league’s scoring', n: 0 };
+}
+
+/* ---- confidence ---- */
+const PSRC_TAU = 0.45;      // how many weekly standard deviations of gap make a source's vote lopsided
+/**
+ * For a slot's candidates: each source casts a soft vote — a wide gap is a firm vote, a near tie is a coin
+ * flip — and the votes are averaged, so the percentages always add to 100. Only sources that have a number
+ * for every candidate vote.
+ */
+function psrcConfidence(cands, wk) {
+  const rows = cands.map(p => psrcAll(p, wk));
+  const voters = PSRC_LIST.filter(x => rows.every(r => r.per[x.id] !== null));
+  let probs;
+  if (voters.length) {
+    probs = cands.map(() => 0);
+    voters.forEach(x => {
+      const vals = rows.map(r => r.per[x.id]);
+      const sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(vals[i], 1))));
+      const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...vals);
+      const e = vals.map(v => Math.exp((v - top) / tau)), tot = sum(e);
+      e.forEach((v, i) => { probs[i] += v / tot / voters.length; });
+    });
+  } else {
+    // no source covers all of them: fall back to whatever average each has
+    const c = rows.map(r => r.cons === null ? 0 : r.cons), sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(c[i], 1))));
+    const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...c), e = c.map(v => Math.exp((v - top) / tau)), tot = sum(e);
+    probs = e.map(v => v / tot);
+  }
+  // round to whole percents that add to exactly 100 (largest remainder)
+  const raw = probs.map(p => p * 100), floor = raw.map(Math.floor);
+  let left = 100 - sum(floor);
+  raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { floor[i]++; left--; } });
+  // how many sources put each candidate on top (ties split)
+  const wins = cands.map(() => 0);
+  voters.forEach(x => {
+    const vals = rows.map(r => r.per[x.id]), top = Math.max(...vals), tied = vals.filter(v => Math.abs(v - top) < 0.05).length;
+    vals.forEach((v, i) => { if (Math.abs(v - top) < 0.05) wins[i] += 1 / tied; });
+  });
+  return { rows, voters, pct: floor, wins, n: voters.length };
+}
+
+/* ---- the slots ---- */
+function slotNames(slots) {
+  const base = s => SLOT_LABEL[s] || s;
+  const total = {}; slots.forEach(s => { total[base(s.slot)] = (total[base(s.slot)] || 0) + 1; });
+  const seen = {};
+  return slots.map(s => {
+    const b = base(s.slot); seen[b] = (seen[b] || 0) + 1;
+    return total[b] > 1 || ['QB', 'RB', 'WR', 'TE'].includes(b) ? b + seen[b] : b;
+  });
+}
+/** The lineup the consensus recommends, and for each slot the two or three players who could fill it. */
+function startSitPlan(T, wk) {
+  const act = activePlayers(T);
+  const val = p => consensusPts(p, wk);
+  const lineup = optimalLineup(act, val);
+  const names = slotNames(lineup);
+  const chosen = new Set(lineup.filter(s => s.player).map(s => s.player.id));
+  return lineup.map((s, i) => {
+    const rec = s.player;
+    const elig = SLOT_ELIG[s.slot] || [s.slot];
+    // someone already starting in a different slot is not a free choice here
+    const pool = act.filter(p => elig.includes(p.pos) && (!chosen.has(p.id) || (rec && p.id === rec.id)));
+    const cands = pool.sort((a, b) => val(b) - val(a)).filter((p, k) => (rec && p.id === rec.id) || val(p) > 0.05).slice(0, 3);
+    if (rec && cands.length && cands[0].id !== rec.id) { cands.splice(cands.indexOf(rec), 1); cands.unshift(rec); }
+    return { slot: s.slot, name: names[i], rec, cands, conf: cands.length >= 2 ? psrcConfidence(cands, wk) : null };
+  });
+}
+
+const LineupUI = { team: null, week: null, compare: [], openKey: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
+/* ---- the slot cards ---- */
+function confChip(conf, i) {
+  if (!conf) return h('span.ssc-conf.solo', 'only option');
+  const pct = conf.pct[i];
+  const cls = pct >= 70 ? '.hi' : pct >= 55 ? '.mid' : '.lo';
+  return h('span.ssc-conf' + cls, { title: conf.n ? wins1(conf.wins[i]) + ' of ' + conf.n + ' sources put him on top' : 'no source covers every candidate, so this rests on the average alone' }, pct + '%');
+}
+/** 4 not 4.0, but 1.5 when two sources tie. */
+function wins1(w) { return String(+w.toFixed(1)); }
+function srcValue(v) { return v === null || v === undefined ? '—' : fmt(v, 1); }
+function slotCard(sl, wk, open, onToggle) {
+  const p = sl.rec;
+  const cons = p ? consensusPts(p, wk) : 0;
+  const opp = p ? (onBye(p, wk) ? 'BYE' : pwOpp(p, wk)) : null;
+  return h('button.ssc' + (open ? '.open' : '') + (p ? medalCls(p).replace(' medal', '.medal').replace(/ /g, '.') : ''), { onclick: onToggle, 'aria-expanded': open ? 'true' : 'false', 'aria-label': sl.name + (p ? ': ' + p.name : ': nobody') },
+    h('div.ssc-top', h('span.ssc-slot', sl.name), p ? confChip(sl.conf, 0) : null),
+    p ? h('div.ssc-who', playerFace(p),
+      h('div.ssc-id', h('div.ssc-nm', p.name),
+        h('div.tiny.muted', [p.pos, p.team || 'FA', opp ? (opp === 'BYE' ? 'BYE' : (/^@|vs/.test(opp) ? opp : 'vs ' + opp)) : null].filter(Boolean).join(' · '))))
+      : h('div.ssc-who', h('span.muted.tiny', 'nobody eligible')),
+    p ? h('div.ssc-bot', h('span.ssc-pts', h('b', fmt(cons, 1)), h('span', ' proj')), injuryTag(p.injury, p), h('span.chev', ico('chev'))) : null);
+}
+function slotPanel(sl, wk) {
+  const conf = sl.conf;
+  const srcs = PSRC_LIST;
+  const rowFor = (p, i) => {
+    const all = conf ? conf.rows[i] : psrcAll(p, wk);
+    const opp = onBye(p, wk) ? 'BYE' : pwOpp(p, wk);
+    const lead = conf && conf.pct[i] === Math.max(...conf.pct);
+    return h('div.sspc' + (i === 0 ? '.rec' : ''),
+      h('div.sspc-head',
+        playerFace(p, { sm: true }),
+        h('div.sspc-id', h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, pname(p, { face: false, style: { fontWeight: 650 } }), injuryTag(p.injury, p), i === 0 ? h('span.tag.sspc-rec', 'recommended') : null),
+          h('div.tiny.muted', [p.pos + (p.posRank || ''), p.team || 'FA', opp ? (opp === 'BYE' ? 'BYE' : (/^@|vs/.test(opp) ? opp : 'vs ' + opp)) : null].filter(Boolean).join(' · '))),
+        conf ? h('div.sspc-pct', { class: lead ? 'lead' : '' }, h('b', conf.pct[i] + '%'), h('span', conf.n ? wins1(conf.wins[i]) + ' of ' + conf.n + ' sources' : 'by average')) : h('div.sspc-pct', h('b', fmt(all.cons || 0, 1)), h('span', 'proj'))),
+      conf ? h('div.sspc-bar', { 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(2, conf.pct[i]) + '%' } })) : null,
+      h('div.sspc-src', srcs.map(x => {
+        const v = all.per[x.id];
+        const others = conf ? conf.rows.filter((_, k) => k !== i).map(r => r.per[x.id]).filter(z => z !== null) : [];
+        const wins = v !== null && others.length && v >= Math.max(...others) - 0.05 && conf && conf.rows.every(r => r.per[x.id] !== null);
+        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + (v === null ? ' has no number for him' : '') }, h('span', x.short), h('b', srcValue(v)));
+      }).concat([h('div.ssrc.avg', { title: 'average of the sources that have a number' }, h('span', 'Avg'), h('b', srcValue(all.cons)))])));
+  };
+  const note = !conf ? h('div.tiny.muted', 'Nobody else on your roster can play this slot, so there is nothing to compare.')
+    : conf.n === 0 ? h('div.tiny.sec', 'No source has a number for every one of these players, so the percentages rest on the average of what is available — treat them as rough.')
+      : conf.n === 1 ? h('div.tiny.sec', 'Only one source covers all of them, so this is one opinion, not a consensus.') : null;
+  return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' candidates' },
+    h('div.ssp-hd', h('b', sl.name + ' — who to start'), h('span.tiny.muted', conf ? 'confidence = how often each one comes out ahead across ' + conf.n + ' source' + (conf.n === 1 ? '' : 's') + ', weighting each by how big its gap is' : '')),
+    sl.cands.map(rowFor), note);
+}
+function srcStrip(wk) {
+  const chip = x => {
+    const st = PSRC.status[x.id] || { state: 'idle', msg: '' };
+    const icon = st.state === 'ok' ? '●' : st.state === 'loading' ? '…' : st.state === 'fail' ? '✕' : '○';
+    return h('span.sstat.' + st.state, { title: x.label + ' — ' + (st.msg || st.state) }, h('i', icon), x.short);
+  };
+  const url = LS.get(siKey(wk), '');
+  const inp = h('input', { type: 'url', placeholder: 'Paste SI Fantasy’s published CSV / “view as web page” link for week ' + wk, value: url, 'aria-label': 'SI Fantasy projections link' });
+  const save = () => {
+    const v = inp.value.trim();
+    LS.set(siKey(wk), v);
+    if (PSRC.data.si) delete PSRC.data.si[wk];
+    psrcSet('si', v ? 'loading' : 'off', v ? 'Reading the sheet…' : 'Paste the link to SI Fantasy’s projections for week ' + wk + ' to include it.', 0, true);
+    render();
+  };
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
+  const failed = PSRC_LIST.filter(x => PSRC.status[x.id].state === 'fail');
+  return h('div.sstrip',
+    h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, h('span.tiny.muted', 'Sources'), PSRC_LIST.map(chip)),
+    failed.length ? h('div.tiny.sec', failed.map(x => x.short + ': ' + PSRC.status[x.id].msg).join(' · ')) : null,
+    h('div.row.sssi', { style: { gap: '8px' } }, inp, h('button.btn.sm', { onclick: save }, url ? 'Reload' : 'Add SI')));
+}
+function startSitSlots(T, wk, act) {
+  psrcKick(wk, act);
+  const plan = startSitPlan(T, wk);
+  const total = sum(plan.map(x => x.rec ? consensusPts(x.rec, wk) : 0));
+  const grid = h('div.ssgrid');
+  plan.forEach((sl, i) => {
+    const key = T.rosterId + ':' + wk + ':' + i, open = LineupUI.openKey === key;
+    grid.appendChild(slotCard(sl, wk, open, () => { LineupUI.openKey = open ? null : key; render(); }));
+    if (open) grid.appendChild(slotPanel(sl, wk));
+  });
+  const byes = act.filter(p => onBye(p, wk));
+  return card('Recommended lineup — week ' + wk,
+    fmt(total, 1) + ' projected points · tap a slot to see the alternatives and how sure each call is'
+    + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
+    h('div', { style: { display: 'grid', gap: '14px' } }, grid, srcStrip(wk)));
+}
 function viewLineup() {
   const wrap = h('div.grid');
   const teams = S.teams;
@@ -7906,11 +8370,13 @@ function viewLineup() {
   const wk = LineupUI.week;
   const act = activePlayers(T);
   const isLive = wk === S.liveWeek;
-  const val = (p) => pwShown(p, wk);
+  // a week still to come is planned from several sources at once; a week under way or finished keeps its real scores
+  const upcoming = !isLive && wk > S.lastWeek;
+  const val = upcoming ? (p => consensusPts(p, wk)) : (p => pwShown(p, wk));
   /* In the week being played the lineup is not a suggestion — it is whatever the
      manager actually set, with some of it already locked in. Re-optimising it
      would be advice about a decision that is no longer available. */
-  const lineup = isLive ? liveLineupSlots(T, wk) : optimalLineup(act, p => pw(p, wk));
+  const lineup = isLive ? liveLineupSlots(T, wk) : optimalLineup(act, upcoming ? val : (p => pw(p, wk)));
   const startIds = new Set(lineup.filter(s => s.player).map(s => s.player.id));
   const bench = act.filter(p => !startIds.has(p.id)).sort((a, b) => val(b) - val(a));
   const total = sum(lineup.map(s => s.player ? val(s.player) : 0));
@@ -7921,10 +8387,10 @@ function viewLineup() {
   wrap.appendChild(h('div.slhead',
     teamCard('a', T, {
       key: 'lineup', label: T.rosterId === S.myRosterId ? 'Your team' : 'Team',
-      onPick: id => { LineupUI.team = id; LineupUI.compare = []; render(); }
+      onPick: id => { LineupUI.team = id; LineupUI.compare = []; LineupUI.openKey = null; render(); }
     }),
     h('div.h2hweek', { style: { alignSelf: 'stretch', alignItems: 'center' } },
-      h('label.fld', { style: { minWidth: '170px' } }, 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; render(); } },
+      h('label.fld', { style: { minWidth: '170px' } }, 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; LineupUI.openKey = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === wk },
           'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
       isLive ? h('span.live', h('i'), 'Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
@@ -7997,6 +8463,8 @@ function viewLineup() {
       }, ico(LineupUI.compare.includes(r.p.id) ? 'check' : 'plus')) : null
     }
   ];
+  if (upcoming) wrap.appendChild(startSitSlots(T, wk, act));
+  else {
   wrap.appendChild(card(isLive ? 'Your lineup — week ' + wk : 'Optimal lineup — week ' + wk,
     (isLive
       ? fmt(total, 1) + ' live — ' + fmt(lr.banked, 1) + ' banked plus ' + fmt(lr.projected, 1) + ' still projected'
@@ -8028,6 +8496,7 @@ function viewLineup() {
             h('span.tiny', { style: { fontWeight: 620 } }, pct(pw1, 0) + ' chance ' + r.p.name.split(' ').slice(-1)[0] + ' outscores ' + alt.name.split(' ').slice(-1)[0])));
       }))
       : h('div.empty', 'Every slot has a clear best option this week.')));
+  }
 
   // ---- head-to-head comparison tray ----
   const chosen = LineupUI.compare.map(id => S.index[id]).filter(Boolean);
