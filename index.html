@@ -523,7 +523,7 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 .sspc-pct span{font-size:11px;color:var(--text-muted)}
 .sspc-bar{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
 .sspc-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-2))}
-.sspc-src{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.sspc-src{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .ssrc{display:grid;justify-items:center;gap:1px;padding:6px 4px;border-radius:9px;background:var(--surface-2);border:1px solid transparent;min-width:0}
 .ssrc span{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-muted);text-transform:uppercase;white-space:nowrap}
 .ssrc b{font-size:15px;font-variant-numeric:tabular-nums}
@@ -538,7 +538,6 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 .sstat.fail{color:var(--bad-text);border-color:var(--critical)}
 .sstat.loading{color:var(--text-muted)}
 .sstat.off,.sstat.idle{color:var(--text-muted);border-style:dashed}
-.sssi input{flex:1;min-width:0;font-size:12.5px;padding:6px 10px}
 @media (max-width:620px){
   .ssgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .ssc{padding:10px}
@@ -7961,10 +7960,9 @@ function pBeats(a, b, wk) {
 /* ================= 10. START / SIT ================= */
 
 /* ================= Start / Sit: several projection sources, one confidence =================
-   Five independent readings of the same week, each in this league's own scoring:
+   Four independent readings of the same week, each in this league's own scoring:
      Sleeper   the Rotowire weekly lines the rest of the app already uses
      ESPN      ESPN's fantasy projections (fetched live; scaled to this league's scoring)
-     SI        SI Fantasy's weekly spreadsheet, from a link pasted for the week
      Last 3    the average of his last three games with a recorded score (injured, bye
                and inactive weeks are skipped)
      Market    the model built from the market price / positional rank
@@ -7973,7 +7971,6 @@ function pBeats(a, b, wk) {
 const PSRC_LIST = [
   { id: 'sleeper', label: 'Sleeper (Rotowire)', short: 'Sleeper', kind: 'ext' },
   { id: 'espn', label: 'ESPN', short: 'ESPN', kind: 'ext' },
-  { id: 'si', label: 'SI Fantasy', short: 'SI', kind: 'ext' },
   { id: 'form', label: 'Last 3 healthy games', short: 'Last 3', kind: 'form' },
   { id: 'market', label: 'Market model', short: 'Market', kind: 'model' }
 ];
@@ -7982,13 +7979,7 @@ PSRC_LIST.forEach(x => { PSRC.status[x.id] = { state: 'idle', msg: '', n: 0 }; }
 let _psrcTimer = null;
 function psrcChanged() {
   clearTimeout(_psrcTimer);
-  _psrcTimer = setTimeout(function again() {
-    if (S.view !== 'lineup') return;
-    // a redraw would wipe what somebody is typing in the SI link box, so wait until they stop
-    const a = document.activeElement;
-    if (a && a.tagName === 'INPUT' && a.closest && a.closest('.sstrip') && a.value !== (a.defaultValue || '')) { _psrcTimer = setTimeout(again, 700); return; }
-    render();
-  }, 140);
+  _psrcTimer = setTimeout(() => { if (S.view === 'lineup') render(); }, 140);
 }
 function psrcSet(id, state, msg, n, quiet) {
   PSRC.status[id] = { state, msg: msg || '', n: n || 0 };
@@ -8123,89 +8114,10 @@ async function psrcLoadEspn(wk) {
   }
 }
 
-/* ---- SI Fantasy: a link to the week's published spreadsheet ---- */
-function siKey(wk) { return 'siUrl:' + S.leagueId + ':' + S.season + ':' + wk; }
-function siCsvUrl(u) {
-  u = String(u || '').trim();
-  if (/docs\.google\.com\/spreadsheets/.test(u)) {
-    if (/output=csv|format=csv/.test(u)) return u;
-    if (/\/pubhtml/.test(u)) return u.replace(/\/pubhtml.*$/, '/pub?output=csv' + (/gid=(\d+)/.test(u) ? '&gid=' + u.match(/gid=(\d+)/)[1] : ''));
-    if (/\/pub(\?|$)/.test(u)) return u + (u.includes('?') ? '&' : '?') + 'output=csv';
-    const m = u.match(/\/spreadsheets\/d\/([^/]+)/);
-    if (m) return 'https://docs.google.com/spreadsheets/d/' + m[1] + '/export?format=csv' + (/gid=(\d+)/.test(u) ? '&gid=' + u.match(/gid=(\d+)/)[1] : '');
-  }
-  return u;
-}
-function parseCsv(text) {
-  const rows = []; let row = [], cur = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
-    else if (c === '"') q = true;
-    else if (c === ',') { row.push(cur); cur = ''; }
-    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
-    else cur += c;
-  }
-  if (cur.length || row.length) { row.push(cur); rows.push(row); }
-  return rows.filter(r => r.some(x => String(x).trim()));
-}
-/** Pull name → points out of whatever columns the sheet has. Returns { map, note } or throws a readable error. */
-function siParse(text, wk) {
-  const rows = parseCsv(text);
-  let hi = rows.findIndex((r, i) => i < 12 && r.some(c => /^(player|name|player name)$/i.test(String(c).trim())));
-  if (hi < 0) throw new Error('could not find a Player column in the sheet');
-  const head = rows[hi].map(c => String(c).trim());
-  const col = re => head.findIndex(c => re.test(c));
-  const iName = col(/^(player|name|player name)$/i), iPos = col(/^pos(ition)?$/i), iTeam = col(/^(team|tm)$/i);
-  const ppr = S.cfg.ppr;
-  const prefs = ppr === 1 ? [/ppr/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i] : ppr === 0.5 ? [/half/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i] : [/(std|standard)/i, /(fpts|fantasy ?pts|fantasy points|total|^pts|points)/i];
-  let iPts = -1;
-  for (const re of prefs) { iPts = col(re); if (iPts >= 0) break; }
-  if (iPts < 0) throw new Error('could not find a fantasy-points column (looked for PPR / half / standard / FPts)');
-  // index our players by normalised name
-  const byName = {};
-  Object.values(S.index).forEach(p => { if (p && p.name && p.pos !== 'PICK') (byName[normName(p.name)] = byName[normName(p.name)] || []).push(p); });
-  const out = new Map(); let matched = 0, seen = 0;
-  for (const r of rows.slice(hi + 1)) {
-    const nm = String(r[iName] || '').trim(); if (!nm) continue;
-    const pts = parseFloat(String(r[iPts] || '').replace(/[^0-9.\-]/g, ''));
-    if (!isFinite(pts)) continue;
-    seen++;
-    const cands = byName[normName(nm)] || [];
-    if (!cands.length) continue;
-    let pick = cands[0];
-    if (cands.length > 1) {
-      const pos = iPos >= 0 ? String(r[iPos] || '').toUpperCase().replace('DST', 'DEF') : '';
-      const team = iTeam >= 0 ? String(r[iTeam] || '').toUpperCase() : '';
-      pick = cands.find(p => pos && p.pos === pos && (!team || p.team === team)) || cands.find(p => pos && p.pos === pos) || cands.find(p => team && p.team === team) || cands[0];
-    }
-    out.set(pick.id, pts); matched++;
-  }
-  if (!matched) throw new Error('no player in the sheet matched this league’s players (' + seen + ' rows read)');
-  return { map: out, note: matched + ' of ' + seen + ' rows matched · column “' + head[iPts] + '”' };
-}
-async function psrcLoadSi(wk) {
-  const url = LS.get(siKey(wk), '');
-  if (!url) { psrcSet('si', 'off', 'Paste the link to SI Fantasy’s projections for week ' + wk + ' to include it.', 0, true); return; }
-  psrcSet('si', 'loading', 'Reading the sheet…', 0, true);
-  try {
-    const r = await fetch(siCsvUrl(url), { cache: 'no-store' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const txt = await r.text();
-    if (/^\s*<(!doctype|html)/i.test(txt)) throw new Error('that link opened a web page, not a spreadsheet — use the sheet’s “publish to web” (CSV) link');
-    const res = siParse(txt, wk);
-    (PSRC.data.si = PSRC.data.si || {})[wk] = res.map;
-    psrcSet('si', 'ok', res.note, res.map.size);
-  } catch (e) {
-    const blocked = e && /Failed to fetch|NetworkError|Load failed/i.test(String(e.message || e));
-    psrcSet('si', 'fail', blocked ? 'The browser could not read that link (blocked or unreachable).' : 'SI: ' + (e && e.message || e));
-  }
-}
 /** Start whatever each source still needs for this week; each runs once and redraws the page as it lands. */
 function psrcKick(wk, players) {
   const once = (k, fn) => { if (PSRC.pending[k]) return; PSRC.pending[k] = true; fn(); };
   once('espn:' + wk, () => psrcLoadEspn(wk));
-  once('si:' + wk + ':' + LS.get(siKey(wk), ''), () => psrcLoadSi(wk));
   once('form:' + wk + ':' + players.length, () => psrcLoadForm(wk, players));
   PSRC.status.sleeper = { state: S.wproj && Object.keys(S.wproj).length ? 'ok' : 'off', msg: S.wproj ? 'Rotowire weekly lines via Sleeper' : 'no weekly lines loaded', n: 0 };
   PSRC.status.market = { state: 'ok', msg: 'built from each player’s market rank and this league’s scoring', n: 0 };
@@ -8335,21 +8247,10 @@ function srcStrip(wk) {
     const icon = st.state === 'ok' ? '●' : st.state === 'loading' ? '…' : st.state === 'fail' ? '✕' : '○';
     return h('span.sstat.' + st.state, { title: x.label + ' — ' + (st.msg || st.state) }, h('i', icon), x.short);
   };
-  const url = LS.get(siKey(wk), '');
-  const inp = h('input', { type: 'url', placeholder: 'Paste SI Fantasy’s published CSV / “view as web page” link for week ' + wk, value: url, 'aria-label': 'SI Fantasy projections link' });
-  const save = () => {
-    const v = inp.value.trim();
-    LS.set(siKey(wk), v);
-    if (PSRC.data.si) delete PSRC.data.si[wk];
-    psrcSet('si', v ? 'loading' : 'off', v ? 'Reading the sheet…' : 'Paste the link to SI Fantasy’s projections for week ' + wk + ' to include it.', 0, true);
-    render();
-  };
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') save(); });
   const failed = PSRC_LIST.filter(x => PSRC.status[x.id].state === 'fail');
   return h('div.sstrip',
     h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, h('span.tiny.muted', 'Sources'), PSRC_LIST.map(chip)),
-    failed.length ? h('div.tiny.sec', failed.map(x => x.short + ': ' + PSRC.status[x.id].msg).join(' · ')) : null,
-    h('div.row.sssi', { style: { gap: '8px' } }, inp, h('button.btn.sm', { onclick: save }, url ? 'Reload' : 'Add SI')));
+    failed.length ? h('div.tiny.sec', failed.map(x => x.short + ': ' + PSRC.status[x.id].msg).join(' · ')) : null);
 }
 function startSitSlots(T, wk, act) {
   psrcKick(wk, act);
