@@ -1723,6 +1723,22 @@ async function loadValues(cfg) {
   }
 }
 
+/* FantasyCalc's own redraft prices for this league's format. The dynasty request also
+   carries a `redraftValue` on every row, but this is the endpoint that prices redraft
+   directly, so it is the number to trust; a player it does not list falls back to that
+   row's `redraftValue`, and a player neither lists is priced at zero rather than guessed. */
+async function loadRedraftValues(cfg) {
+  const key = `fc:r:${cfg.numQbs}:${cfg.numTeams}:${cfg.ppr}`;
+  const cached = LS.get(key);
+  if (cached && Date.now() - cached.t < 4 * 3600 * 1000) return cached.d;
+  try {
+    const d = await getJSON(`${FCALC}/values/current?isDynasty=false&numQbs=${cfg.numQbs}&numTeams=${cfg.numTeams}&ppr=${cfg.ppr}&includeAdp=false`, 2);
+    const pairs = Array.isArray(d) ? d.filter(r => r && r.player && r.player.sleeperId).map(r => [String(r.player.sleeperId), r.value || 0]) : [];
+    if (pairs.length) { LS.set(key, { t: Date.now(), d: pairs }); return pairs; }
+  } catch (e) { /* the dynasty response's own redraft column still stands in */ }
+  return cached ? cached.d : null;
+}
+
 async function loadSleeperPlayers() {
   const rec = await idbGet('players');
   const FRESH = 12 * 3600 * 1000;
@@ -1820,6 +1836,8 @@ function buildIndex() {
   const idx = {};        // sleeperId -> player object
   const picks = {};      // "2027|1|Mid" -> value ;  "2026|1|3" (exact slot) -> value
   const byPos = { QB: [], RB: [], WR: [], TE: [] };
+  // FantasyCalc's redraft endpoint, when it answered: the actual redraft price for each player
+  const rvApi = S.redraftApi ? new Map(S.redraftApi) : null;
 
   for (const row of vals) {
     const p = row.player || {};
@@ -1843,7 +1861,7 @@ function buildIndex() {
       team: meta.t || p.maybeTeam || null,
       age: p.maybeAge !== null && p.maybeAge !== undefined ? Math.round(p.maybeAge * 10) / 10 : (meta.a || null),
       exp: p.maybeYoe !== null && p.maybeYoe !== undefined ? p.maybeYoe : meta.y,
-      dv: row.value || 0, dvDyn: row.value || 0, rv: row.redraftValue || 0,
+      dv: row.value || 0, dvDyn: row.value || 0, rv: rvApi && rvApi.has(id) ? rvApi.get(id) : (row.redraftValue || 0),
       rank: row.overallRank, posRank: row.positionRank, tier: row.maybeTier || null,
       trend30: row.trend30Day || 0, rosterPct: row.maybeRosterPercent,
       tradeFreq: row.maybeTradeFrequency, injury: meta.i || null,
@@ -2448,6 +2466,7 @@ async function loadLeague(leagueId, onStep) {
 
   step('Loading ' + valueWord() + ' trade values…', 0.52);
   S.values = await loadValues(S.cfg);
+  S.redraftApi = await loadRedraftValues(S.cfg);
   S.index = buildIndex(); S._sig = null; S._tl = null;
   if (isDynasty()) buildPickCurves();
 
@@ -9878,6 +9897,7 @@ function viewHome() {
   }
 
   /* ---- the week, if there is one being played ---- */
+  let weekCard = null;
   if (S.liveWeek && me) {
     const g = liveMatchups(S.liveWeek).find(x => x.A.rosterId === me.rosterId || x.B.rosterId === me.rosterId);
     if (g) {
@@ -9887,7 +9907,7 @@ function viewHome() {
       const pMe = p, pThem = 1 - p;
       // the same team · odds · team layout as the This Week page, so a game reads
       // the same wherever it appears
-      wrap.appendChild(card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
+      weekCard = card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
         h('div', { style: { display: 'grid', gap: '16px' } },
           h('div.mvs.mvs-lg',
             matchupSide(my, me, 'var(--s1)'),
@@ -9901,17 +9921,18 @@ function viewHome() {
             matchupSide(th, them, 'var(--s2)')),
           h('div.row', { style: { gap: '10px', justifyContent: 'center' } },
             h('button.btn.pri', { onclick: () => goView('week') }, 'This week →'),
-            h('button.btn', { onclick: () => goView('lineup') }, 'Check my lineup')))));
+            h('button.btn', { onclick: () => goView('lineup') }, 'Check my lineup'))));
     }
   }
 
-  /* ---- the faces on your roster ---- */
-  const faces = myHeadliners(me);
-  if (faces) wrap.appendChild(faces);
-
-  /* ---- the top of the table ---- */
+  /* ---- the top of the table, then every team on the value plot, then your headliners, then the week ---- */
   const strip = leagueStrip();
   if (strip) wrap.appendChild(strip);
+  const plot = valueQuadrants();
+  if (plot) wrap.appendChild(plot);
+  const faces = myHeadliners(me);
+  if (faces) wrap.appendChild(faces);
+  if (weekCard) wrap.appendChild(weekCard);
 
   /* ---- everywhere else ---- */
   wrap.appendChild(card('Everything else', 'fourteen pages, all reading the same league',
@@ -10018,6 +10039,145 @@ function leaguePodium(ranked, live) {
 
 /** Every team in the league in one ranked strip: badge, record, scoring, recent
  *  form and how the season is likely to end. */
+/* ================= home: where every team sits on dynasty vs redraft value =================
+   Each team is one dot: how much its whole roster would fetch in a dynasty trade
+   (players plus draft picks) against what it would fetch in a redraft one. The
+   league median on each axis splits the plot into four, and the two corners where
+   the axes disagree are the interesting ones — old stars who win now, young talent
+   who win later. The four groups are read off position, so the dots stay one colour. */
+const VALUE_QUADS = {
+  tr: { name: 'Powerhouse', sub: 'strong now and later' },
+  tl: { name: 'Win-now', sub: 'strong now, thin future' },
+  br: { name: 'Future-loaded', sub: 'young talent and picks' },
+  bl: { name: 'Rebuilding', sub: 'light on both' }
+};
+function teamValueAxes(t) {
+  return {
+    dyn: sum(t.players.map(p => p.dvDyn || 0)) + (isDynasty() ? (t.pickCapital || 0) : 0),
+    red: sum(t.players.map(p => p.rv || 0))
+  };
+}
+function valueQuadrants() {
+  const teams = S.teams;
+  if (teams.length < 4) return null;
+  const pts = teams.map(t => Object.assign({ t, me: t.rosterId === S.myRosterId }, teamValueAxes(t)));
+  const med = (a) => { const v = a.slice().sort((x, y) => x - y), n = v.length; return n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2; };
+  const mx = med(pts.map(p => p.dyn)), my = med(pts.map(p => p.red));
+  const dynRank = pts.slice().sort((a, b) => b.dyn - a.dyn).map(p => p.t.rosterId);
+  const redRank = pts.slice().sort((a, b) => b.red - a.red).map(p => p.t.rosterId);
+  pts.forEach(p => {
+    p.q = (p.red >= my ? 't' : 'b') + (p.dyn >= mx ? 'r' : 'l');
+    p.dynRk = dynRank.indexOf(p.t.rosterId) + 1; p.redRk = redRank.indexOf(p.t.rosterId) + 1;
+  });
+
+  const W = chartW(900, 380), H = isNarrow() ? 400 : 440, m = isNarrow() ? { t: 14, r: 12, b: 42, l: 44 } : { t: 16, r: 18, b: 46, l: 56 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  // the quadrant captions live in the top and bottom bands, so the redraft axis keeps those
+  // bands clear of dots; the dynasty axis only needs a little air
+  const span = (a, padPx, len) => { const lo = Math.min(...a), hi = Math.max(...a), pad = Math.max((hi - lo) * padPx / Math.max(len - 2 * padPx, 40), 1); return [lo - pad, hi + pad]; };
+  const [x0, x1] = span(pts.map(p => p.dyn), 26, iw), [y0, y1] = span(pts.map(p => p.red), 54, ih);
+  const X = v => m.l + (v - x0) / (x1 - x0) * iw, Y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
+  const ticks = (lo, hi, n) => {
+    const raw = (hi - lo) / n, pow = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / pow;
+    const step = (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * pow, out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
+    return out;
+  };
+  const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'each team by dynasty value and redraft value' });
+  // the quadrant captions live in the corners; the viewBox keeps its own proportions
+  g.style.width = '100%'; g.style.height = 'auto';
+  // the two corners where the axes disagree get a faint wash
+  g.appendChild(svg('rect', { x: m.l, y: m.t, width: X(mx) - m.l, height: Y(my) - m.t, fill: 'var(--surface-2)' }));
+  g.appendChild(svg('rect', { x: X(mx), y: Y(my), width: m.l + iw - X(mx), height: m.t + ih - Y(my), fill: 'var(--surface-2)' }));
+  ticks(y0, y1, 5).forEach(v => {
+    g.appendChild(svg('line', { class: 'gl', x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v) }));
+    const t = svg('text', { class: 'ax', x: m.l - 7, y: Y(v) + 3.5, 'text-anchor': 'end' }); t.textContent = kfmt(Math.round(v)); g.appendChild(t);
+  });
+  ticks(x0, x1, isNarrow() ? 4 : 6).forEach(v => {
+    g.appendChild(svg('line', { x1: X(v), x2: X(v), y1: m.t + ih, y2: m.t + ih + 4, stroke: 'var(--axis)', 'stroke-width': 1 }));
+    const t = svg('text', { class: 'ax', x: X(v), y: m.t + ih + 17, 'text-anchor': 'middle' }); t.textContent = kfmt(Math.round(v)); g.appendChild(t);
+  });
+  // the league median on each axis: the cross that makes the four groups
+  g.appendChild(svg('line', { x1: X(mx), x2: X(mx), y1: m.t, y2: m.t + ih, stroke: 'var(--axis)', 'stroke-width': 1.25 }));
+  g.appendChild(svg('line', { x1: m.l, x2: W - m.r, y1: Y(my), y2: Y(my), stroke: 'var(--axis)', 'stroke-width': 1.25 }));
+
+  // quadrant names ride the corners, away from the cross where the dots bunch
+  const reserved = [];
+  const corner = (q, x, y, anchor) => {
+    const d = VALUE_QUADS[q], nm = svg('text', { x, y, 'text-anchor': anchor, 'font-size': 11.5, 'font-weight': 700, 'letter-spacing': '.05em', fill: 'var(--text-secondary)' });
+    nm.textContent = d.name.toUpperCase(); g.appendChild(nm);
+    const sb = svg('text', { class: 'ax', x, y: y + 14, 'text-anchor': anchor }); sb.textContent = d.sub; g.appendChild(sb);
+    const w = Math.max(d.name.length * 8.2, d.sub.length * 5.8) + 6;
+    reserved.push([anchor === 'start' ? x - 3 : x - w + 3, y - 12, w, 30]);
+  };
+  corner('tl', m.l + 10, m.t + 20, 'start'); corner('tr', W - m.r - 10, m.t + 20, 'end');
+  corner('bl', m.l + 10, m.t + ih - 24, 'start'); corner('br', W - m.r - 10, m.t + ih - 24, 'end');
+
+  // labels: you first, then everyone who still fits; the tooltip and the table carry the rest
+  const R = isNarrow() ? 11 : 14;                         // a team's logo is a disc this big
+  const rOf = p => p.me ? R + 3 : R;
+  const placed = reserved.slice(), dots = pts.map(p => ({ x: X(p.dyn), y: Y(p.red), r: rOf(p) }));
+  const hit = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+  const labels = [];
+  pts.slice().sort((a, b) => (b.me ? 1 : 0) - (a.me ? 1 : 0)).forEach(p => {
+    const cx = X(p.dyn), cy = Y(p.red), txt = p.t.short || p.t.name, w = txt.length * 6.6 + 4, hh = 13, gap = rOf(p) + 6;
+    const cands = [
+      { x: cx + gap, y: cy + 4, a: 'start', r: [cx + gap - 2, cy - hh + 4, w, hh] },
+      { x: cx - gap, y: cy + 4, a: 'end', r: [cx - gap - w + 2, cy - hh + 4, w, hh] },
+      { x: cx, y: cy - gap - 1, a: 'middle', r: [cx - w / 2, cy - gap - 1 - hh + 3, w, hh] },
+      { x: cx, y: cy + gap + 10, a: 'middle', r: [cx - w / 2, cy + gap + 10 - hh + 3, w, hh] }];
+    for (const c of cands) {
+      const [rx, ry, rw, rh] = c.r;
+      if (rx < m.l || rx + rw > W - m.r || ry < m.t || ry + rh > m.t + ih) continue;
+      if (placed.some(o => hit(c.r, o))) continue;
+      if (dots.some(d => d.x > rx - d.r && d.x < rx + rw + d.r && d.y > ry - d.r && d.y < ry + rh + d.r)) continue;
+      placed.push(c.r); labels.push({ p, c, txt }); break;
+    }
+  });
+
+  // each team is its own logo, clipped to a disc; a team with no logo (or one that fails to
+  // load) keeps a plain disc with its initial, so it is never missing from the plot
+  const defs = svg('defs'); g.appendChild(defs);
+  pts.forEach(p => {
+    const cx = X(p.dyn), cy = Y(p.red), r = rOf(p), id = 'vq-' + p.t.rosterId;
+    const cp = svg('clipPath', { id }); cp.appendChild(svg('circle', { cx, cy, r })); defs.appendChild(cp);
+    g.appendChild(svg('circle', { cx, cy, r: r + 2, fill: 'var(--surface-1)' }));
+    g.appendChild(svg('circle', { cx, cy, r, fill: 'var(--s1)' }));
+    const ini = svg('text', { x: cx, y: cy + 4, 'text-anchor': 'middle', 'font-size': r * 0.95, 'font-weight': 700, fill: '#fff' });
+    ini.textContent = String(p.t.short || p.t.name || '?').charAt(0).toUpperCase(); g.appendChild(ini);
+    if (p.t.avatar) {
+      const im = svg('image', { href: p.t.avatar, x: cx - r, y: cy - r, width: r * 2, height: r * 2, 'clip-path': `url(#${id})`, preserveAspectRatio: 'xMidYMid slice' });
+      im.addEventListener('error', () => im.remove());
+      g.appendChild(im);
+    }
+    g.appendChild(svg('circle', { cx, cy, r, fill: 'none', stroke: p.me ? 'var(--text-primary)' : 'var(--border-strong)', 'stroke-width': p.me ? 2.5 : 1 }));
+  });
+  labels.forEach(({ p, c, txt }) => {
+    const t = svg('text', { class: 'ax', x: c.x, y: c.y, 'text-anchor': c.a, fill: 'var(--text-secondary)', 'font-weight': p.me ? 800 : 600, 'paint-order': 'stroke', stroke: 'var(--surface-1)', 'stroke-width': 3, 'stroke-linejoin': 'round' });
+    t.textContent = txt; g.appendChild(t);
+  });
+  pts.forEach(p => {
+    const el = svg('circle', { cx: X(p.dyn), cy: Y(p.red), r: rOf(p) + 4, fill: 'transparent', tabindex: 0, role: 'img', 'aria-label': p.t.name + ', ' + VALUE_QUADS[p.q].name, style: 'cursor:default;outline:none' });
+    bindTT(el, () => `<div class="k">${p.t.name}${p.me ? ' (you)' : ''}</div><b>${VALUE_QUADS[p.q].name}</b><br>Dynasty <b>${kfmt(Math.round(p.dyn))}</b> (#${p.dynRk})<br>Redraft <b>${kfmt(Math.round(p.red))}</b> (#${p.redRk})`);
+    g.appendChild(el);
+  });
+  const xl = svg('text', { class: 'ax', x: m.l + iw / 2, y: H - 7, 'text-anchor': 'middle' }); xl.textContent = 'Dynasty value  →';
+  const yl = svg('text', { class: 'ax', x: 12, y: m.t + ih / 2, 'text-anchor': 'middle', transform: `rotate(-90 12 ${m.t + ih / 2})` }); yl.textContent = 'Redraft value  →';
+  g.appendChild(xl); g.appendChild(yl);
+
+  // the same numbers as a table, for anyone who would rather read them
+  const tbl = table([
+    { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t, { sub: false }) },
+    { k: 'q', h: 'Group', sort: r => VALUE_QUADS[r.q].name, f: r => h('span.tag', VALUE_QUADS[r.q].name) },
+    { k: 'dyn', h: 'Dynasty value', num: true, sort: r => r.dyn, f: r => h('span', kfmt(Math.round(r.dyn)), h('span.tiny.muted', ' #' + r.dynRk)) },
+    { k: 'red', h: 'Redraft value', num: true, sort: r => r.red, f: r => h('span', kfmt(Math.round(r.red)), h('span.tiny.muted', ' #' + r.redRk)) }
+  ], pts, { sortKey: 'dyn', sortDir: -1 });
+  const wt = withTable(h('div', g), tbl);
+  const note = h('div.tiny.muted', { style: { marginTop: '8px' } },
+    'Whole-roster trade value' + (isDynasty() ? ', picks included in dynasty' : '') + '. Lines mark the league median on each axis; the shaded corners are where the two disagree.');
+  wt.body.appendChild(note);
+  return card('Dynasty vs. redraft', 'every team’s roster priced both ways — where you’d sit if the league ended this year or in three', wt.body, wt.btn);
+}
 function leagueStrip() {
   const sim = S.sim && S.sim.by ? S.sim : null;
   const live = S.gamesPlayed > 0;
