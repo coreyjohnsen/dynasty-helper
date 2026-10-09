@@ -3565,12 +3565,21 @@ function playerCard(p, opts) {
 /* Injury designations, abbreviated on a phone — "Questionable" is 85px of a
    348px card, and the full word is still on the tag's title. */
 const INJ_SHORT = { Questionable: 'Q', Doubtful: 'D', Out: 'OUT', IR: 'IR', PUP: 'PUP', Sus: 'SUSP', COV: 'COV', DNR: 'DNR', NA: 'NA' };
-function injuryTag(inj, p) {
+/* Everywhere except the pages that are about injuries, the tag is a single letter: O, IR, D, Q. */
+const INJ_TINY = Object.assign({}, INJ_SHORT, { Out: 'O' });
+/** The pages that spell a status out: a player's own page, Start / Sit and Players (and the injury report on Rosters, which asks). */
+const INJ_FULL_VIEWS = ['player', 'lineup', 'players'];
+function injuryTag(inj, p, opts) {
   if (!inj) return null;
   const j = p && p.inj;
-  let label = isNarrow() ? (INJ_SHORT[inj] || String(inj).slice(0, 3).toUpperCase()) : inj;
-  // for anyone out for a stretch, say when he is due back
-  if (j && j.kind === 'long' && j.label) label += isNarrow() ? ' ' + (j.season ? 'Szn' : j.R) : ' · ' + j.label;
+  const full = opts && opts.full !== undefined ? !!opts.full : INJ_FULL_VIEWS.includes(S.view);
+  let label;
+  if (!full) label = INJ_TINY[inj] || String(inj).slice(0, 3).toUpperCase();
+  else {
+    label = isNarrow() ? (INJ_SHORT[inj] || String(inj).slice(0, 3).toUpperCase()) : inj;
+    // for anyone out for a stretch, say when he is due back
+    if (j && j.kind === 'long' && j.label) label += isNarrow() ? ' ' + (j.season ? 'Szn' : j.R) : ' · ' + j.label;
+  }
   return h('span.tag', { title: injuryTitle(p) || inj, style: { color: 'var(--critical)', borderColor: 'var(--critical)' } }, label);
 }
 /** The hover text for an injury tag: what, where, back when, and how we know. */
@@ -4621,7 +4630,7 @@ function injuryReportCard(t) {
   if (!hurt.length) return null;
   const tbl = table([
     { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div.row', { style: { gap: '7px', flexWrap: 'nowrap' } },
-      isSimple() ? playerFace(r.p) : posPill(r.p.pos), pname(r.p, { face: false, style: { fontWeight: 560 } }), injuryTag(r.p.injury, r.p)) },
+      isSimple() ? playerFace(r.p) : posPill(r.p.pos), pname(r.p, { face: false, style: { fontWeight: 560 } }), injuryTag(r.p.injury, r.p, { full: true })) },
     { k: 'slot', prio: 2, h: 'Role', sort: r => r.slot, f: r => h('span.tag', r.slot) },
     { k: 'body', prio: 2, keepSimple: true, h: 'Injury', sort: r => r.p.inj.body || '', f: r => h('span.tiny', r.p.inj.body || '—') },
     { k: 'back', h: 'Back', sort: r => r.p.inj.kind === 'day' ? injCurrentWeek() : r.p.inj.R, f: r => r.p.inj.kind === 'day' ? h('span.tiny.muted', r.p.inj.pNow >= 0.8 ? 'Likely plays' : 'Likely sits')
