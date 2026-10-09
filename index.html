@@ -713,6 +713,15 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .availbar i{display:block;width:100%;background:var(--good);opacity:.82;transition:height .3s var(--ease)}
 .availcell.bye .availbar{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--border) 5px 6px)}
 .inotes{display:grid;gap:6px;padding:10px 12px;border-left:3px solid var(--border-strong,var(--border));background:var(--surface-2);border-radius:0 var(--r-sm) var(--r-sm) 0;color:var(--text-2)}
+/* team key and per-team bars for the stacked (phone) slot ladder */
+.lkey{display:grid;gap:6px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);margin-bottom:4px}
+.lteam{display:flex;align-items:center;gap:7px;min-width:0}
+.lteam i{width:10px;height:10px;border-radius:50%;flex:none}
+.lteam .lfull{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lline{border-left:3px solid var(--border);padding:3px 0 3px 9px;border-radius:2px}
+.lhow{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-secondary);line-height:1.45}
+.lhow-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px;font-size:12px}
+.lhow-legend .lstat{display:inline-block;padding:1px 6px;border-radius:6px;background:var(--surface-3)}
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -8318,23 +8327,30 @@ function slotLadder(rows, A, B, CA, CB, opts) {
   const badge = (pl) => live && pl && !opts.cell ? liveBadge(pl, wk) : null;
 
   if (isNarrow()) {
-    return h('div', { style: { display: 'grid', gap: '2px' } }, rows.map(r2 => {
-      const line = (pl, v, won, col) => h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } },
-        pl ? posPill(pl.pos) : h('span.pill.pos-NA', '—'),
+    /* Two lines per slot can't say whose is whose by position alone, so each team
+       gets a colour, a key at the top, and a bar of that colour down its lines. */
+    const chip = (T, col, tot) => h('div.lteam', h('i', { style: { background: col } }), h('b', T.short), h('span.tiny.muted.lfull', T.name),
+      h('span', { style: { flex: 1 } }), h('b.mono', { style: { color: col } }, fmt(tot, 1)), h('span.tiny.muted', 'total'));
+    const key = h('div.lkey', chip(A, CA, sum(rows.map(r => r.va || 0))), chip(B, CB, sum(rows.map(r => r.vb || 0))));
+    return h('div', { style: { display: 'grid', gap: '2px' } }, [key].concat(rows.map(r2 => {
+      const line = (pl, v, won, col) => h('div.row.lline', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap', borderLeftColor: col } },
+        pl ? flexy(r2.slot, pl) : null,
         pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
         badge(pl),
         h('span', { style: { flex: 1 } }),
         h('div', { style: { textAlign: 'right' } }, num(pl, v, won, col)));
+      const lead = r2.d > 0 ? h('span.tiny.mono', { style: { color: CA, fontWeight: 650 } }, A.short + ' +' + fmt(r2.d, 1))
+        : r2.d < 0 ? h('span.tiny.mono', { style: { color: CB, fontWeight: 650 } }, B.short + ' +' + fmt(-r2.d, 1))
+          : h('span.tiny.mono.muted', 'tied');
       return h('div.ladderstack',
-        h('div.row', { style: { gap: '7px', marginBottom: '3px' } },
+        h('div.row', { style: { gap: '7px', marginBottom: '4px' } },
           h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot),
-          h('span', { style: { flex: 1 } }),
-          h('span.tiny.mono', { class: r2.d > 0 ? 'up' : r2.d < 0 ? 'down' : 'flat' }, sgn(r2.d, 1))),
+          h('span', { style: { flex: 1 } }), lead),
         line(r2.a, r2.va, r2.d > 0, CA), line(r2.b, r2.vb, r2.d < 0, CB));
-    }));
+    })));
   }
 
-  const cw = opts.cell ? 'minmax(0,1fr) 84px 74px 84px minmax(0,1fr)' : 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
+  const cw = opts.cell ? 'minmax(0,1fr) 96px 74px 96px minmax(0,1fr)' : 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
   const word = opts.head || (live ? 'Pts' : 'Proj');
   const head = h('div.ladderrow.ladderhd', { style: { gridTemplateColumns: cw } },
     h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
@@ -9203,12 +9219,12 @@ function matchupLadder(g, wk) {
     if (!p) return h('span.muted.tiny', '—');
     const lv = liveValue(p, wk);
     const ps = playedScore(p, wk);
-    const status = lv.state === 'bye' ? h('span', 'bye')
-      : lv.state === 'upcoming' ? h('span', 'to play')
+    const status = lv.state === 'bye' ? h('span', 'bye week')
+      : lv.state === 'upcoming' ? h('span', 'projected')
         : ps && ps.final
           ? h('span', { class: ps.actual >= ps.proj ? 'up' : 'down' },
-            (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1))
-          : h('span', lv.quarter ? String(lv.quarter) : 'live');
+            (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1) + ' vs proj')
+          : h('span', (lv.quarter ? String(lv.quarter) + ' · ' : '') + 'live');
     const tip = lv.state === 'bye' ? `<div class="k">${p.name}</div>On bye this week`
       : lv.state === 'upcoming' ? `<div class="k">${p.name}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
         : ps && ps.final ? `<div class="k">${p.name} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
@@ -9219,9 +9235,15 @@ function matchupLadder(g, wk) {
   };
   const aWon = rows.filter(r => r.va > r.vb).length;
   return h('div', { style: { display: 'grid', gap: '10px' } },
+    h('div.lhow',
+      h('div', h('b', 'How to read it. '), 'Each row is one lineup slot with one player from each team' + (isNarrow() ? ', the team’s colour down the left of his line' : ', yours on the left') + '. The big number is what he counts toward his team’s total.'),
+      h('div.lhow-legend',
+        h('span', h('b.mono', { style: { color: CA } }, '12.4'), ' a coloured score won the slot'),
+        h('span', h('span.lstat', h('span.up', '▲ 3.1 vs proj')), ' game over, beat his projection by 3.1'),
+        h('span', h('span.lstat', 'projected'), ' not played yet, counted at projection'),
+        h('span', h('span.lstat', 'Q3 · live'), ' on the field now, so a mix of both'))),
     slotLadder(rows, g.A, g.B, CA, CB, { wk, live: true, cell, head: 'Pts' }),
-    h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots. `
-      + 'Under each score: ▲ or ▼ is how a finished game went against its projection; a quarter means the game is still on.'));
+    h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots.`));
 }
 /* ================= 14. HOME =================
    The landing page: which league you are looking at, where the season stands,
