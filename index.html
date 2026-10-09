@@ -2061,6 +2061,38 @@ function scoreLine(stats) {
   }
   return Math.round(p * 100) / 100;
 }
+/* ================= actual weekly scoring for players nobody rosters =================
+   Sleeper's matchup rows only score players on a roster in this league, so a free agent's past weeks are blank
+   there. Sleeper also serves every player's raw stat line for a finished week; scored with this league's own
+   settings (the same scoreLine() used for projections) it gives the same points a roster would have got.
+   Only a player's own page asks for it, and only for the weeks he sat on no roster. */
+const WSTATS = { pts: {}, state: {}, inflight: {} };           // week -> { playerId: points }, week -> 'ok' | 'fail'
+async function loadWeekStats(week) {
+  if (WSTATS.state[week]) return WSTATS.state[week] === 'ok';
+  if (WSTATS.inflight[week]) return WSTATS.inflight[week];
+  const season = S.season, key = 'wstats:' + S.leagueId + ':' + season + ':' + week;
+  WSTATS.inflight[week] = (async () => {
+    try {
+      // a finished week's stats do not change, so a saved copy is good for days
+      const rec = await idbGet(key);
+      if (rec && rec.d && Date.now() - rec.t < 3 * 86400 * 1000) { WSTATS.pts[week] = rec.d; WSTATS.state[week] = 'ok'; return true; }
+      const j = await getJSON(`https://api.sleeper.app/stats/nfl/regular/${season}/${week}`, 2);
+      if (!j || typeof j !== 'object') throw new Error('no stats');
+      const out = {};
+      // keep the players this app knows, as points, so the saved copy stays small
+      for (const id in S.index) {
+        const st = j[id]; if (!st || typeof st !== 'object') continue;
+        if (!Object.keys(st).some(k => typeof st[k] === 'number')) continue;
+        out[id] = scoreLine(st);
+      }
+      WSTATS.pts[week] = out; WSTATS.state[week] = 'ok';
+      idbSet(key, { t: Date.now(), d: out });
+      return true;
+    } catch (e) { WSTATS.state[week] = 'fail'; return false; }
+    finally { delete WSTATS.inflight[week]; }
+  })();
+  return WSTATS.inflight[week];
+}
 async function loadWeeklyProjections(ids, season, onProgress) {
   const key = 'wproj:' + season;
   const rec = await idbGet(key);
@@ -3497,12 +3529,17 @@ function simulateOneSeason(opts) {
  *  played: once his own NFL game is over his score is a result like any other,
  *  and while it is on the score so far is real too — just not final. Weeks where
  *  his game has not kicked off are left out, so the caller's projections fill them. */
-function playerGameLog(id) {
+function playerGameLog(id, opts) {
   const out = [];
+  const useStats = !!(opts && opts.stats);
   const entry = (w, state) => {
     const ms = S.matchups[w] || [];
     const row = ms.find(m => (m.players || []).map(String).includes(String(id)));
-    if (!row) return { week: w, pts: null, started: false, rostered: false, state };
+    if (!row) {
+      // on nobody's roster that week: the matchups have no number for him, but the raw stats might
+      const sp = useStats && state === 'final' && WSTATS.pts[w] ? WSTATS.pts[w][String(id)] : undefined;
+      return sp !== undefined ? { week: w, pts: sp, started: false, rostered: false, fromStats: true, state } : { week: w, pts: null, started: false, rostered: false, state };
+    }
     const pp = row.players_points || {};
     const pts = pp[id] === undefined ? null : pp[id];
     return { week: w, pts, started: (row.starters || []).map(String).includes(String(id)), rostered: true, rosterId: row.roster_id, state };
@@ -7066,10 +7103,16 @@ function viewPlayer() {
   const p = S.index[PlayerUI.id];
   if (!p) return wrap.appendChild(card('Player', null, h('div.empty', 'That player is no longer in the index.'))), wrap;
   const owner = ownerOfPlayer(p.id);
-  const log = playerGameLog(p.id);
+  const log = playerGameLog(p.id, { stats: true });
+  // weeks he sat on no roster have no matchup score; fetch his raw stats for them and redraw when they arrive
+  const blank = log.filter(g => !g.rostered && !g.fromStats && g.state === 'final').map(g => g.week).filter(w => !WSTATS.state[w]);
+  if (blank.length && S.lastWeek) {
+    const pid = p.id;
+    Promise.all(blank.map(loadWeekStats)).then(() => { if (S.view === 'player' && PlayerUI.id === pid) render(); });
+  }
   // a game still being played is real but not a result, so it stays out of the
   // season averages until it is over
-  const played = log.filter(g => g.pts !== null && g.rostered && g.state === 'final');
+  const played = log.filter(g => g.pts !== null && (g.rostered || g.fromStats) && g.state === 'final');
   const startedGames = played.filter(g => g.started);
   const posPeers = Object.values(S.index).filter(x => x.pos === p.pos && (x.dv || 0) > 0).sort((a, b) => b.dv - a.dv);
   const myIdx = posPeers.findIndex(x => x.id === p.id);
@@ -7147,8 +7190,9 @@ function viewPlayer() {
   log.forEach(g => {
     const vsProj = g.proj !== undefined && g.pts !== null ? ` · projected ${fmt(g.proj, 1)}` : '';
     bars.push({
-      x: g.week, v: g.rostered ? g.pts : null, kind: g.state === 'live' ? 'live' : 'actual',
-      note: !g.rostered ? 'Not rostered in this league — Sleeper only scores rostered players'
+      x: g.week, v: g.rostered || g.fromStats ? g.pts : null, kind: g.state === 'live' ? 'live' : 'actual',
+      note: g.fromStats ? 'On no roster in this league — scored from his raw stats with this league’s settings'
+        : !g.rostered ? (WSTATS.state[g.week] === 'fail' ? 'Not rostered in this league, and his stats could not be loaded' : blank.includes(g.week) ? 'Not rostered in this league — loading his stats…' : 'Not rostered in this league — no stats listed for him this week')
         : g.state === 'live' ? `In progress${g.quarter ? ' (' + g.quarter + ')' : ''} — ${fmt(g.pts || 0, 1)} so far${vsProj}`
           : (g.started ? 'Started' : 'On the bench') + (g.week === S.liveWeek ? ' · final' + vsProj : '')
     });
