@@ -211,26 +211,30 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 
 /* ============ player tiers ============ */
 :root{
-  --m-diamond-a:#7de8ff; --m-diamond-b:#a98bff; --m-diamond-c:#ff9ad5;
-  --m-gold-a:#ffe27a; --m-gold-b:#f2a900; --m-gold-c:#fff0b0;
-  --m-silver-a:#e9edf5; --m-silver-b:#9aa5ba; --m-silver-c:#ffffff;
-  --m-bronze-a:#e0a070; --m-bronze-b:#a8622f; --m-bronze-c:#f2c299;
+  --m-diamond-a:#3fd9ff; --m-diamond-b:#8b6bff; --m-diamond-c:#ff62c8;
+  --m-gold-a:#ffd84a; --m-gold-b:#e08a00; --m-gold-c:#fff2b0;
+  --m-silver-a:#f6f8fc; --m-silver-b:#6f7e9c; --m-silver-c:#ffffff;
+  --m-bronze-a:#eaa062; --m-bronze-b:#9c4f17; --m-bronze-c:#f7c999;
 }
-.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(125,232,255,.16);--m-edge:#8fb6ff}
-.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.14);--m-edge:#e8a800}
-.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(154,165,186,.16);--m-edge:#a3adc0}
-.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,98,47,.13);--m-edge:#c07840}
-.mring{display:inline-flex;flex:none;padding:3px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
-.mring.lg{padding:3px;border-radius:17px}
-.mring.mhero{padding:4px;border-radius:17px}
+.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(110,160,255,.14);--m-edge:#7f9bff;--m-bar:linear-gradient(180deg,#3fd9ff,#8b6bff 55%,#ff62c8)}
+.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.15);--m-edge:#e8a000;--m-bar:linear-gradient(180deg,#ffd84a,#e08a00)}
+.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(120,135,165,.14);--m-edge:#8493b0;--m-bar:linear-gradient(180deg,#f6f8fc,#6f7e9c 60%,#c9d2e3)}
+.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,90,30,.14);--m-edge:#b8662a;--m-bar:linear-gradient(180deg,#eaa062,#9c4f17)}
+.mring{display:inline-flex;flex:none;padding:3.5px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
+.mring.lg{padding:4px;border-radius:17px}
+.mring.mhero{padding:5px;border-radius:17px}
 .mring.mhero>*{border-radius:13px!important;display:block}
-.mring.xs,.mring.sm{padding:2px}
-.lupface .mring.lg{border-radius:50%;padding:3px}
+.mring.sm{padding:3px}
+.mring.xs{padding:2.5px}
+.lupface .mring.lg{border-radius:50%;padding:4px}
 .lupface .mring>.face.lg{border-width:0}
 .mring>.face{box-shadow:0 0 0 1px var(--surface-1)}
 .mring:not(.anim){background-size:100% 100%}
-.mring.diamond{box-shadow:0 0 10px -1px rgba(125,232,255,.55)}
-.mring.gold{box-shadow:0 0 9px -2px rgba(242,169,0,.5)}
+.mring{box-shadow:0 0 0 1px rgba(20,30,60,.22)}
+.mring.diamond{box-shadow:0 0 0 1px rgba(90,110,255,.45),0 0 12px 0 rgba(90,170,255,.6)}
+.mring.gold{box-shadow:0 0 0 1px rgba(170,100,0,.45),0 0 11px -1px rgba(242,169,0,.65)}
+.mring.silver{box-shadow:0 0 0 1px rgba(60,75,110,.42),0 0 6px -1px rgba(130,150,190,.55)}
+.mring.bronze{box-shadow:0 0 0 1px rgba(110,50,10,.45),0 0 6px -2px rgba(184,102,42,.5)}
 .pcard.medal,.card.medal.mhero{position:relative;overflow:hidden;border-color:var(--m-edge);
   background:linear-gradient(100deg,var(--m-tint),transparent 62%),var(--surface-1)}
 .pcard.medal::after,.card.medal.mhero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
@@ -250,7 +254,16 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){ .mring,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
 :root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}
 :root[data-theme="dark"] .medal.diamond{--m-tint:rgba(125,232,255,.1)}
-:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.12)}
+:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.14)}
+:root[data-theme="dark"] .medal.silver{--m-tint:rgba(170,185,215,.1)}
+:root[data-theme="dark"] .medal.bronze{--m-tint:rgba(210,120,50,.14)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .medal{--m-tint:rgba(255,255,255,.05)}
+  :root:not([data-theme="light"]) .medal.diamond{--m-tint:rgba(125,232,255,.1)}
+  :root:not([data-theme="light"]) .medal.gold{--m-tint:rgba(242,169,0,.14)}
+  :root:not([data-theme="light"]) .medal.silver{--m-tint:rgba(170,185,215,.1)}
+  :root:not([data-theme="light"]) .medal.bronze{--m-tint:rgba(210,120,50,.14)}
+}
 :root[data-theme="dark"] .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%} }
 
@@ -260,9 +273,10 @@ button{font-family:inherit;font-size:inherit;color:inherit}
   transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease),box-shadow .3s;touch-action:pan-y;
   background:var(--pcx-frame);box-shadow:0 18px 40px -14px rgba(18,22,48,.5),0 2px 6px rgba(18,22,48,.2);background-size:260% 260%;background-position:calc(50% + var(--hx)*.85) calc(50% + var(--hy)*.85)}
 .pcxcard.pcxon{transition:transform .08s linear,box-shadow .3s;box-shadow:0 30px 50px -16px rgba(18,22,48,.55),0 2px 6px rgba(18,22,48,.2)}
-.pcxcard.none,.pxm.none{--pcx-frame:linear-gradient(140deg,#c9cfdf,#8d95ad 50%,#c9cfdf);--pcx-bg:linear-gradient(170deg,#f4f6fb,#dfe3ee);--pcx-art:linear-gradient(160deg,#cdd3e4,#e8ebf4)}
+.pcxcard.none,.pxm.none{--pcx-frame:#a9b0c4;--pcx-bg:#eff1f7;--pcx-art:#dde1ec}
 .pcxcard.bronze,.pxm.bronze{--pcx-frame:linear-gradient(140deg,#e0a070,#a8622f 50%,#e8b186);--pcx-bg:linear-gradient(170deg,#fff4ea,#f0d3b8);--pcx-art:linear-gradient(160deg,#e9c3a0,#f8e4d1)}
-.pcxcard.silver,.pxm.silver{--pcx-frame:linear-gradient(140deg,#f2f5fa,#9aa5ba 45%,#fff 70%,#aab4c8);--pcx-bg:linear-gradient(170deg,#fbfcff,#dde2ee);--pcx-art:linear-gradient(160deg,#cdd5e6,#eef1f8)}
+.pcxcard.silver,.pxm.silver{--pcx-frame:linear-gradient(135deg,#d5dcec 0%,#5d6c8c 14%,#ffffff 28%,#8696b8 44%,#f4f7ff 58%,#4f5f82 76%,#c4cee4 90%,#ffffff 100%);--pcx-bg:repeating-linear-gradient(118deg,rgba(255,255,255,.75) 0 1.5px,rgba(120,138,178,.14) 1.5px 4px),linear-gradient(170deg,#fcfdff,#c9d2e6);--pcx-art:linear-gradient(135deg,#b3c0dc,#f6f8fd 45%,#a2b0d0)}
+.pcxcard.silver{box-shadow:0 18px 40px -12px rgba(110,130,185,.6),0 2px 6px rgba(18,22,48,.2)}
 .pcxcard.gold,.pxm.gold{--pcx-frame:linear-gradient(140deg,#fff0b0,#f2a900 40%,#ffe27a 65%,#d99200);--pcx-bg:linear-gradient(170deg,#fffaf0,#fbe9bd);--pcx-art:linear-gradient(160deg,#ffe9a8,#fff6dc)}
 .pcxcard.diamond,.pxm.diamond{--pcx-frame:linear-gradient(140deg,#7de8ff,#a98bff 40%,#ff9ad5 65%,#7de8ff);--pcx-bg:linear-gradient(170deg,#f6fcff,#e4e2ff);--pcx-art:linear-gradient(160deg,#c4efff,#e2d6ff 55%,#ffd9ee)}
 .pcxcard.diamond{box-shadow:0 18px 44px -12px rgba(125,150,255,.55),0 2px 6px rgba(18,22,48,.2)}
@@ -274,8 +288,10 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxart{position:relative;flex:1;min-height:0;border-radius:11px;overflow:hidden;background:var(--pcx-art);box-shadow:inset 0 0 0 1px rgba(18,22,48,.14)}
 .pcxart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
 .pcxpos{position:absolute;left:-4px;bottom:-14px;font-size:92px;font-weight:900;letter-spacing:-.05em;color:rgba(18,22,48,.1);line-height:1;pointer-events:none}
-.pcxteam{position:absolute;right:7px;bottom:6px;display:flex;align-items:center;gap:5px;padding:2px 8px 2px 4px;border-radius:99px;background:rgba(255,255,255,.88);font-size:11px;font-weight:700;color:#14182c}
-.pcxteam .tlogo{width:18px;height:18px}
+.pcxteam{position:absolute;right:5px;top:5px;width:52px;height:52px;display:grid;place-items:center}
+.pcxteam .tlogo{width:50px;height:50px;margin:0;display:block;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(18,22,48,.45))}
+.pcxdef .pcxdeflogo{position:absolute;left:50%;top:50%;width:68%;height:68%;transform:translate(-50%,-50%);object-fit:contain;filter:drop-shadow(0 6px 10px rgba(18,22,48,.28))}
+.pxmdef{position:absolute;left:50%;top:50%;width:70%;height:70%;transform:translate(-50%,-50%);object-fit:contain;filter:drop-shadow(0 2px 3px rgba(18,22,48,.3))}
 .pcxmeta{font-size:11px;font-weight:650;color:#4a5170;letter-spacing:.02em;text-align:center}
 .pcxstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .pcxs{background:rgba(255,255,255,.7);border:1px solid rgba(18,22,48,.12);border-radius:9px;padding:5px 4px 4px;text-align:center;min-width:0}
@@ -291,8 +307,10 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxcard.diamond.pcxon .pcxholo{opacity:.62}
 .pcxcard.gold .pcxholo{background-image:linear-gradient(115deg,transparent 20%,rgba(255,236,150,.95) 40%,rgba(255,255,255,.9) 50%,rgba(255,200,60,.9) 60%,transparent 80%);opacity:.2}
 .pcxcard.gold.pcxon .pcxholo{opacity:.5}
-.pcxcard.silver .pcxholo{background-image:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.9) 50%,transparent 75%);opacity:0}
-.pcxcard.silver.pcxon .pcxholo{opacity:.35}
+.pcxcard.silver .pcxholo{background-image:linear-gradient(115deg,transparent 18%,rgba(255,255,255,.95) 38%,rgba(190,205,240,.9) 50%,rgba(255,255,255,.95) 62%,transparent 82%);opacity:.32}
+.pcxcard.silver.pcxon .pcxholo{opacity:.7}
+.pcxcard.anim.silver .pcxholo{animation:pcx-drift 7s ease-in-out infinite alternate}
+.pcxcard.anim.silver:not(.pcxon){animation:pcx-frame 8s ease-in-out infinite alternate}
 .pcxcard.anim.diamond:not(.pcxon){animation:pcx-frame 7s ease-in-out infinite alternate}
 .pcxcard.anim.gold:not(.pcxon){animation:pcx-frame 9s ease-in-out infinite alternate}
 @keyframes pcx-frame{from{background-position:30% 30%}to{background-position:70% 70%}}
@@ -358,6 +376,20 @@ button{font-family:inherit;font-size:inherit;color:inherit}
   .pcxdeck .pcxfit:active{transform:translateY(-10px);transition-duration:.12s}
   .pcxhint{display:block}
 }
+
+/* ---- row accent: a tier bar down the left edge and a faint wash across the row ---- */
+.trm{--m-wash:color-mix(in srgb,var(--m-tint) 50%,transparent)}
+.lnrow{display:grid;grid-template-columns:46px 1fr auto;gap:9px;align-items:center;padding:3px 0;border-bottom:1px solid var(--grid)}
+.lnrow.trm{padding-left:10px;border-radius:6px 0 0 6px}
+table.tbl tbody tr.trm td{background-image:linear-gradient(var(--m-wash),var(--m-wash))}
+table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradient(var(--m-wash),var(--m-wash));background-size:4px 100%,auto;background-repeat:no-repeat,repeat;background-position:left top,0 0}
+.bitem.trm,.sigrow.trm,.dealitem.trm,.lnrow.trm,.pcard.trm:not(.hypin){background-image:var(--m-bar),linear-gradient(90deg,var(--m-tint),transparent 80%);background-size:4px 100%,auto;background-repeat:no-repeat;background-position:left top,0 0}
+
+/* ---- player page: card beside the headline numbers ---- */
+.pcxhero{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:8px 30px;align-items:center}
+.pcxhero>.grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+@media (max-width:1180px){ .pcxhero>.grid{grid-template-columns:repeat(2,minmax(0,1fr))!important} }
+@media (max-width:900px){ .pcxhero{grid-template-columns:minmax(0,1fr)} .pcxhero>.grid{grid-template-columns:repeat(auto-fit,minmax(min(146px,100%),1fr))!important} }
 
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
@@ -1460,6 +1492,11 @@ function assignMedals(all) {
 function medalOf(p) {
   if (!p || !p.medal || !isSimple() || medalMode() === 'off') return null;
   return p.medal;
+}
+/** Class names that give a row its tier accent (empty when there is none to show). */
+function rowMedal(p) {
+  const m = medalOf(p);
+  return m ? 'trm medal ' + m : null;
 }
 function medalCls(p) {
   const m = medalOf(p);
@@ -3676,7 +3713,7 @@ function table(allCols, rows, opts) {
       }, c.h, st.key === c.k ? (st.dir < 0 ? ' ↓' : ' ↑') : '')))),
       h('tbody', data.map((r, i) => h('tr', {
         onclick: opts.onRow ? () => opts.onRow(r) : null, style: opts.onRow ? { cursor: 'pointer' } : null,
-        class: opts.rowClass ? (opts.rowClass(r) || null) : null
+        class: [opts.rowClass ? opts.rowClass(r) : null, rowMedal(r && r.p && r.p.id ? r.p : r)].filter(Boolean).join(' ') || null
       },
         cols.map(c => h('td', { class: c.num ? 'num' : '' }, c.f ? c.f(r, i) : r[c.k]))))));
     wrap.appendChild(tb);
@@ -4458,11 +4495,11 @@ function viewRoster() {
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
     t.window ? h('span.tag', t.window) : null));
 
-  // Default view: the whole roster as a deck, best first; hover one to pull it up
+  // Default view: the ten best players as a deck; hover one to pull it up
   if (isSimple()) {
-    const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0));
+    const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0)).slice(0, 10);
     if (all.length) {
-      wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — every player, best first' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+      wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — ten best players' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
       wrap.appendChild(h('div.pcxhint.tiny.muted', 'Swipe along the deck · tap a card to open it'));
     }
   }
@@ -4537,7 +4574,7 @@ function injuryReportCard(t) {
 function lineupTable(t) {
   return h('div', { style: { display: 'grid', gap: '3px' } }, t.starters.map(s => {
     const p = s.player;
-    return h('div', { style: { display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: '9px', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid var(--grid)' } },
+    return h('div.lnrow', { class: p ? rowMedal(p) : null },
       h('span.tag', { style: { textAlign: 'center' } }, SLOT_LABEL[s.slot] || s.slot),
       p ? h('div.row', { style: { gap: '7px', minWidth: 0 } },
         isSimple() ? playerFace(p) : posPill(p.pos),
@@ -5154,7 +5191,7 @@ function assetFace(a) {
 /** A chosen asset, large enough to read: face, name, position, where he plays, value. */
 function assetCard(a, o) {
   o = o || {};
-  return h('div.dealitem' + (o.compact ? '.compact' : ''),
+  return h('div.dealitem' + (o.compact ? '.compact' : ''), { class: a.kind === 'player' ? rowMedal(a.ref) : null },
     assetFace(a),
     h('div.dealmain',
       h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' && a.ref ? injuryTag(a.ref.injury, a.ref) : null, o.extra || null),
@@ -5188,7 +5225,7 @@ function assetBrowser(o) {
   const list = h('div.bgrid'), more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
   const item = (a) => {
     const inDeal = chosen.has(a.id), face = assetFace(a);
-    return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', onclick: () => o.onToggle(a, inDeal) },
+    return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', class: a.kind === 'player' ? rowMedal(a.ref) : null, onclick: () => o.onToggle(a, inDeal) },
       face ? h('span.bface', face) : null,
       h('span.bmain',
         h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury, a.ref) : null),
@@ -6099,7 +6136,7 @@ function signalBoard(T, shop) {
   const holds = mine.filter(x => x.s.kind === 'buy').sort(rank).slice(0, 3);
   const buys = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').sort(rank).slice(0, 6);
   const pips = pipsOf;
-  const rowEl = (x, verb, where) => h('div.sigrow',
+  const rowEl = (x, verb, where) => h('div.sigrow', { class: rowMedal(x.p) },
     isSimple() ? playerFace(x.p) : posPill(x.p.pos),
     h('div.sigmain',
       h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, pname(x.p, { face: false, style: { fontWeight: '640' } }), pips(x.s.strength)),
@@ -6751,9 +6788,15 @@ function tradingCard(p, opts) {
   const tier = medalOf(p) || 'none';
   const dl = draftLine(p);
   const cell = (k, v, sub) => h('div.pcxs', h('div.pcxk', k), h('div.pcxv', v), sub ? h('div.pcxsub', sub) : null);
-  const full = /^\d+$/.test(String(p.id)) ? 'https://sleepercdn.com/content/nfl/players/' + p.id + '.jpg' : null;
-  const art = h('div.pcxart',
+  const isDef = p.pos === 'DEF';
+  const full = !isDef && /^\d+$/.test(String(p.id)) ? 'https://sleepercdn.com/content/nfl/players/' + p.id + '.jpg' : null;
+  const defTeam = String(p.team || p.id || '').toLowerCase();
+  const art = h('div.pcxart' + (isDef ? '.pcxdef' : ''),
     h('div.pcxpos', p.pos),
+    isDef && defTeam ? h('img.pcxdeflogo', {
+      src: 'https://sleepercdn.com/images/team_logos/nfl/' + defTeam + '.png', alt: '',
+      onerror: e => { e.target.style.visibility = 'hidden'; }
+    }) : null,
     full ? h('img', {
       src: full, alt: '',
       onerror: e => {
@@ -6763,7 +6806,7 @@ function tradingCard(p, opts) {
       }
     }) : null,
     h('div.pcxholo'),
-    h('div.pcxteam', p.team ? teamLogo(p.team) : null, h('span', p.team || 'FA')));
+    !isDef && p.team ? h('div.pcxteam', teamLogo(p.team)) : null);
   const face = h('div.pcxface',
     h('div.pcxtop', h('div.pcxname', p.name),
       p.rank ? h('div.pcxrank', '#' + p.rank) : null),
@@ -6849,7 +6892,11 @@ function assetMiniCard(a, o) {
   const tier = p ? (medalOf(p) || 'none') : 'none';
   const short = (nm) => { const w = String(nm || '').trim().split(/\s+/); return w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : nm; };
   const art = h('div.pxmart');
-  if (p && /^\d+$/.test(String(p.id))) art.appendChild(h('img', {
+  if (p && p.pos === 'DEF') art.appendChild(h('img.pxmdef', {
+    src: 'https://sleepercdn.com/images/team_logos/nfl/' + String(p.team || p.id).toLowerCase() + '.png', alt: '', loading: 'lazy',
+    onerror: e => { e.target.style.visibility = 'hidden'; }
+  }));
+  else if (p && /^\d+$/.test(String(p.id))) art.appendChild(h('img', {
     src: 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg', alt: '', loading: 'lazy',
     onerror: e => { e.target.style.visibility = 'hidden'; }
   }));
@@ -6921,7 +6968,8 @@ function viewPlayer() {
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
         owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
-  wrap.appendChild(isSimple() ? tradingCardStage(p, owner) : hdr);
+  const heroSlot = isSimple() ? h('div.pcxhero', tradingCardStage(p, owner)) : null;
+  wrap.appendChild(heroSlot || hdr);
 
   // ---- what the market is saying about him ----
   const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
@@ -6937,7 +6985,7 @@ function viewPlayer() {
 
   // ---- headline numbers ----
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(146px,100%),1fr))' } },
+  const kpis = h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(146px,100%),1fr))' } },
     kpi(isDynasty() ? 'Dynasty value' : 'Redraft value', kfmt(Math.round(p.dv || 0)), p.rank ? 'overall #' + p.rank : 'unranked',
       `<div class="k">FantasyCalc ${valueWord()} value</div>Priced for this league's exact format — ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
     kpi('Position rank', (p.pos || '') + (p.posRank || (myIdx >= 0 ? myIdx + 1 : '—')), p.tier ? 'tier ' + p.tier : 'of ' + posPeers.length + ' ranked'),
@@ -6955,7 +7003,9 @@ function viewPlayer() {
         '<div class="k">Redraft vs dynasty</div>A player worth more in redraft than dynasty is being paid for production now; the reverse means the market is paying for the years ahead.')
       : kpi('Dynasty market', kfmt(Math.round(p.dvDyn || 0)), p.rv && p.dvDyn ? (p.dvDyn > p.rv ? 'priced for the future' : 'priced for now') : '—',
         '<div class="k">What he is worth elsewhere</div>This league does not pay for it, but the dynasty market does. A player worth far more in dynasty than redraft is young, and in this league that premium buys you nothing.')
-  ));
+  );
+  // Default view: the headline numbers sit beside the card instead of under it
+  (heroSlot || wrap).appendChild(kpis);
 
   const injCard = injuryCard(p);
   if (injCard) wrap.appendChild(injCard);
