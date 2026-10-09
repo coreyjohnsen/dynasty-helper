@@ -702,6 +702,23 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 :root .hypgrid .tbrowse .bd{padding:0;gap:10px}
 .hypgrid .bgrid{grid-template-columns:minmax(0,1fr)}
 
+/* ---- injury report ---- */
+.ifacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ifact{padding:11px 13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);min-width:0}
+.ifact .k{font-size:11px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3)}
+.ifact .v{font-weight:650;font-size:15px;margin:3px 0 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.availstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.availcell{flex:1 0 46px;display:grid;justify-items:center;gap:4px;min-width:46px}
+.availbar{width:100%;max-width:44px;height:52px;border-radius:8px;background:var(--surface-3,var(--surface-2));border:1px solid var(--border);display:flex;align-items:flex-end;overflow:hidden}
+.availbar i{display:block;width:100%;background:var(--good);opacity:.82;transition:height .3s var(--ease)}
+.availcell.bye .availbar{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--border) 5px 6px)}
+.inotes{display:grid;gap:6px;padding:10px 12px;border-left:3px solid var(--border-strong,var(--border));background:var(--surface-2);border-radius:0 var(--r-sm) var(--r-sm) 0;color:var(--text-2)}
+/* team key and per-team bars for the stacked (phone) slot ladder */
+.lkey{display:grid;gap:6px;padding:9px 11px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);margin-bottom:4px}
+.lteam{display:flex;align-items:center;gap:7px;min-width:0}
+.lteam i{width:10px;height:10px;border-radius:50%;flex:none}
+.lteam .lfull{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lline{border-left:3px solid var(--border);padding:3px 0 3px 9px;border-radius:2px}
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -730,7 +747,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 :root[data-ui="simple"] .avatar{width:32px;height:32px;border-radius:10px}
 /* ---- settings menu ---- */
 .menuwrap{position:relative}
-.menupanel{position:absolute;top:calc(100% + 10px);right:0;z-index:60;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:18px;width:312px;display:grid;gap:16px;animation:rise .22s var(--ease) both}
+.menupanel{position:absolute;top:calc(100% + 10px);right:0;z-index:60;background:var(--surface-1);border:1px solid var(--border-strong);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:18px;width:312px;display:grid;gap:16px;max-height:calc(100vh - 96px);overflow-y:auto;animation:rise .22s var(--ease) both}
 .menupanel .mlbl{font-size:10.5px;font-weight:720;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
 .menupanel .mnote{font-size:12px;color:var(--text-muted);margin-top:7px;line-height:1.45}
 .menupanel .seg{width:100%}
@@ -1238,7 +1255,7 @@ function applyValueMode(idx) {
   for (const id in all) {
     const p = all[id];
     if (!p || p.pos === 'PICK') continue;
-    p.dv = dyn ? (p.dvDyn || 0) : (p.rv || 0);
+    p.dv = dyn ? (p.dvDyn || 0) : (p.rv || 0) * (p.injFactor || 1);
     p.fppg = isDynasty() ? (p.fppgDyn !== undefined ? p.fppgDyn : p.ppg) : p.ppg;
   }
 }
@@ -1411,7 +1428,7 @@ async function loadValues(cfg) {
 async function loadSleeperPlayers() {
   const rec = await idbGet('players');
   const FRESH = 12 * 3600 * 1000;
-  if (rec && Date.now() - rec.t < FRESH && rec.d) return rec.d;
+  if (rec && Date.now() - rec.t < FRESH && rec.d && rec.v === 2) return rec.d;
   try {
     const raw = await getJSON(SLEEPER + '/players/nfl', 1);
     const slim = {};
@@ -1427,8 +1444,14 @@ async function loadSleeperPlayers() {
         i: p.injury_status || null, r: p.search_rank || 9999,
         d: p.depth_chart_order || null, st: p.status || null
       };
+      if (p.injury_status) {
+        // what the tag does not say: where, how long ago, in whose words, and the
+        // id ESPN knows him by (so the return-date feed matches exactly)
+        slim[id].ib = p.injury_body_part || null; slim[id].in = p.injury_notes || null;
+        slim[id].is = p.injury_start_date || null; slim[id].e = p.espn_id || null;
+      }
     }
-    await idbSet('players', { t: Date.now(), d: slim });
+    await idbSet('players', { t: Date.now(), d: slim, v: 2 });
     return slim;
   } catch (e) {
     if (rec && rec.d) return rec.d;
@@ -1550,6 +1573,7 @@ function buildIndex() {
     // look like a rounding error while still being wrong. This only reaches
     // players with no Sleeper weekly line of their own; anyone with one is
     // projected from that.
+    p.ppgHealthy = p.ppg;                        // before any injury discount
     if (OUT_TAGS.includes(p.injury)) p.ppg = 0;
     else if (p.injury === 'Doubtful') p.ppg *= 0.35;
     else if (p.injury === 'Questionable') p.ppg *= 0.9;
@@ -1584,11 +1608,13 @@ function ensurePlayer(id) {
     trend30: 0, injury: m ? m.i : null, unranked: true
   };
   o.ppg = REPL[pos] !== undefined ? REPL[pos] * (pos === 'DEF' || pos === 'K' ? 1 : 0.8) : 1.5;
+  o.ppgHealthy = o.ppg;
   if (OUT_TAGS.includes(o.injury)) o.ppg = 0;
   o.fppgDyn = o.ppg * 0.85;
   o.fppg = isDynasty() ? o.fppgDyn : o.ppg;
   o.vol = volFor(pos, o.ppg);
   S.index[id] = o;
+  availOne(o);
   return o;
 }
 
@@ -1687,6 +1713,268 @@ async function loadWeeklyProjections(ids, season, onProgress) {
   }
   if (missing.length) { try { await idbSet(key, { t: Date.now(), d: have }); } catch (e) { } }
   return have;
+}
+
+/* ================= injury availability =================
+   Sleeper's status tag says whether a player is hurt, not for how long. This layer
+   answers the second question, so a player back in Week 9 is a Week 9 player rather
+   than a zero for the whole season. Three sources, best first:
+     1. ESPN's public injury feed, which carries an estimated return date for some players;
+     2. the wording of the injury notes (Sleeper's and ESPN's): "4-6 weeks", "season-ending";
+     3. a table of typical recovery times by body part and designation.
+   Whatever the source, the answer is the same shape: the week he is most likely back,
+   and how unsure that is. availability(p, wk) turns that into the chance he plays in
+   a given week, and pw() multiplies the weekly projection by it, so every lineup,
+   simulation and season outlook reads one set of numbers. */
+const ESPN_INJ = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries';
+const INJ = { enabled: () => LS.get('injEst', true) !== false };
+const WEEK_MS = 7 * 24 * 3600 * 1000;
+/* typical games missed once a player is ruled out, by what hurt */
+const BODY_WEEKS = {
+  hamstring: 3, ankle: 3, 'high ankle': 5, knee: 4, shoulder: 4, groin: 3, calf: 3, foot: 5, back: 3, hip: 3, quadricep: 3, quad: 3,
+  rib: 3, ribs: 3, wrist: 3, hand: 4, finger: 2, thumb: 3, elbow: 3, neck: 3, toe: 4, concussion: 2, head: 2, illness: 1, abdomen: 4,
+  chest: 3, forearm: 4, 'lower leg': 5, leg: 4, shin: 3, thigh: 3, heel: 3, arm: 4, core: 4, oblique: 3, glute: 3, 'hip flexor': 3,
+  achilles: 40, pectoral: 10, bicep: 8, biceps: 8, tricep: 8, triceps: 8, acl: 40, 'torn acl': 40, patella: 10, hernia: 5, 'sports hernia': 5
+};
+const SEASON_WORDS = /season[- ]ending|out for the (?:season|year|rest)|rest of (?:the )?(?:season|year)|for the year|done for the (?:season|year)|remainder of the (?:season|year)|torn (?:acl|achilles)|ruptured (?:acl|achilles)|\bacl (?:tear|injury)|achilles (?:tear|rupture)/i;
+function normName(s) { return String(s || '').toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, '').replace(/[^a-z]/g, ''); }
+function phi(z) { return normCdf(z); }
+
+/** What a line of injury commentary says about how long he is out, if anything. */
+function injuryHints(text) {
+  const t = String(text || '');
+  if (!t) return null;
+  if (SEASON_WORDS.test(t)) return { season: true };
+  let m = /(\d+)\s*(?:-|–|to)\s*(\d+)\s*(?:more\s*)?weeks?/i.exec(t);
+  if (m && +m[2] >= +m[1] && +m[2] <= 20) return { weeks: (+m[1] + +m[2]) / 2 };
+  m = /(?:miss|out|sidelined|sideline|expected to (?:be out|return)|return|back)[^.]{0,40}?\b(\d+)\s*(?:more\s*)?(?:weeks?|games?)/i.exec(t)
+    || /\b(\d+)\s*(?:more\s*)?(?:weeks?|games?)\s*(?:of absence|out|sidelined|away)/i.exec(t);
+  if (m && +m[1] > 0 && +m[1] <= 20) return { weeks: +m[1] };
+  m = /(?:return|back|available|activated|eligible|target(?:ing)?)[^.]{0,40}?\bweek\s*(\d{1,2})\b/i.exec(t);
+  if (m && +m[1] >= 1 && +m[1] <= 22) return { week: +m[1] };
+  if (/day[- ]to[- ]day/i.test(t)) return { weeks: 0.5 };
+  return null;
+}
+
+/** The slate week a calendar date falls in (a return date is a game day). */
+function weekOfDate(dateStr) {
+  const t = Date.parse(String(dateStr).length <= 10 ? dateStr + 'T12:00:00' : dateStr);
+  if (!isFinite(t)) return null;
+  const sc = S.nflSched;
+  if (sc) {
+    let best = null;
+    for (const w in sc) {
+      let start = Infinity;
+      for (const tm in sc[w]) { const d = Date.parse(String(sc[w][tm].date).length <= 10 ? sc[w][tm].date + 'T12:00:00' : sc[w][tm].date); if (isFinite(d) && d < start) start = d; }
+      if (!isFinite(start)) continue;
+      if (start - 24 * 3600 * 1000 <= t) best = { w: +w, start };
+    }
+    if (best) return t > best.start + 4.5 * 24 * 3600 * 1000 ? best.w + 1 : best.w;
+  }
+  const cw = injCurrentWeek();
+  return cw + Math.max(0, Math.round((t - Date.now()) / WEEK_MS));
+}
+/** The next week still to be played — the one an injury is measured from. */
+function injCurrentWeek() { return S.liveWeek || (S.lastWeek + 1); }
+
+/** ESPN's feed, tolerant of its shape: team groups holding entries, or a flat list. */
+function parseEspnInjuries(j) {
+  const byId = {}, byName = {}; let n = 0;
+  const take = (e) => {
+    if (!e || typeof e !== 'object') return;
+    const a = e.athlete || {}, d = e.details || {};
+    const rec = {
+      id: a.id !== undefined ? String(a.id) : null, name: a.displayName || a.fullName || null,
+      status: e.status || (e.type && e.type.description) || null,
+      body: d.type || null, loc: d.location || null, side: d.side || null,
+      ret: d.returnDate || e.returnDate || null, date: e.date || null,
+      short: e.shortComment || null, long: e.longComment || null
+    };
+    if (!rec.id && !rec.name) return;
+    n++;
+    if (rec.id) byId[rec.id] = rec;
+    if (rec.name) byName[normName(rec.name)] = rec;
+  };
+  const groups = (j && (j.injuries || j.items)) || [];
+  (Array.isArray(groups) ? groups : []).forEach(g => {
+    if (g && Array.isArray(g.injuries)) g.injuries.forEach(take); else take(g);
+  });
+  return { byId, byName, n };
+}
+async function loadEspnInjuries() {
+  const key = 'espninj';
+  const rec = await idbGet(key);
+  const FRESH = 2 * 3600 * 1000;
+  if (rec && Date.now() - rec.t < FRESH && rec.d && rec.d.n) return { d: rec.d, at: rec.t, state: 'ok' };
+  try {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(() => ctl && ctl.abort(), 8000);
+    let j;
+    try {
+      const r = await fetch(ESPN_INJ, { cache: 'no-store', signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      j = await r.json();
+    } finally { clearTimeout(timer); }
+    const d = parseEspnInjuries(j);
+    if (!d.n) throw new Error('empty feed');
+    try { await idbSet(key, { t: Date.now(), d }); } catch (e) { }
+    return { d, at: Date.now(), state: 'ok' };
+  } catch (e) {
+    if (rec && rec.d) return { d: rec.d, at: rec.t, state: 'stale', error: String(e.message || e) };
+    return { d: null, at: null, state: 'down', error: String(e.message || e) };
+  }
+}
+
+/** Typical games missed for a body part and designation, plus whether it ends the season. */
+function modelWeeks(tag, body, note) {
+  const b = String(body || '').toLowerCase().trim();
+  let w = BODY_WEEKS[b];
+  if (w === undefined) { const k = Object.keys(BODY_WEEKS).find(k => b.includes(k)); w = k ? BODY_WEEKS[k] : 3; }
+  const n = String(note || '');
+  if (/fracture|broken|surgery|operation|torn|rupture/i.test(n) && w < 6) w = Math.max(w, 6);
+  if (tag === 'IR') w = Math.max(w, 4);          // the league minimum for an IR stay
+  if (tag === 'PUP') w = Math.max(w, 5);
+  return w;
+}
+
+/** Build one player's injury profile, or null when there is nothing to estimate. */
+function injuryProfile(p, espn) {
+  const tag = p.injury;
+  if (!tag || tag === 'NA') return null;
+  const m = S.players[p.id] || {};
+  const cw = injCurrentWeek();
+  const body = (m.ib || (espn && espn.body) || '') || null;
+  const note = [m.in, espn && espn.long, espn && espn.short].filter(Boolean).join(' ');
+  const base = { tag, body, note: m.in || (espn && (espn.short || espn.long)) || null, cw };
+  if (tag === 'Questionable') return Object.assign(base, { kind: 'day', pNow: 0.85, pNext: 1, src: 'tag', label: null, text: 'Questionable — listed week to week' });
+  if (tag === 'Doubtful') return Object.assign(base, { kind: 'day', pNow: 0.2, pNext: 0.85, src: 'tag', label: null, text: 'Doubtful — unlikely to play this week' });
+  if (tag === 'COV') return Object.assign(base, { kind: 'long', R: cw + 1, s: 0.7, src: 'model', text: 'Health and safety protocols — typically a week' });
+
+  const startMs = m.is ? Date.parse(m.is + 'T12:00:00') : (espn && espn.date ? Date.parse(espn.date) : NaN);
+  const elapsedWk = isFinite(startMs) ? Math.max(0, (Date.now() - startMs) / WEEK_MS) : null;
+  let R = null, s = 1.3, src = 'model', retDate = null, season = false, why = '';
+
+  // 1. ESPN's own return date
+  if (espn && espn.ret) {
+    const w = weekOfDate(espn.ret);
+    if (w !== null) {
+      retDate = String(espn.ret).slice(0, 10);
+      R = w; s = 0.8; src = 'espn';
+      if (R <= cw) { R = cw + 1; s = 1.3; why = 'ESPN’s return date has already passed'; }
+    }
+  }
+  // 2. the wording of the notes
+  if (R === null) {
+    // words from ESPN count from the day ESPN wrote them; Sleeper's from the day he was hurt
+    const eh = espn && injuryHints([espn.long, espn.short].filter(Boolean).join(' '));
+    const hint = eh || injuryHints(m.in);
+    const hintElapsed = eh && espn.date && isFinite(Date.parse(espn.date)) ? Math.max(0, (Date.now() - Date.parse(espn.date)) / WEEK_MS) : elapsedWk;
+    if (hint) {
+      if (hint.season) { R = 99; season = true; src = 'note'; s = 0.5; }
+      else if (hint.week) { R = Math.max(hint.week, cw + 1); s = 0.9; src = 'note'; }
+      else if (hint.weeks) {
+        const left = Math.max(1, hint.weeks - (hintElapsed || 0));
+        R = cw + Math.max(1, Math.round(left)); s = 1 + Math.min(1, left * 0.1); src = 'note';
+      }
+    }
+  }
+  // 3. typical recovery for what hurt
+  if (R === null) {
+    if (tag === 'Sus') {
+      const g = /(\d+)[- ]game/i.exec(note);
+      R = cw + (g ? +g[1] : 2); s = g ? 0.6 : 1.5; src = g ? 'note' : 'model';
+    } else if (tag === 'DNR') { R = cw + 1; s = 1; }
+    else {
+      const total = modelWeeks(tag, body, note);
+      if (total >= 30) { R = 99; season = true; s = 0.5; }
+      else {
+        let left = total - (elapsedWk !== null ? elapsedWk : (tag === 'IR' || tag === 'PUP' ? 1 : 0.5));
+        let spread = 1.1 + Math.min(1.4, 0.18 * Math.max(0, left));
+        if (left < 1) { left = 1; spread = 1.5; why = 'past the usual recovery time'; }
+        R = cw + Math.max(1, Math.round(left)); s = spread;
+      }
+    }
+  }
+  if (!season && R > 40) { season = true; }
+  const seasonEnd = season || R > S.regEnd + 4;
+  const wkLabel = seasonEnd ? 'Season' : 'Wk ' + R;
+  const srcText = src === 'espn' ? 'ESPN’s estimated return' : src === 'note' ? 'From the injury report wording' : 'Typical for ' + (body ? 'a ' + String(body).toLowerCase() + ' injury' : 'this designation');
+  return Object.assign(base, {
+    kind: 'long', R: seasonEnd ? 99 : R, s, src, season: seasonEnd, retDate, label: wkLabel,
+    short: seasonEnd ? 'S' : String(R), text: srcText + (why ? ' (' + why + ')' : '')
+  });
+}
+
+/** Chance he plays in week `wk`, given what we know. 1 for a healthy player. */
+function availability(p, wk) {
+  const j = p && p.inj;
+  if (!j || !INJ.enabled()) return 1;
+  const cw = j.cw;
+  if (wk < cw) return 1;
+  if (j.kind === 'day') return wk === cw ? j.pNow : wk === cw + 1 ? j.pNext : 1;
+  if (j.season) return 0;
+  let a = phi((wk - j.R + 0.5) / j.s);
+  a *= 1 - 0.1 * clamp(1 - (wk - j.R), 0, 1);       // a first game back is often a limited one
+  return a < 0.02 ? 0 : a > 0.995 ? 1 : a;
+}
+/** Expected share of the regular season still to play that he is available for. */
+function availRest(p) {
+  const cw = injCurrentWeek(); let n = 0, tot = 0;
+  for (let k = cw; k <= S.regEnd; k++) { tot += availability(p, k); n++; }
+  return n ? tot / n : 1;
+}
+/** Expected games he misses between now and the end of the regular season. */
+function gamesMissed(p) {
+  const cw = injCurrentWeek(); let miss = 0;
+  for (let k = cw; k <= S.regEnd; k++) if (!onBye(p, k)) miss += 1 - availability(p, k);
+  return miss;
+}
+
+/** Fold one player's injury profile into his projection. `ctx` carries the feed, the
+ *  on/off choice and the current week so the loop and lazy callers share one path. */
+function availOne(p, ctx) {
+  ctx = ctx || availCtx();
+  if (!p || p.pos === 'PICK') return;
+  if (!p.injury || p.injury === 'NA') { p.inj = null; if (p.ppgLegacy !== undefined) p.ppg = p.ppgLegacy; p.flat = undefined; p.injFactor = 1; return; }
+  const m = S.players[p.id] || {};
+  let e = null;
+  if (ctx.feed) { e = (m.e && ctx.feed.byId[String(m.e)]) || ctx.feed.byName[normName(p.name)] || null; }
+  p.inj = injuryProfile(p, e);
+  if (p.inj) { p.inj.espn = !!e; p.inj.feed = e || null; }
+  if (p.ppgLegacy === undefined) p.ppgLegacy = p.ppg;
+  if (!ctx.on || !p.inj || ctx.cw > S.regEnd + 4) { p.ppg = p.ppgLegacy; p.flat = undefined; p.injFactor = 1; return e; }
+  if (p.wk) {
+    const lines = [];
+    for (let k = Math.max(1, S.lastWeek + 1); k <= S.regEnd; k++) if (p.wk[k]) lines.push(p.wk[k].p * availability(p, k));
+    if (lines.length) p.ppg = mean(lines);
+    else { const all = []; for (let k = 1; k <= 18; k++) if (p.wk[k]) all.push(p.wk[k].p); p.ppg = mean(all) * availRest(p); }
+    p.flat = undefined;
+  } else {
+    p.flat = p.ppgHealthy !== undefined ? p.ppgHealthy : p.ppgLegacy;
+    p.ppg = p.flat * availRest(p);
+  }
+  p.vol = volFromMean(p.pos, p.ppg);
+  p.injFactor = 1 - 0.3 * (1 - availRest(p));
+  return e;
+}
+function availCtx() { return { feed: S.espnInj && S.espnInj.d, on: INJ.enabled(), cw: injCurrentWeek() }; }
+/** Run every flagged player through availOne. Safe to repeat: baselines are stored. */
+function applyAvailability() {
+  const ctx = availCtx();
+  let flagged = 0, matched = 0;
+  for (const id in S.index) {
+    const p = S.index[id];
+    if (!p || p.pos === 'PICK') continue;
+    if (p.injury && p.injury !== 'NA') flagged++;
+    const e = availOne(p, ctx);
+    if (e) matched++;
+    else if (p.inj && p.inj.espn) matched++;
+  }
+  S.injFeedInfo = {
+    state: S.espnInj ? S.espnInj.state : 'off', at: S.espnInj ? S.espnInj.at : null, error: S.espnInj ? S.espnInj.error : null,
+    listed: ctx.feed ? ctx.feed.n : 0, flagged, matched
+  };
+  applyValueMode();
 }
 
 /* ================= draft pick pricing =================
@@ -1857,6 +2145,8 @@ async function loadLeague(leagueId, onStep) {
 
   step('Loading player database…', 0.3);
   S.players = await loadSleeperPlayers();
+  // ESPN's injury report loads alongside everything else and is allowed to fail
+  const espnLoad = loadEspnInjuries().catch(e => ({ d: null, at: null, state: 'down', error: String(e && e.message || e) }));
 
   step('Loading ' + valueWord() + ' trade values…', 0.52);
   S.values = await loadValues(S.cfg);
@@ -1911,6 +2201,8 @@ async function loadLeague(leagueId, onStep) {
       (d, n) => step(`Loading weekly projections… ${d}/${n}`, 0.88 + 0.1 * (d / n)));
   } catch (e) { S.wproj = {}; }
   applyProjections();
+  S.espnInj = await espnLoad;
+  applyAvailability();
 
   step('Building models…', 0.99);
   computeStrength();
@@ -2075,8 +2367,9 @@ function lineupPoints(players, key) {
 /** Projected points for one player in one week. A player with projection data but
  *  no entry for that week is on bye, and scores nothing. */
 function pw(p, wk) {
-  if (p && p.wk) { const r = p.wk[wk]; return r ? r.p : 0; }
-  return (p && p.ppg) || 0;
+  const a = p && p.inj ? availability(p, wk) : 1;
+  if (p && p.wk) { const r = p.wk[wk]; return r ? r.p * a : 0; }
+  return p ? (p.flat !== undefined ? p.flat : (p.ppg || 0)) * a : 0;
 }
 function pwOpp(p, wk) { const r = p && p.wk && p.wk[wk]; return r ? r.o : null; }
 /* A manager never actually starts a player on bye — they stream someone. This is
@@ -2112,6 +2405,15 @@ function applyProjections() {
   S.projCoverage = { covered: covered, total: total };
 }
 function activePlayers(t) { return t.players.filter(p => !t.taxi.has(p.id) && !t.ir.has(p.id)); }
+/** Players parked in an IR slot who should be back, and activated, by week `wk`.
+ *  A manager moves them as soon as they can play, so a projection that ignores
+ *  them undersells every team with a star due back. */
+function withReturners(list, t, wk) {
+  if (!INJ.enabled() || wk <= injCurrentWeek() || !t || !t.ir) return list;
+  const have = new Set(list.map(p => p.id));
+  const extra = t.players.filter(p => t.ir.has(p.id) && !have.has(p.id) && p.inj && availability(p, wk) >= 0.5);
+  return extra.length ? list.concat(extra) : list;
+}
 
 /* ================= strength & power ================= */
 function computeStrength() {
@@ -2289,7 +2591,7 @@ function buildWeeklyStarters(teams, weeks, rosterFor, live) {
       }
       return {
         banked: 0,
-        arr: optimalLineup(rosterFor(t), (p) => pw(p, wk))
+        arr: optimalLineup(withReturners(rosterFor(t), t, wk), (p) => pw(p, wk))
           .map(s => {
             // No manager leaves a slot empty or starts a bye player — they stream it.
             const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
@@ -2665,7 +2967,7 @@ function simulateOneSeason(opts) {
   const weekList = []; for (let w = 1; w <= S.regEnd + 4; w++) weekList.push(w);
   const startersOf = {};
   weekList.forEach(wk => {
-    startersOf[wk] = teams.map(t => optimalLineup(activePlayers(t), (p) => pw(p, wk))
+    startersOf[wk] = teams.map(t => optimalLineup(withReturners(activePlayers(t), t, wk), (p) => pw(p, wk))
       .map(s => {
         const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
         let m = s.player ? pw(s.player, wk) : 0, streamed = !s.player;
@@ -2916,17 +3218,89 @@ function playerCard(p, opts) {
     h('div.meta',
       h('div.nm', pname(p, { face: false })),
       h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
-        opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury))),
+        opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury, p))),
     opts.value !== undefined ? h('div.val', opts.value) : null);
 }
 /* Injury designations, abbreviated on a phone — "Questionable" is 85px of a
    348px card, and the full word is still on the tag's title. */
 const INJ_SHORT = { Questionable: 'Q', Doubtful: 'D', Out: 'OUT', IR: 'IR', PUP: 'PUP', Sus: 'SUSP', COV: 'COV', DNR: 'DNR', NA: 'NA' };
-function injuryTag(inj) {
+function injuryTag(inj, p) {
   if (!inj) return null;
-  const label = isNarrow() ? (INJ_SHORT[inj] || String(inj).slice(0, 3).toUpperCase()) : inj;
-  return h('span.tag', { title: inj, style: { color: 'var(--critical)', borderColor: 'var(--critical)' } }, label);
+  const j = p && p.inj;
+  let label = isNarrow() ? (INJ_SHORT[inj] || String(inj).slice(0, 3).toUpperCase()) : inj;
+  // for anyone out for a stretch, say when he is due back
+  if (j && j.kind === 'long' && j.label) label += isNarrow() ? ' ' + (j.season ? 'Szn' : j.R) : ' · ' + j.label;
+  return h('span.tag', { title: injuryTitle(p) || inj, style: { color: 'var(--critical)', borderColor: 'var(--critical)' } }, label);
 }
+/** The hover text for an injury tag: what, where, back when, and how we know. */
+function injuryTitle(p) {
+  const j = p && p.inj; if (!j) return '';
+  const bits = [p.injury + (j.body ? ' — ' + j.body : '')];
+  if (j.kind === 'long' && j.label) bits.push(j.season ? 'out for the season' : 'expected back ' + (j.retDate ? fmtDay(j.retDate) + ' (' + j.label + ')' : j.label));
+  else if (j.text) bits.push(j.text);
+  if (j.kind === 'long') bits.push(j.text);
+  return bits.filter(Boolean).join(' · ');
+}
+/** Turn return-date estimates on or off, and re-run everything that reads them. */
+function setInjuryEstimates(on) {
+  LS.set('injEst', !!on);
+  if (!S.teams || !S.teams.length) return;
+  applyAvailability();
+  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S.sim = null; S._short = {}; S._sig = null; S._tl = null;
+  computeStrength();
+}
+/** One line for Settings: is the ESPN feed reachable, and how much did it tell us. */
+function injFeedLine() {
+  const f = S.injFeedInfo;
+  const lead = INJ.enabled()
+    ? 'Players who are out are projected at zero only until their estimated return, and IR-slot players due back count toward the lineup and the simulator. '
+    : 'Off: anyone tagged Out or on IR is projected at zero for the rest of the season, as Sleeper’s tag alone implies. ';
+  if (!f) return lead;
+  const ago = f.at ? Math.max(1, Math.round((Date.now() - f.at) / 60000)) : null;
+  const when = ago === null ? '' : ago < 90 ? ago + ' min ago' : Math.round(ago / 60) + ' h ago';
+  const feed = f.state === 'ok' ? `ESPN feed: ${f.listed} players listed, ${f.matched} of your ${f.flagged} flagged players matched · updated ${when}.`
+    : f.state === 'stale' ? `ESPN feed unreachable, using a saved copy from ${when}.`
+      : 'ESPN feed unavailable (blocked or offline) — using the injury notes and typical recovery times instead.';
+  return lead + feed;
+}
+/** A few words for why a week's projection is reduced. */
+function injuryWhy(p, wk) {
+  const j = p && p.inj; if (!j) return '';
+  if (j.kind === 'day') return 'listed ' + p.injury.toLowerCase();
+  if (j.season) return 'out for the season';
+  return wk < j.R ? 'out until ' + j.label.toLowerCase().replace('wk', 'week') : 'returning from ' + (j.body ? j.body.toLowerCase() + ' ' : '') + 'injury';
+}
+/** The player page's injury report: what, when he is due back, how sure we are, and the
+ *  chance he plays in each of the next several weeks. */
+function injuryCard(p) {
+  const j = p.inj; if (!j) return null;
+  const cw = injCurrentWeek(), on = INJ.enabled();
+  const weeks = []; for (let k = cw; k <= Math.min(S.regEnd + 3, cw + 7); k++) weeks.push(k);
+  const fact = (k, v, sub) => h('div.ifact', h('div.k', k), h('div.v', v), sub ? h('div.tiny.muted', sub) : null);
+  const back = j.kind === 'day' ? (j.pNow >= 0.8 ? 'Likely plays' : 'Likely sits') : j.season ? 'Out for the season' : j.label + (j.retDate ? ' · ' + fmtDay(j.retDate) : '');
+  const missed = gamesMissed(p);
+  const feed = j.feed;
+  const words = [feed && (feed.long || feed.short), j.note].filter((x, i, a) => x && a.indexOf(x) === i);
+  const strip = h('div.availstrip', { role: 'img', 'aria-label': 'Chance of playing each week' }, weeks.map(k => {
+    const a = availability(p, k), bye = onBye(p, k);
+    return h('div.availcell' + (bye ? '.bye' : ''), { title: 'Week ' + k + (bye ? ' — bye' : ' — ' + Math.round(a * 100) + '% likely to play') },
+      h('span.tiny.mono.muted', 'Wk ' + k),
+      h('span.availbar', h('i', { style: { height: bye ? '0%' : Math.round(a * 100) + '%' } })),
+      h('span.tiny.mono', bye ? 'bye' : Math.round(a * 100) + '%'));
+  }));
+  return card('Injury report',
+    on ? 'return estimates feed his projection, lineups and the simulator' : 'estimates are switched off in Settings — projections use the status tag only',
+    h('div', { style: { display: 'grid', gap: '14px' } },
+      h('div.ifacts',
+        fact('Status', injuryTag(p.injury, p) || p.injury, j.body ? j.body + (feed && feed.side ? ' (' + feed.side.toLowerCase() + ')' : '') : 'body part not listed'),
+        fact('Expected back', back, j.text),
+        j.kind === 'long' && !j.season ? fact('Games missed', fmt(missed, 1), 'regular season, expected') : j.kind === 'long' ? fact('Games missed', 'Rest of season', null) : null,
+        fact('Source', j.espn && j.retDate ? 'ESPN' : j.src === 'note' ? 'Injury notes' : j.src === 'tag' ? 'Sleeper tag' : 'Estimate',
+          j.espn ? 'ESPN lists him' : 'ESPN has no return date for him')),
+      h('div', h('div.tiny.muted', { style: { marginBottom: '6px' } }, 'Chance he plays'), strip),
+      words.length ? h('div.inotes', words.map(w => h('div.tiny', '“' + String(w).slice(0, 360) + '”'))) : null));
+}
+function fmtDay(iso) { const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); return isFinite(d) ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : iso; }
 function teamCell(t, opts) {
   opts = opts || {};
   // on a phone the avatar and the owner line cost about 40px of a 348px card and
@@ -3599,6 +3973,9 @@ function settingsMenu() {
       + (isDynasty()
         ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
         : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
+    S.league ? group('Injury return dates',
+      segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], INJ.enabled(), v => { setInjuryEstimates(v); render(); }),
+      injFeedLine()) : null,
     h('hr'),
     h('button.btn', { onclick: () => { settingsOpen = false; hardRefresh(); } }, ico('refresh'), 'Refresh data'),
     h('button.btn', {
@@ -3712,6 +4089,7 @@ function watchViewport() {
 async function hardRefresh() {
   const id = S.leagueId;
   Object.keys(localStorage).filter(k => k.startsWith('dcc:fc:')).forEach(k => localStorage.removeItem(k));
+  try { await idbSet('espninj', null); } catch (e) { }
   S.league = null; S._sched = null; S.sim = null;
   await boot(id);
 }
@@ -3822,10 +4200,43 @@ function viewRoster() {
   const changes = hypRosterChanges(t);
   if (changes) wrap.appendChild(changes);
 
+  const injRep = injuryReportCard(t);
+  if (injRep) wrap.appendChild(injRep);
+
   // full roster
   wrap.appendChild(card('Full roster', `${t.players.length} players` + (isDynasty() ? ` · ${t.pickAssets.length} picks` : ''), rosterTable(t),
     isSimple() ? null : segmented([{ k: true, label: 'By position' }, { k: false, label: 'Flat' }], RosterUI.group, v => { RosterUI.group = v; render(); })));
   return wrap;
+}
+/** Projected points a player is expected to miss, ROS regular season, because of injury. */
+function pointsLost(p) {
+  const cw = injCurrentWeek(); let lost = 0;
+  for (let k = cw; k <= S.regEnd; k++) {
+    const base = p.wk ? (p.wk[k] ? p.wk[k].p : 0) : (p.flat !== undefined ? p.flat : (p.ppgHealthy !== undefined ? p.ppgHealthy : p.ppg || 0));
+    lost += base * (1 - availability(p, k));
+  }
+  return lost;
+}
+/** Who on this roster is hurt, when each is due back, and what it costs the lineup. */
+function injuryReportCard(t) {
+  const hurt = t.players.filter(p => p.inj).map(p => ({
+    p, slot: t.taxi.has(p.id) ? 'TAXI' : t.ir.has(p.id) ? 'IR' : t.starterIds.has(p.id) ? 'START' : 'BN',
+    missed: gamesMissed(p), lost: pointsLost(p)
+  }));
+  if (!hurt.length) return null;
+  const tbl = table([
+    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div.row', { style: { gap: '7px', flexWrap: 'nowrap' } },
+      isSimple() ? playerFace(r.p) : posPill(r.p.pos), pname(r.p, { face: false, style: { fontWeight: 560 } }), injuryTag(r.p.injury, r.p)) },
+    { k: 'slot', prio: 2, h: 'Role', sort: r => r.slot, f: r => h('span.tag', r.slot) },
+    { k: 'body', prio: 2, keepSimple: true, h: 'Injury', sort: r => r.p.inj.body || '', f: r => h('span.tiny', r.p.inj.body || '—') },
+    { k: 'back', h: 'Back', sort: r => r.p.inj.kind === 'day' ? injCurrentWeek() : r.p.inj.R, f: r => r.p.inj.kind === 'day' ? h('span.tiny.muted', r.p.inj.pNow >= 0.8 ? 'Likely plays' : 'Likely sits')
+      : h('div', h('b', r.p.inj.label), r.p.inj.retDate ? h('div.tiny.muted', fmtDay(r.p.inj.retDate)) : null) },
+    { k: 'missed', h: 'Games out', num: true, sort: r => r.missed, f: r => r.p.inj.season ? 'Rest of year' : fmt(r.missed, 1) },
+    { k: 'lost', prio: 2, keepSimple: true, h: 'Pts lost', num: true, sort: r => r.lost, f: r => fmt(r.lost, 0) },
+    { k: 'src', prio: 2, h: 'Source', sort: r => r.p.inj.src, f: r => h('span.tiny.muted', r.p.inj.espn && r.p.inj.retDate ? 'ESPN' : r.p.inj.src === 'note' ? 'Notes' : r.p.inj.src === 'tag' ? 'Tag' : 'Estimate') }
+  ], hurt, { sortKey: 'lost', sortDir: -1 });
+  const out = hurt.filter(r => r.p.inj.kind === 'long' && !r.p.inj.season && r.slot !== 'TAXI').length;
+  return card('Injury report', `${hurt.length} on the report` + (out ? ` · ${out} due back` : '') + ' · estimated return weeks and what the lineup loses until then', tbl);
 }
 function lineupTable(t) {
   return h('div', { style: { display: 'grid', gap: '3px' } }, t.starters.map(s => {
@@ -3835,7 +4246,7 @@ function lineupTable(t) {
       p ? h('div.row', { style: { gap: '7px', minWidth: 0 } },
         isSimple() ? playerFace(p) : posPill(p.pos),
         pname(p, { face: false, style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '540' } }),
-        injuryTag(p.injury),
+        injuryTag(p.injury, p),
         p.team ? (isSimple() ? teamLogo(p.team) : h('span.tiny.muted', p.team)) : null) : h('span.muted.tiny', 'empty'),
       h('span.mono.tiny.sec', p ? fmt(p.ppg, 1) : '—'));
   }));
@@ -3860,7 +4271,7 @@ function rosterTable(t) {
         r._hyp === 'in' ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'IN')
           : r._hyp === 'out' ? h('span.tag', { style: { borderColor: 'var(--critical)', color: 'var(--bad-text)' } }, 'OUT') : null,
         r._slot === 'START' ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'ST') : r._slot === 'TAXI' ? h('span.tag', 'TX') : r._slot === 'IR' ? h('span.tag', 'IR') : null,
-        injuryTag(r.injury))
+        injuryTag(r.injury, r))
     },
     { k: 'team', prio: 2, h: 'NFL', f: r => r.team || '—' },
     { k: 'age', prio: 2, h: 'Age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
@@ -3888,7 +4299,7 @@ function rosterTable(t) {
       : h('div.pcard' + (r._hyp === 'in' ? '.hypin' : ''), playerFace(r),
         h('div.meta', h('div.nm', pname(r, { face: false, style: { fontWeight: r._slot === 'START' ? 650 : 560 } })),
           h('div.sub', posPill(r.pos), r.team ? teamLogo(r.team) : null,
-            r.age ? h('span', fmt(r.age, 0) + 'y') : null, badge(r), injuryTag(r.injury))),
+            r.age ? h('span', fmt(r.age, 0) + 'y') : null, badge(r), injuryTag(r.injury, r))),
         h('div.val',
           h('b.mono', kfmt(Math.round(r.dv || 0))),
           h('div.tiny.muted', r.ppg === null || r.ppg === undefined ? '—' : fmt(r.ppg, 1) + ' pts/wk')));
@@ -4450,7 +4861,7 @@ function assetCard(a, o) {
   return h('div.dealitem' + (o.compact ? '.compact' : ''),
     assetFace(a),
     h('div.dealmain',
-      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' && a.ref ? injuryTag(a.ref.injury) : null, o.extra || null),
+      h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' && a.ref ? injuryTag(a.ref.injury, a.ref) : null, o.extra || null),
       h('div.tiny.muted.dealmeta', o.meta || assetMeta(a))),
     h('span.dealval.mono', o.value !== undefined ? o.value : kfmt(Math.round(a.dv))),
     o.action ? o.action : (o.onRemove ? h('button.dealx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: o.onRemove }, ico('close')) : null));
@@ -4484,7 +4895,7 @@ function assetBrowser(o) {
     return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', onclick: () => o.onToggle(a, inDeal) },
       face ? h('span.bface', face) : null,
       h('span.bmain',
-        h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury) : null),
+        h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury, a.ref) : null),
         h('span.tiny.muted.bmeta', o.meta ? o.meta(a) : assetMeta(a))),
       h('span.bval.mono', o.val ? o.val(a) : kfmt(Math.round(a.dv))),
       h('span.badd', ico(inDeal ? 'check' : 'plus')));
@@ -4993,6 +5404,14 @@ function computeSignal(x, cal) {
   if (tr <= -0.08 && (p.age || 99) <= 27) { buy += 0.2; rb.push(`value down ${Math.round(-tr * 100)}% in 30 days`); }
   if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days — close to a peak`); }
   if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos} — values fall away from here`); }
+  if (x.recovering) {
+    /* Back soon: his price is low because he is hurt, but only for a few weeks. That is
+       the one injured case worth flagging — and only as a buy, never a sell. */
+    sell = 0; rs.length = 0;
+    const left = Math.max(0, S.regEnd - p.inj.R + 1);
+    if (tr <= -0.05) { buy += 0.45; rb.push(`out until ${p.inj.label.toLowerCase().replace('wk', 'week')}, and his price is down ${Math.round(-tr * 100)}% — he returns with ${left} regular-season game${left === 1 ? '' : 's'} left`); }
+    else if (buy > 0) rb.push(`back ${p.inj.label.toLowerCase().replace('wk', 'week')}, so the dip is short-term`);
+  }
   if (Math.max(buy, sell) < 0.35) return null;
   const kind = buy > sell ? 'buy' : 'sell';
   return { kind, strength: Math.min(1, Math.max(buy, sell)), reasons: kind === 'buy' ? rb : rs, actual, expected, games: n };
@@ -5010,15 +5429,17 @@ function signalMap() {
   const hurt = new Set(); S.teams.forEach(t => t.ir.forEach(id => hurt.add(id)));
   // Sleeper often records a long-term injury only in the player's status, leaving the
   // injury tag empty, so the status is read too
-  const unavailable = (p) => hurt.has(p.id) || OUT_TAGS.includes(p.injury) || p.injury === 'Doubtful'
-    || /injured|physically|suspended|retired/i.test(((S.players[p.id] || {}).st) || '');
+  const returnsSoon = (p) => !!(INJ.enabled() && p.inj && p.inj.kind === 'long' && !p.inj.season
+    && p.inj.R - injCurrentWeek() <= 3 && S.regEnd - p.inj.R >= 2);
+  const unavailable = (p) => !returnsSoon(p) && (hurt.has(p.id) || OUT_TAGS.includes(p.injury) || p.injury === 'Doubtful'
+    || /injured|physically|suspended|retired/i.test(((S.players[p.id] || {}).st) || ''));
   const info = {};
   Object.values(S.index).forEach(p => {
     if (!POS4.includes(p.pos) || (p.dv || 0) < 900 || !rank[p.id] || unavailable(p)) return;
     const games = playerGameLog(p.id).filter(g => g.state === 'final' && g.pts !== null && g.pts > 0);
     // a young player is not expected to produce what his future is priced at
     const youth = p.age ? clamp(0.78 + (p.age - 21) * 0.07, 0.78, 1) : 1;
-    info[p.id] = { p, n: games.length, actual: games.length ? mean(games.map(g => g.pts)) : null,
+    info[p.id] = { p, recovering: returnsSoon(p), n: games.length, actual: games.length ? mean(games.map(g => g.pts)) : null,
       base: scoringAdjust(p.pos, curveLookup(p.pos, rank[p.id]), rank[p.id], S.cfg) * youth };
   });
   // Scoring format, a tight-end premium or the curve itself shift every player of a
@@ -5409,7 +5830,7 @@ function signalBoard(T, shop) {
         holds.length ? col('Don’t sell yet', 'yours — scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
         : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
       h('div.tiny.muted', S.lastWeek
-        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out: their price is explained by the injury.`
+        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out, because their price is explained by the injury — unless they are due back within about three weeks with games left to play, when only a buy-low can be flagged.`
         : 'No games have been played yet, so flags come only from age cliffs. Production-based flags appear once the season starts.')) : null);
 }
 
@@ -5977,7 +6398,7 @@ function viewPlayer() {
     h('div', { style: { minWidth: 0 } },
       h('div.row', { style: { gap: '8px' } }, posPill(p.pos),
         h('h2', { style: { fontSize: '22px', letterSpacing: '-.02em' } }, p.name),
-        injuryTag(p.injury)),
+        injuryTag(p.injury, p)),
       h('div.tiny.sec', { style: { marginTop: '2px' } },
         [p.team || 'Free agent', p.age ? fmt(p.age, 1) + ' years old' : null,
         p.exp !== null && p.exp !== undefined ? (p.exp === 0 ? 'rookie' : p.exp + ' yrs exp') : null,
@@ -6007,8 +6428,8 @@ function viewPlayer() {
     kpi('30-day trend', p.trend30 ? sgn(p.trend30, 0) : 'flat', p.trend30 ? sgn(trendPct * 100, 1) + '%' : 'no movement'),
     kpi('Projected', fmt(p.ppg || 0, 1), p.wk ? 'pts / week remaining' : 'pts / week now',
       p.wk
-        ? `<div class="k">Sleeper weekly projections</div>Average over the weeks still to play, byes excluded. Each week's projected stat line is scored with this league's own settings, so custom scoring is respected.`
-        : `<div class="k">Estimated</div>Sleeper publishes no weekly projection for this player, so this comes from the redraft value's positional rank adjusted for league scoring.` + (p.injury ? '<br>Discounted for the <b>' + p.injury + '</b> tag.' : '')),
+        ? `<div class="k">Sleeper weekly projections</div>Average over the weeks still to play, byes excluded. Each week's projected stat line is scored with this league's own settings, so custom scoring is respected.` + (p.inj && INJ.enabled() ? '<br>Weeks he is expected to miss count as zero, so this is lower than his healthy rate.' : '')
+        : `<div class="k">Estimated</div>Sleeper publishes no weekly projection for this player, so this comes from the redraft value's positional rank adjusted for league scoring.` + (p.injury ? '<br>Discounted for the <b>' + p.injury + '</b> tag' + (p.inj && INJ.enabled() && p.inj.kind === 'long' ? ' — zero until ' + (p.inj.season ? 'next season' : p.inj.label.toLowerCase()) + '.' : '.') : '')),
     dynOnly(kpi('Projected 2–3 yrs', fmt(p.fppg || 0, 1), 'pts / week',
       `<div class="k">Future outlook</div>Dynasty-value rank run through the same curve, then aged with a ${p.pos}-specific decline profile.`)),
     // in a redraft league the dynasty price is the interesting comparison, not
@@ -6019,6 +6440,9 @@ function viewPlayer() {
       : kpi('Dynasty market', kfmt(Math.round(p.dvDyn || 0)), p.rv && p.dvDyn ? (p.dvDyn > p.rv ? 'priced for the future' : 'priced for now') : '—',
         '<div class="k">What he is worth elsewhere</div>This league does not pay for it, but the dynasty market does. A player worth far more in dynasty than redraft is young, and in this league that premium buys you nothing.')
   ));
+
+  const injCard = injuryCard(p);
+  if (injCard) wrap.appendChild(injCard);
 
   // ---- weekly production ----
   const bars = [];
@@ -6039,14 +6463,22 @@ function viewPlayer() {
       // No line for a week is two different things. If his team is off, it is a
       // bye. If his team is playing, nobody expects him on the field — which is
       // nothing projected, not a bye, and the chart has to say so.
-      if (r) bars.push({ x: w, v: Math.round(r.p * 10) / 10, kind: 'proj', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') });
+      if (r) {
+        const a = availability(p, w);
+        if (p.inj && a < 0.05) bars.push({ x: w, v: 0, kind: 'proj', mark: 'OUT', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') + ' if healthy — ' + injuryWhy(p, w) });
+        else bars.push({ x: w, v: Math.round(r.p * a * 10) / 10, kind: 'proj', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') + (a < 0.995 ? ' · ' + Math.round(a * 100) + '% likely to play (' + injuryWhy(p, w) + ')' : '') });
+      }
       else if (onBye(p, w)) bars.push({ x: w, v: null, kind: 'proj', bye: true, note: 'Bye week' });
       else bars.push({
         x: w, v: 0, kind: 'proj', mark: 'OUT',
         note: 'Nothing projected — not expected to play' + (p.injury ? ' (' + p.injury + ')' : '')
       });
     } else {
-      bars.push({ x: w, v: Math.round((p.ppg || 0) * 10) / 10, kind: 'proj', note: 'Projection, not a result' });
+      const a = availability(p, w);
+      bars.push({
+        x: w, v: Math.round(pw(p, w) * 10) / 10, kind: 'proj', mark: p.inj && a < 0.05 ? 'OUT' : undefined,
+        note: 'Projection, not a result' + (p.inj && a < 0.995 ? ' · ' + (a < 0.05 ? 'not expected to play' : Math.round(a * 100) + '% likely to play') + ' (' + injuryWhy(p, w) + ')' : '')
+      });
     }
   }
   const logTable = table([
@@ -6711,7 +7143,7 @@ function viewLineup() {
       k: 'player', h: 'Player', sortable: false, f: r => r.p
         ? h('div', { style: { minWidth: 0 } }, h('div.row', { style: { gap: '7px', minWidth: 0 } },
           isSimple() ? playerFace(r.p) : null, posPill(r.p.pos), pname(r.p, { face: false }),
-          injuryTag(r.p.injury),
+          injuryTag(r.p.injury, r.p),
           // on a phone the tag costs more width than it earns — the card directly
           // below this table is the real place these calls get made
           r.close && !isNarrow() ? h('span.tag', { style: { borderColor: 'var(--s4)', color: 'var(--s4)' } }, 'close call') : null),
@@ -6823,7 +7255,7 @@ function viewLineup() {
   });
   wrap.appendChild(card('Bench', bench.length + (isLive ? ' players not in the lineup' : ' players not in the optimal lineup'), table([
     { k: 'pos', h: 'Pos', f: r => posPill(r.p.pos), sort: r => r.p.pos },
-    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p, { face: false }), injuryTag(r.p.injury)),
+    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => h('div', h('div.row', { style: { gap: '7px' } }, isSimple() ? playerFace(r.p) : null, pname(r.p, { face: false }), injuryTag(r.p.injury, r.p)),
       isLive && isNarrow() ? h('div', { style: { marginTop: '2px' } }, liveBadge(r.p, wk)) : null) },
     {
       k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.o.bye ? h('span.tag', 'BYE')
@@ -6879,7 +7311,7 @@ function compareGrid(players, wk) {
             h('span.tiny.muted', o.bye ? (isLive ? '' : 'on bye this week')
               : o.zero ? 'not expected to play'
                 : o.opp ? (isLive ? '' : 'vs ') + o.opp : 'no opponent listed'),
-            injuryTag(p.injury), isLive ? liveBadge(p, wk) : null))),
+            injuryTag(p.injury, p), isLive ? liveBadge(p, wk) : null))),
       // the headline number: what he actually scored once he has played, else the projection
       h('div.row', { style: { alignItems: 'baseline', gap: '8px' } },
         ps && ps.final
@@ -7491,7 +7923,7 @@ function h2hSim(A, B, wk, n) {
     }
     return {
       banked: 0,
-      arr: optimalLineup(activePlayers(T), p => pw(p, wk))
+      arr: optimalLineup(withReturners(activePlayers(T), T, wk), p => pw(p, wk))
         .map(s => {
           const pos = s.player ? s.player.pos : (SLOT_ELIG[s.slot] || [s.slot])[0];
           let m = s.player ? pw(s.player, wk) : 0;
@@ -7892,23 +8324,30 @@ function slotLadder(rows, A, B, CA, CB, opts) {
   const badge = (pl) => live && pl && !opts.cell ? liveBadge(pl, wk) : null;
 
   if (isNarrow()) {
-    return h('div', { style: { display: 'grid', gap: '2px' } }, rows.map(r2 => {
-      const line = (pl, v, won, col) => h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } },
-        pl ? posPill(pl.pos) : h('span.pill.pos-NA', '—'),
+    /* Two lines per slot can't say whose is whose by position alone, so each team
+       gets a colour, a key at the top, and a bar of that colour down its lines. */
+    const chip = (T, col, tot) => h('div.lteam', h('i', { style: { background: col } }), h('b', T.short), h('span.tiny.muted.lfull', T.name),
+      h('span', { style: { flex: 1 } }), h('b.mono', { style: { color: col } }, fmt(tot, 1)), h('span.tiny.muted', 'total'));
+    const key = h('div.lkey', chip(A, CA, sum(rows.map(r => r.va || 0))), chip(B, CB, sum(rows.map(r => r.vb || 0))));
+    return h('div', { style: { display: 'grid', gap: '2px' } }, [key].concat(rows.map(r2 => {
+      const line = (pl, v, won, col) => h('div.row.lline', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap', borderLeftColor: col } },
+        pl ? flexy(r2.slot, pl) : null,
         pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
         badge(pl),
         h('span', { style: { flex: 1 } }),
         h('div', { style: { textAlign: 'right' } }, num(pl, v, won, col)));
+      const lead = r2.d > 0 ? h('span.tiny.mono', { style: { color: CA, fontWeight: 650 } }, A.short + ' +' + fmt(r2.d, 1))
+        : r2.d < 0 ? h('span.tiny.mono', { style: { color: CB, fontWeight: 650 } }, B.short + ' +' + fmt(-r2.d, 1))
+          : h('span.tiny.mono.muted', 'tied');
       return h('div.ladderstack',
-        h('div.row', { style: { gap: '7px', marginBottom: '3px' } },
+        h('div.row', { style: { gap: '7px', marginBottom: '4px' } },
           h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot),
-          h('span', { style: { flex: 1 } }),
-          h('span.tiny.mono', { class: r2.d > 0 ? 'up' : r2.d < 0 ? 'down' : 'flat' }, sgn(r2.d, 1))),
+          h('span', { style: { flex: 1 } }), lead),
         line(r2.a, r2.va, r2.d > 0, CA), line(r2.b, r2.vb, r2.d < 0, CB));
-    }));
+    })));
   }
 
-  const cw = opts.cell ? 'minmax(0,1fr) 84px 74px 84px minmax(0,1fr)' : 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
+  const cw = opts.cell ? 'minmax(0,1fr) 96px 74px 96px minmax(0,1fr)' : 'minmax(0,1fr) 64px 74px 64px minmax(0,1fr)';
   const word = opts.head || (live ? 'Pts' : 'Proj');
   const head = h('div.ladderrow.ladderhd', { style: { gridTemplateColumns: cw } },
     h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
@@ -8777,12 +9216,12 @@ function matchupLadder(g, wk) {
     if (!p) return h('span.muted.tiny', '—');
     const lv = liveValue(p, wk);
     const ps = playedScore(p, wk);
-    const status = lv.state === 'bye' ? h('span', 'bye')
-      : lv.state === 'upcoming' ? h('span', 'to play')
+    const status = lv.state === 'bye' ? h('span', 'bye week')
+      : lv.state === 'upcoming' ? h('span', 'projected')
         : ps && ps.final
           ? h('span', { class: ps.actual >= ps.proj ? 'up' : 'down' },
-            (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1))
-          : h('span', lv.quarter ? String(lv.quarter) : 'live');
+            (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1) + ' vs proj')
+          : h('span', (lv.quarter ? String(lv.quarter) + ' · ' : '') + 'live');
     const tip = lv.state === 'bye' ? `<div class="k">${p.name}</div>On bye this week`
       : lv.state === 'upcoming' ? `<div class="k">${p.name}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
         : ps && ps.final ? `<div class="k">${p.name} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
@@ -8794,8 +9233,7 @@ function matchupLadder(g, wk) {
   const aWon = rows.filter(r => r.va > r.vb).length;
   return h('div', { style: { display: 'grid', gap: '10px' } },
     slotLadder(rows, g.A, g.B, CA, CB, { wk, live: true, cell, head: 'Pts' }),
-    h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots. `
-      + 'Under each score: ▲ or ▼ is how a finished game went against its projection; a quarter means the game is still on.'));
+    h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots.`));
 }
 /* ================= 14. HOME =================
    The landing page: which league you are looking at, where the season stands,
@@ -9168,10 +9606,10 @@ function viewPlayers() {
         : isNarrow()
           // on a phone the position rides under the name instead of taking a column
           ? h('div', { style: { minWidth: 0 } },
-            h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury)),
+            h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury, r.p)),
             h('div.row', { style: { gap: '6px', marginTop: '1px', flexWrap: 'nowrap' } }, h('span.tiny.muted', r.p.pos + posRank[r.p.id] + (r.p.team ? ' · ' + r.p.team : '')), marketTags(r.p)))
           : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
-            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury), marketTags(r.p))
+            pname(r.p, { style: { fontWeight: 580 } }), injuryTag(r.p.injury, r.p), marketTags(r.p))
     },
     {
       k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r._pick ? 'ZZ' : r.p.pos + String(posRank[r.p.id]).padStart(4, '0'),
@@ -9302,9 +9740,9 @@ function waiverCard(ownerOf, me) {
     {
       k: 'name', h: 'Player', sort: r => r.name, f: r => isNarrow()
         ? h('div', { style: { minWidth: 0 } },
-          h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury)),
+          h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury, r)),
           h('div.tiny.muted', { style: { marginTop: '1px' } }, r.pos + (r.team ? ' · ' + r.team : '') + ' · ' + fmt(r.ppg || 0, 1) + '/wk'))
-        : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury))
+        : h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } }, pname(r, { style: { fontWeight: 580 } }), injuryTag(r.injury, r))
     },
     { k: 'pos', h: 'Pos', prio: isNarrow() ? 2 : 0, sort: r => r.pos, f: r => posPill(r.pos) },
     { k: 'team', prio: 2, h: 'NFL', sort: r => r.team || '', f: r => isSimple() && r.team ? h('span.row', { style: { gap: '5px' } }, teamLogo(r.team), h('span.tiny', r.team)) : h('span.tiny', r.team || '—') },
