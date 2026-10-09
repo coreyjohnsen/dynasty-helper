@@ -7982,7 +7982,13 @@ PSRC_LIST.forEach(x => { PSRC.status[x.id] = { state: 'idle', msg: '', n: 0 }; }
 let _psrcTimer = null;
 function psrcChanged() {
   clearTimeout(_psrcTimer);
-  _psrcTimer = setTimeout(() => { if (S.view === 'lineup') render(); }, 140);
+  _psrcTimer = setTimeout(function again() {
+    if (S.view !== 'lineup') return;
+    // a redraw would wipe what somebody is typing in the SI link box, so wait until they stop
+    const a = document.activeElement;
+    if (a && a.tagName === 'INPUT' && a.closest && a.closest('.sstrip') && a.value !== (a.defaultValue || '')) { _psrcTimer = setTimeout(again, 700); return; }
+    render();
+  }, 140);
 }
 function psrcSet(id, state, msg, n, quiet) {
   PSRC.status[id] = { state, msg: msg || '', n: n || 0 };
