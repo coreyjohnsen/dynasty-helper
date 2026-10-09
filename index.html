@@ -418,6 +418,42 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 .pcxcard.sm .pcxteam .tlogo{width:62px;height:62px}
 .pcxcard.sm .pcxpos{font-size:110px}
 
+/* ---- the three likeliest champions on the simulator ---- */
+.tpodium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}
+.tpod{--tc:#c99a1e;--tc2:#e8c35a;position:relative;display:grid;justify-items:center;align-content:start;gap:4px;padding:20px 14px 16px;
+  border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);box-shadow:var(--shadow);overflow:hidden}
+.tpod::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--tc),var(--tc2),var(--tc))}
+.tpod.t1{--tc:#c99a1e;--tc2:#f1d36b;order:2;padding-top:28px;padding-bottom:20px;
+  background:linear-gradient(180deg,color-mix(in srgb,#f1d36b 22%,var(--surface-1)),var(--surface-1) 62%);border-color:color-mix(in srgb,#c99a1e 55%,var(--border));box-shadow:0 16px 36px -18px rgba(201,154,30,.7),var(--shadow)}
+.tpod.t2{--tc:#8996a8;--tc2:#d7dde6;order:1}
+.tpod.t3{--tc:#b0743f;--tc2:#e0aa7c;order:3}
+.tpod.mine{outline:2px solid var(--brand);outline-offset:2px}
+.tpod-rank{font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted)}
+.tpod.t1 .tpod-rank{color:#a47a0c}
+:root[data-theme="dark"] .tpod.t1 .tpod-rank{color:#f1d36b}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .tpod.t1 .tpod-rank{color:#f1d36b} }
+.tpod-av{margin:6px 0 4px;border-radius:50%;padding:3px;background:linear-gradient(145deg,var(--tc2),var(--tc));box-shadow:0 8px 18px -8px color-mix(in srgb,var(--tc) 70%,transparent);line-height:0}
+.tpod-av>*{border-radius:50%!important;border:2px solid var(--surface-1);display:block;object-fit:cover}
+.tpod-nm{font-weight:700;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tpod-pct{font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums;margin-top:4px}
+.tpod.t1 .tpod-pct{font-size:42px;color:var(--brand,var(--s1))}
+.tpod-lbl{font-size:12px;color:var(--text-muted);margin-top:-2px}
+.tpod-bar{width:100%;height:6px;border-radius:99px;background:var(--surface-3);margin:10px 0 6px;overflow:hidden}
+.tpod-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--tc),var(--tc2))}
+.tpod-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.tpod-stats>div{display:grid;justify-items:center;gap:1px;padding:7px 4px;border-radius:var(--r-sm);background:var(--surface-2)}
+.tpod-stats b{font-size:15px;font-variant-numeric:tabular-nums}
+.tpod-stats span{font-size:10.5px;color:var(--text-muted);text-align:center;line-height:1.2}
+@media (max-width:620px){
+  .tpodium{grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+  .tpod.t1{grid-column:1/-1;order:0}
+  .tpod.t2{order:1}.tpod.t3{order:2}
+  .tpod{padding:16px 10px 12px}
+  .tpod.t1{padding-top:22px}
+  .tpod-pct{font-size:28px}.tpod.t1 .tpod-pct{font-size:38px}
+  .tpod-nm{font-size:14px}
+}
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -945,14 +981,6 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .smode-t{font-size:12.5px;font-weight:660;text-align:center;line-height:1.2}
 .simctl{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
 .simctl .simrun{flex:0 1 240px;min-height:42px;justify-content:center}
-.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch}
-.pod{position:relative;display:grid;justify-items:center;align-content:start;gap:3px;padding:16px 8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);box-shadow:var(--shadow);text-align:center;min-width:0}
-.pod.first{background:linear-gradient(170deg,color-mix(in srgb,var(--brand,var(--s1)) 16%,var(--surface-1)),var(--surface-1) 70%);border-color:color-mix(in srgb,var(--brand,var(--s1)) 45%,var(--border))}
-.pod-rank{position:absolute;top:7px;left:9px;font-size:11px;font-weight:700;color:var(--text-muted)}
-.pod-nm{font-weight:650;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
-.pod-big{font-size:24px;font-weight:760;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
-.pod.first .pod-big{font-size:28px;color:var(--brand,var(--s1))}
-.pod-meta{font-size:11px;color:var(--text-secondary);margin-top:3px;line-height:1.35}
 .kstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px}
 .olist{display:grid;gap:8px}
 .orow{display:grid;grid-template-columns:20px 38px minmax(0,1fr);gap:10px;align-items:start;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
@@ -1003,10 +1031,6 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .kstrip{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:10px;padding:2px 2px 6px;margin:0 -2px;-webkit-overflow-scrolling:touch}
   .kstrip .kpi{flex:0 0 162px;scroll-snap-align:start}
   .levgrid{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:6px}
-  .podium{gap:7px}
-  .pod{padding:14px 5px 10px}
-  .pod-big{font-size:21px}
-  .pod.first .pod-big{font-size:24px}
   .champ-again{justify-self:stretch;justify-content:center}
 }
 /* ============ simple mode ============
@@ -6473,14 +6497,18 @@ function simWeekView(res) {
 }
 /** The three likeliest champions, as cards. */
 function simPodium(rows) {
-  const top = rows.slice(0, 3);
-  return h('div.podium', top.map((r, i) => h('div.pod' + (i === 0 ? '.first' : ''),
-    h('span.pod-rank', i === 0 ? '👑' : '#' + (i + 1)),
-    teamFace(r.t, i === 0 ? 58 : 46),
-    h('div.pod-nm', { title: r.t.name }, r.t.name),
-    h('div.pod-big', pct(r.s.title, 1)),
-    h('div.tiny.muted', 'to win it all'),
-    h('div.pod-meta', h('div', h('b', pct(r.s.playoff, 0)), ' playoffs'), h('div', h('b', fmt(r.s.wins, 1)), ' proj W')))));
+  const top = rows.slice(0, 3), lead = Math.max(top[0] ? top[0].s.title : 0, 0.0001);
+  // the likeliest champion stands in the middle and a little higher, like a podium
+  return h('div.tpodium', top.map((r, i) => h('div.tpod.t' + (i + 1) + (r.t.rosterId === S.myRosterId ? '.mine' : ''),
+    h('div.tpod-rank', i === 0 ? '👑 Favourite' : i === 1 ? '2nd' : '3rd'),
+    h('div.tpod-av', teamFace(r.t, i === 0 ? 76 : 62)),
+    h('div.tpod-nm', { title: r.t.name }, r.t.name),
+    h('div.tpod-pct', pct(r.s.title, 1)),
+    h('div.tpod-lbl', 'to win it all'),
+    h('div.tpod-bar', { 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(4, r.s.title / lead * 100) + '%' } })),
+    h('div.tpod-stats',
+      h('div', h('b', pct(r.s.playoff, 0)), h('span', 'make playoffs')),
+      h('div', h('b', fmt(r.s.wins, 1)), h('span', 'projected wins'))))));
 }
 /** Every team as a ranked card — the phone's answer to a nine-column table. */
 function simOutcomeList(rows, res) {
