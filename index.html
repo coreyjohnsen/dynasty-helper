@@ -254,6 +254,55 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 :root[data-theme="dark"] .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%} }
 
+/* ---- trading card ---- */
+.pcxstage{display:grid;justify-items:center;gap:12px;padding:10px 0 4px;perspective:1000px}
+.pcxcard{--rx:0deg;--ry:0deg;--mx:50%;--my:50%;--hx:0%;--hy:0%;position:relative;width:min(300px,86vw);aspect-ratio:5/7;border-radius:20px;padding:6px;
+  transform:rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease),box-shadow .3s;touch-action:pan-y;
+  background:var(--pcx-frame);box-shadow:0 18px 40px -14px rgba(18,22,48,.5),0 2px 6px rgba(18,22,48,.2);background-size:260% 260%;background-position:calc(50% + var(--hx)*.85) calc(50% + var(--hy)*.85)}
+.pcxcard.pcxon{transition:transform .08s linear,box-shadow .3s;box-shadow:0 30px 50px -16px rgba(18,22,48,.55),0 2px 6px rgba(18,22,48,.2)}
+.pcxcard.none{--pcx-frame:linear-gradient(140deg,#c9cfdf,#8d95ad 50%,#c9cfdf);--pcx-bg:linear-gradient(170deg,#f4f6fb,#dfe3ee);--pcx-art:linear-gradient(160deg,#cdd3e4,#e8ebf4)}
+.pcxcard.bronze{--pcx-frame:linear-gradient(140deg,#e0a070,#a8622f 50%,#e8b186);--pcx-bg:linear-gradient(170deg,#fff4ea,#f0d3b8);--pcx-art:linear-gradient(160deg,#e9c3a0,#f8e4d1)}
+.pcxcard.silver{--pcx-frame:linear-gradient(140deg,#f2f5fa,#9aa5ba 45%,#fff 70%,#aab4c8);--pcx-bg:linear-gradient(170deg,#fbfcff,#dde2ee);--pcx-art:linear-gradient(160deg,#cdd5e6,#eef1f8)}
+.pcxcard.gold{--pcx-frame:linear-gradient(140deg,#fff0b0,#f2a900 40%,#ffe27a 65%,#d99200);--pcx-bg:linear-gradient(170deg,#fffaf0,#fbe9bd);--pcx-art:linear-gradient(160deg,#ffe9a8,#fff6dc)}
+.pcxcard.diamond{--pcx-frame:linear-gradient(140deg,#7de8ff,#a98bff 40%,#ff9ad5 65%,#7de8ff);--pcx-bg:linear-gradient(170deg,#f6fcff,#e4e2ff);--pcx-art:linear-gradient(160deg,#c4efff,#e2d6ff 55%,#ffd9ee)}
+.pcxcard.diamond{box-shadow:0 18px 44px -12px rgba(125,150,255,.55),0 2px 6px rgba(18,22,48,.2)}
+.pcxcard.gold{box-shadow:0 18px 44px -12px rgba(242,169,0,.5),0 2px 6px rgba(18,22,48,.2)}
+.pcxface{position:relative;height:100%;border-radius:15px;overflow:hidden;background:var(--pcx-bg);color:#14182c;display:flex;flex-direction:column;padding:11px 11px 10px;gap:8px}
+.pcxtop{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pcxname{font-weight:780;font-size:19px;letter-spacing:-.02em;line-height:1.1;min-width:0}
+.pcxrank{font-size:11px;font-weight:700;color:#5a6180;white-space:nowrap}
+.pcxart{position:relative;flex:1;min-height:0;border-radius:11px;overflow:hidden;background:var(--pcx-art);box-shadow:inset 0 0 0 1px rgba(18,22,48,.14)}
+.pcxart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
+.pcxpos{position:absolute;left:-4px;bottom:-14px;font-size:92px;font-weight:900;letter-spacing:-.05em;color:rgba(18,22,48,.1);line-height:1;pointer-events:none}
+.pcxteam{position:absolute;right:7px;bottom:6px;display:flex;align-items:center;gap:5px;padding:2px 8px 2px 4px;border-radius:99px;background:rgba(255,255,255,.88);font-size:11px;font-weight:700;color:#14182c}
+.pcxteam .tlogo{width:18px;height:18px}
+.pcxmeta{font-size:11px;font-weight:650;color:#4a5170;letter-spacing:.02em;text-align:center}
+.pcxstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pcxs{background:rgba(255,255,255,.7);border:1px solid rgba(18,22,48,.12);border-radius:9px;padding:5px 4px 4px;text-align:center;min-width:0}
+.pcxk{font-size:9px;font-weight:750;letter-spacing:.08em;text-transform:uppercase;color:#5a6180}
+.pcxv{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.2;white-space:nowrap}
+.pcxsub{font-size:9.5px;color:#6a7089;line-height:1.1;min-height:10px}
+/* the shine: a glare that follows the pointer, and a foil that slides under it */
+.pcxglare,.pcxholo{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+.pcxglare{background:radial-gradient(circle at var(--mx) var(--my),rgba(255,255,255,.55),transparent 48%);opacity:0;transition:opacity .3s;mix-blend-mode:soft-light}
+.pcxcard.pcxon .pcxglare{opacity:1}
+.pcxholo{opacity:0;transition:opacity .3s;mix-blend-mode:color-dodge;border-radius:inherit;background-size:220% 220%;background-position:calc(50% + var(--hx)) calc(50% + var(--hy))}
+.pcxcard.diamond .pcxholo{background-image:repeating-linear-gradient(115deg,#ff7ad9 0%,#ffd86b 12%,#7dffa8 24%,#6bd6ff 36%,#a98bff 48%,#ff7ad9 60%);opacity:.38}
+.pcxcard.diamond.pcxon .pcxholo{opacity:.62}
+.pcxcard.gold .pcxholo{background-image:linear-gradient(115deg,transparent 20%,rgba(255,236,150,.95) 40%,rgba(255,255,255,.9) 50%,rgba(255,200,60,.9) 60%,transparent 80%);opacity:.2}
+.pcxcard.gold.pcxon .pcxholo{opacity:.5}
+.pcxcard.silver .pcxholo{background-image:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.9) 50%,transparent 75%);opacity:0}
+.pcxcard.silver.pcxon .pcxholo{opacity:.35}
+.pcxcard.anim.diamond:not(.pcxon){animation:pcx-frame 7s ease-in-out infinite alternate}
+.pcxcard.anim.gold:not(.pcxon){animation:pcx-frame 9s ease-in-out infinite alternate}
+@keyframes pcx-frame{from{background-position:30% 30%}to{background-position:70% 70%}}
+.pcxcard.anim.diamond .pcxholo{animation:pcx-drift 6s ease-in-out infinite alternate}
+.pcxcard.anim.gold .pcxholo{animation:pcx-drift 8s ease-in-out infinite alternate}
+.pcxcard.pcxon .pcxholo{animation:none}
+@keyframes pcx-drift{from{background-position:20% 20%}to{background-position:80% 80%}}
+.pcxcap{text-align:center}
+@media (prefers-reduced-motion:reduce){ .pcxcard{transform:none!important;transition:none} .pcxholo{animation:none!important} }
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -6619,6 +6668,68 @@ function pname(p, opts) {
 
 /* ================= 9. PLAYER PAGE ================= */
 const PlayerUI = { id: null, back: 'roster', range: 90 };
+/* ================= trading card (player page, Default view) ================= */
+/** NFL draft line for the card: "2023 · Rd 1 · #5", a rookie with no record yet, or undrafted. */
+function draftLine(p) {
+  if (p.draft && p.draft.round) return { top: 'Rd ' + p.draft.round + ' · #' + p.draft.pick, sub: String(p.draft.year || '') };
+  return { top: p.exp === 0 ? 'Rookie' : 'Undrafted', sub: p.exp === 0 ? 'class of ' + (S.season || '') : '' };
+}
+function tradingCard(p) {
+  const tier = medalOf(p) || 'none';
+  const dl = draftLine(p);
+  const cell = (k, v, sub) => h('div.pcxs', h('div.pcxk', k), h('div.pcxv', v), sub ? h('div.pcxsub', sub) : null);
+  const full = /^\d+$/.test(String(p.id)) ? 'https://sleepercdn.com/content/nfl/players/' + p.id + '.jpg' : null;
+  const art = h('div.pcxart',
+    h('div.pcxpos', p.pos),
+    full ? h('img', {
+      src: full, alt: '',
+      onerror: e => {
+        const im = e.target;
+        if (!im.dataset.fb) { im.dataset.fb = '1'; im.src = 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg'; }
+        else im.style.visibility = 'hidden';
+      }
+    }) : null,
+    h('div.pcxholo'),
+    h('div.pcxteam', p.team ? teamLogo(p.team) : null, h('span', p.team || 'FA')));
+  const face = h('div.pcxface',
+    h('div.pcxtop', h('div.pcxname', p.name),
+      p.rank ? h('div.pcxrank', '#' + p.rank) : null),
+    art,
+    h('div.pcxmeta', p.pos + (p.posRank ? p.posRank : '') + ' · ' + (p.team || 'Free agent') + (p.age ? ' · ' + fmt(p.age, 0) + ' yrs' : '')),
+    h('div.pcxstats',
+      cell('Value', kfmt(Math.round(p.dv || 0)), isDynasty() ? 'dynasty' : 'redraft'),
+      cell('Pts / wk', fmt(p.ppg || 0, 1), 'projected'),
+      cell('Draft', dl.top, dl.sub)),
+    h('div.pcxglare'));
+  const card = h('div.pcxcard.' + tier + (medalMode() === 'animated' ? '.anim' : ''), { title: p.medal ? medalTitle(p) : null }, face);
+  // the card leans toward the pointer; the glare and foil follow the same point
+  const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!still) {
+    const move = e => {
+      const r = card.getBoundingClientRect();
+      const x = clamp((e.clientX - r.left) / r.width, 0, 1), y = clamp((e.clientY - r.top) / r.height, 0, 1);
+      card.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+      card.style.setProperty('--rx', ((0.5 - y) * 18).toFixed(2) + 'deg'); card.style.setProperty('--ry', ((x - 0.5) * 18).toFixed(2) + 'deg');
+      card.style.setProperty('--hx', ((x - 0.5) * 100).toFixed(1) + '%'); card.style.setProperty('--hy', ((y - 0.5) * 100).toFixed(1) + '%');
+    };
+    card.addEventListener('pointerenter', () => { card.classList.add('pcxon'); });
+    card.addEventListener('pointermove', move);
+    card.addEventListener('pointerleave', () => {
+      card.classList.remove('pcxon');
+      ['--mx', '--my', '--rx', '--ry', '--hx', '--hy'].forEach(k => card.style.removeProperty(k));
+    });
+  }
+  return card;
+}
+function tradingCardStage(p, owner) {
+  const bits = [p.college || null, p.exp !== null && p.exp !== undefined ? (p.exp === 0 ? 'rookie' : p.exp + ' yrs exp') : null].filter(Boolean).join(' · ');
+  return h('div.pcxstage',
+    tradingCard(p),
+    h('div.pcxcap',
+      h('div.row', { style: { gap: '8px', justifyContent: 'center', flexWrap: 'wrap' } }, p.injury ? injuryTag(p.injury, p) : null, bits ? h('span.tiny.sec', bits) : null),
+      h('div.tiny.muted', { style: { marginTop: '3px' } },
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')));
+}
 function viewPlayer() {
   const wrap = h('div.grid');
   const p = S.index[PlayerUI.id];
@@ -6658,13 +6769,7 @@ function viewPlayer() {
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
         owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
-  if (medalOf(p)) {
-    hdr.className += medalCls(p).replace(' medal', ' medal mhero');
-    const pic = hdr.querySelector('.bd > .row > :first-child');
-    const ring = h('span.mring.mhero' + medalCls(p).replace(' medal', '.medal').replace(/ /g, '.'));
-    pic.replaceWith(ring); ring.appendChild(pic);
-  }
-  wrap.appendChild(hdr);
+  wrap.appendChild(isSimple() ? tradingCardStage(p, owner) : hdr);
 
   // ---- what the market is saying about him ----
   const sgp = signalMap()[p.id], tlp = timelineMap()[p.id];
