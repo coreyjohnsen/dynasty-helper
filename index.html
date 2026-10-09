@@ -808,6 +808,12 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .bsearch .ic svg{width:16px;height:16px}
 .bsearch input{width:100%;padding-left:36px}
 .bgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+/* a fixed number per row, stepping down as the room shrinks: four on a big monitor, three on a laptop, two on a
+   tablet, one on a phone — each step is the narrowest width at which the name and the stats line both still fit */
+.bgrid.fixed{grid-template-columns:repeat(var(--bcols,4),minmax(0,1fr))}
+@media (max-width:1759px){ .bgrid.fixed{grid-template-columns:repeat(min(var(--bcols,4),3),minmax(0,1fr))} }
+@media (max-width:1379px){ .bgrid.fixed{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:779px){ .bgrid.fixed{grid-template-columns:minmax(0,1fr)} }
 .bitem{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;text-align:left;color:inherit;transition:border-color .15s,background .15s,transform .15s}
 .bitem:hover{border-color:var(--c);background:var(--surface-2);transform:translateY(-1px)}
 .bitem:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -5337,7 +5343,8 @@ function assetBrowser(o) {
   const chosen = o.chosen || new Set();
   const matches = (q) => o.assets.filter(a => (st.pos === 'all' || a.pos === st.pos)
     && (!q || (a.name + ' ' + (a.ref && a.ref.team || '')).toLowerCase().includes(q.toLowerCase())));
-  const list = h('div.bgrid'), more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
+  // `o.cols` caps how many cards sit on a row, so names are not squeezed on a wide screen
+  const list = h('div.bgrid' + (o.cols ? '.fixed' : '')), more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
   const item = (a) => {
     const inDeal = chosen.has(a.id), face = assetFace(a);
     return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', class: a.kind === 'player' ? rowMedal(a.ref) : null, onclick: () => o.onToggle(a, inDeal) },
@@ -5361,7 +5368,7 @@ function assetBrowser(o) {
   const tabs = o.tabs && o.tabs.length > 1 ? h('div.btabs', o.tabs.map(t =>
     h('button.btab.' + t.color + (o.tab === t.k ? '.on' : ''), { onclick: () => o.onTab(t.k) },
       h('span.btab-dot'), h('span.btab-nm', t.label), t.n ? h('span.btab-n', t.n + (o.tabNote || ' in deal')) : null))) : null;
-  return h('div.card.tbrowse.t' + color, { id: o.id },
+  const shell = h('div.card.tbrowse.t' + color, { id: o.id },
     h('div.bhd', h('h3', o.title || 'Add to the deal'), o.note ? h('span.note', o.note) : null),
     h('div.bd', tabs,
       h('div.bbar',
@@ -5373,6 +5380,8 @@ function assetBrowser(o) {
           onclick: () => { st.pos = p; st.limit = step; o.onChange(); }
         }, p === 'all' ? 'All' : p === 'PICK' ? 'Picks' : p)))),
       list, more));
+  if (o.cols) shell.style.setProperty('--bcols', String(o.cols));
+  return shell;
 }
 /** The bar that rides above the tab bar on a phone: a headline, a sub line, and the action. */
 function dealBar(head, sub, action) {
@@ -5477,7 +5486,9 @@ function viewTrade() {
   /* ---- the roster to choose from ---- */
   const bw = TradeUI.tab === 'b' ? 'b' : 'a', BT = T_OF[bw];
   wrap.appendChild(assetBrowser({
-    id: 'tbrowse', color: bw, st: TradeUI.st,
+    id: 'tbrowse', color: bw, st: TradeUI.st, cols: 4,
+    // the short form of the usual line — team, age, points a week — so it fits four to a row
+    meta: a => a.kind === 'player' && a.ref ? [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + 'y' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' ppg' : null].filter(Boolean).join(' · ') : assetMeta(a),
     title: 'Add to the deal', note: 'tap an asset to add it to what ' + (who(BT) === 'You' ? 'you send' : BT.short + ' sends') + ' · tap again to take it out',
     tabs: ['a', 'b'].map(w => ({ k: w, color: w, label: who(T_OF[w]) === 'You' ? 'Your roster' : T_OF[w].name, n: outOf(w).length })), tab: bw,
     onTab: k => { TradeUI.tab = k; TradeUI.st.pos = 'all'; TradeUI.st.limit = 30; render(); },
