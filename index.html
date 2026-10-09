@@ -529,6 +529,7 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 .sspc-src{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .ssrc{display:grid;justify-items:center;gap:1px;padding:6px 4px;border-radius:9px;background:var(--surface-2);border:1px solid transparent;min-width:0}
 .ssrc span{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-muted);text-transform:uppercase;white-space:nowrap}
+.ssrc-why{font-style:normal;font-size:9.5px;color:var(--text-muted);line-height:1.1;text-align:center}
 .ssrc b{font-size:15px;font-variant-numeric:tabular-nums}
 .ssrc.win{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--surface-2))}
 .ssrc.win b{color:var(--good-text)}
@@ -8074,7 +8075,7 @@ function espnParse(j, wk) {
     for (const id in S.players) { const e = S.players[id] && S.players[id].e; if (e) PSRC.espnMap.set(String(e), id); }
   }
   const list = Array.isArray(j) ? j : (j && (j.players || (j.data && j.data.players))) || [];
-  const raw = new Map();
+  const raw = new Map(), noLine = [];
   for (const e of list) {
     const pl = (e && e.player) || e || {};
     const eid = String(e && e.id !== undefined ? e.id : pl.id);
@@ -8083,7 +8084,7 @@ function espnParse(j, wk) {
     const stats = pl.stats || [];
     const s1 = stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk && (x.statSplitTypeId === undefined || x.statSplitTypeId === 1))
       || stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk);
-    if (!s1) continue;
+    if (!s1) { noLine.push(sid); continue; }
     const v = typeof s1.appliedTotal === 'number' ? s1.appliedTotal : null;
     if (v !== null && isFinite(v)) raw.set(sid, v);
   }
@@ -8100,9 +8101,17 @@ function espnParse(j, wk) {
     if (a.length >= 8) { const m = a[a.length >> 1]; if (m < 0.93 || m > 1.07) scale[pos] = clamp(m, 0.5, 2); }
   }
   PSRC.espnScale = scale;
+  (PSRC.espnNoLine = PSRC.espnNoLine || {})[wk] = new Set(noLine);
   const out = new Map();
   raw.forEach((v, id) => { const p = S.index[id]; out.set(id, v / ((p && scale[p.pos]) || 1)); });
   return out;
+}
+/** Why ESPN has no number for him, in words. */
+function espnWhy(p, wk) {
+  const sp = S.players[p.id]; if (!(sp && sp.e)) return 'Sleeper has no ESPN id for him, so ESPN’s numbers cannot be matched to him';
+  if (!PSRC.data.espn || !PSRC.data.espn[wk]) return 'ESPN has not loaded';
+  if (PSRC.espnNoLine && PSRC.espnNoLine[wk] && PSRC.espnNoLine[wk].has(p.id)) return 'ESPN lists him but has no projection for week ' + wk;
+  return 'ESPN did not return him at all this week (inactive, unprojected, or outside its most-owned list)';
 }
 async function psrcLoadEspn(wk) {
   psrcSet('espn', 'loading', 'Asking ESPN…', 0, true);
@@ -8110,7 +8119,7 @@ async function psrcLoadEspn(wk) {
     const season = S.season, ck = 'psrc:espn:' + season + ':' + wk;
     let map = null;
     const rec = await idbGet(ck);
-    if (rec && rec.d && Date.now() - rec.t < 6 * 3600 * 1000) map = new Map(rec.d);
+    if (rec && rec.d && Date.now() - rec.t < 6 * 3600 * 1000) { map = new Map(rec.d); (PSRC.espnNoLine = PSRC.espnNoLine || {})[wk] = new Set(rec.nl || []); }
     if (!map) {
       const filter = JSON.stringify({ players: { filterSlotIds: { value: [0, 2, 4, 6, 16, 17, 23] }, limit: 1500, offset: 0, filterStatsForSourceIds: { value: [1] }, filterStatsForSplitTypeIds: { value: [1] }, sortPercOwned: { sortPriority: 1, sortAsc: false } } });
       let j = null, err = null;
@@ -8124,7 +8133,7 @@ async function psrcLoadEspn(wk) {
       if (!j) throw err || new Error('no response');
       map = espnParse(j, wk);
       if (!map.size) throw new Error('the response had no projections for week ' + wk);
-      idbSet(ck, { t: Date.now(), d: Array.from(map) });
+      idbSet(ck, { t: Date.now(), d: Array.from(map), nl: Array.from(PSRC.espnNoLine[wk] || []) });
     }
     (PSRC.data.espn = PSRC.data.espn || {})[wk] = map;
     const sc = Object.keys(PSRC.espnScale).map(k => k + ' ×' + fmt(1 / PSRC.espnScale[k], 2)).join(', ');
@@ -8153,12 +8162,14 @@ const PSRC_TAU = 0.45;      // how many weekly standard deviations of gap make a
  */
 function psrcConfidence(cands, wk) {
   const rows = cands.map(p => psrcAll(p, wk));
-  const voters = PSRC_LIST.filter(x => rows.every(r => r.per[x.id] !== null));
+  // a player ESPN has no line for votes with his Sleeper number there, so one gap does not take ESPN out of the vote for everyone
+  rows.forEach(r => { r.vote = Object.assign({}, r.per); if (r.vote.espn === null && r.vote.sleeper !== null) r.vote.espn = r.vote.sleeper; });
+  const voters = PSRC_LIST.filter(x => rows.every(r => r.vote[x.id] !== null));
   let probs;
   if (voters.length) {
     probs = cands.map(() => 0);
     voters.forEach(x => {
-      const vals = rows.map(r => r.per[x.id]);
+      const vals = rows.map(r => r.vote[x.id]);
       const sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(vals[i], 1))));
       const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...vals);
       const e = vals.map(v => Math.exp((v - top) / tau)), tot = sum(e);
@@ -8177,7 +8188,7 @@ function psrcConfidence(cands, wk) {
   // how many sources put each candidate on top (ties split)
   const wins = cands.map(() => 0);
   voters.forEach(x => {
-    const vals = rows.map(r => r.per[x.id]), top = Math.max(...vals), tied = vals.filter(v => Math.abs(v - top) < 0.05).length;
+    const vals = rows.map(r => r.vote[x.id]), top = Math.max(...vals), tied = vals.filter(v => Math.abs(v - top) < 0.05).length;
     vals.forEach((v, i) => { if (Math.abs(v - top) < 0.05) wins[i] += 1 / tied; });
   });
   return { rows, voters, pct: floor, wins, n: voters.length };
@@ -8266,7 +8277,7 @@ function slotPanel(sl, wk) {
         const v = all.per[x.id];
         const others = conf ? conf.rows.filter((_, k) => k !== i).map(r => r.per[x.id]).filter(z => z !== null) : [];
         const wins = v !== null && others.length && v >= Math.max(...others) - 0.05 && conf && conf.rows.every(r => r.per[x.id] !== null);
-        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + (v === null ? ' has no number for him' : '') }, h('span', x.short), h('b', srcValue(v)));
+        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : '') }, h('span', x.short), h('b', srcValue(v)), v === null && x.id === 'espn' ? h('em.ssrc-why', conf && conf.rows[i].vote && conf.rows[i].vote.espn !== null ? 'votes as Sleeper' : espnWhy(p, wk).startsWith('Sleeper has no') ? 'no ESPN id' : 'no line') : null);
       }).concat([h('div.ssrc.avg', { title: 'average of the sources that have a number' }, h('span', 'Avg'), h('b', srcValue(all.cons)))])));
   };
   const note = !conf ? h('div.tiny.muted', 'Nobody else on your roster can play this slot, so there is nothing to compare.')
