@@ -6,6 +6,7 @@
 <title>Dynasty Command Center</title>
 <meta name="description" content="Live Sleeper dynasty league analysis — rosters, trade calculator, power rankings, season simulation, draft-pick pricing and a hypothetical roster sandbox.">
 <meta name="color-scheme" content="light dark">
+<!-- the two media-matched colours are the fallback; once the page runs it keeps one plain tag in step with the theme and accent -->
 <meta name="theme-color" content="#f2f3f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a0d17" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%232a78d6'/><stop offset='1' stop-color='%234a3aa7'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><g transform='rotate(-32 32 32)'><ellipse cx='32' cy='32' rx='18' ry='11' fill='%23fdfdfb'/><path d='M24 32h16' stroke='%232a78d6' stroke-width='2.4' stroke-linecap='round'/><path d='M27 28.6v6.8M31 28.6v6.8M35 28.6v6.8' stroke='%232a78d6' stroke-width='2.2' stroke-linecap='round'/></g></svg>">
@@ -4350,7 +4351,35 @@ function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
   LS.set('theme', t);
+  updateThemeColor();
 }
+/** oklch → #rrggbb, for the browser's own chrome, which cannot be handed an oklch() colour. */
+function oklchToHex(L, C, hDeg) {
+  const h = hDeg * Math.PI / 180, a = C * Math.cos(h), b = C * Math.sin(h);
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b, m_ = L - 0.1055613458 * a - 0.0638541728 * b, s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const l = l_ ** 3, m = m_ ** 3, s = s_ ** 3;
+  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+  return '#' + lin.map(v => { v = Math.min(1, Math.max(0, v)); v = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055; return Math.round(v * 255).toString(16).padStart(2, '0'); }).join('');
+}
+/** Keep the browser's address-bar / status-bar colour the same as the page behind it. */
+function updateThemeColor() {
+  if (typeof document === 'undefined') return;
+  try {
+    const t = LS.get('theme', 'system');
+    const dark = t === 'dark' || (t !== 'light' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches);
+    let color = '#f2f3f8';                                    // the light page background never changes
+    if (dark) {
+      const cs = getComputedStyle(document.documentElement);
+      const hue = parseFloat(cs.getPropertyValue('--hue')), sat = parseFloat(cs.getPropertyValue('--cs'));
+      color = isFinite(hue) && isFinite(sat) && typeof CSS !== 'undefined' && CSS.supports && CSS.supports('color', 'oklch(50% .1 200)')
+        ? oklchToHex(0.165, 0.034 * sat, hue) : '#0a0d17';   // same numbers as --plane in the stylesheet
+    }
+    let m = document.querySelector('meta[name="theme-color"]:not([media])');
+    if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.insertBefore(m, document.head.firstChild); }
+    m.content = color;
+  } catch (e) { /* the media-matched fallbacks stay */ }
+}
+if (typeof matchMedia === 'function') { try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => updateThemeColor()); } catch (e) { } }
 function currentTheme() { return LS.get('theme', 'system'); }
 /* Accent colour: one hue drives every brand token (see "accent themes" in the
    stylesheet). The hexes are only the swatches' faces. */
@@ -4369,6 +4398,7 @@ function setAccent(k) {
   if (k === 'indigo') document.documentElement.removeAttribute('data-accent');
   else document.documentElement.setAttribute('data-accent', k);
   LS.set('accent', k);
+  updateThemeColor();
 }
 
 /* One menu for everything that changes how the app looks rather than what it
