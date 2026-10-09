@@ -168,6 +168,25 @@ run to compare against. The player page explains any flag in words.
 
 ---
 
+## Injury return dates
+
+Sleeper's tag says a player is hurt, not for how long. `availability(p, week)` is the chance a
+flagged player plays in a given week, and `pw()` multiplies every weekly projection by it, so
+lineups, Start/Sit, Head to Head, the simulator and the season outlook all read one number.
+
+Where the return week comes from, best first:
+
+1. **ESPN's public injury feed** (`site.api.espn.com/apis/site/v2/sports/football/nfl/injuries`),
+   matched through the `espn_id` Sleeper already carries. It is unofficial and keyless; if the
+   browser blocks it or it changes shape, the app says so in Settings and carries on.
+2. **The wording of the notes** (ESPN's and Sleeper's): "season-ending", "4-6 weeks", "Week 9".
+3. **Typical recovery for the body part and designation** (`BODY_WEEKS`; IR is at least four games).
+
+Each source gives a most-likely week and a spread, so a Week 7 return is 24% likely to play in
+Week 6 and 97% in Week 8, not a cliff. IR-slot players due back are added to the simulated
+lineups from the week they return. Redraft values lose up to 30% for lost games, dynasty values
+are untouched. **Settings → Injury return dates** switches all of it off and shows the feed's status.
+
 ## Known limits
 
 - Rotowire's weekly projections barely differ week to week before the season
