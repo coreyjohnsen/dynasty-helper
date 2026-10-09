@@ -440,7 +440,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .why li.w-cost::before{background:var(--warning)}
 .why li.w-age::before{background:var(--s4)}
 .why li.w-them::before{background:var(--s3)}
-.sigcols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.sigcols{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr))}
 .sigh{display:grid;gap:1px;margin-bottom:8px}
 .sigrows{display:grid;gap:8px}
 .sigrow{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);min-width:0}
@@ -505,7 +505,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tray-t{display:flex;align-items:center;gap:9px;font-size:15px;min-width:0}
 .tray-dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
 .tray-sum{font-size:24px;font-weight:730;letter-spacing:-.03em;color:var(--c)}
-.tray-items{display:grid;gap:8px;align-content:start;padding:4px 14px 14px;flex:1}
+.tray-items{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-content:start;padding:4px 14px 14px;flex:1}
 .dealitem{display:flex;align-items:center;gap:12px;padding:11px 12px 11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);animation:rise .28s var(--ease) both}
 .dealmain{min-width:0;flex:1}
 .dealnm{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -562,7 +562,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .bsearch .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;display:grid}
 .bsearch .ic svg{width:16px;height:16px}
 .bsearch input{width:100%;padding-left:36px}
-.bgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.bgrid{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
 .bitem{display:flex;align-items:center;gap:12px;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;text-align:left;color:inherit;transition:border-color .15s,background .15s,transform .15s}
 .bitem:hover{border-color:var(--c);background:var(--surface-2);transform:translateY(-1px)}
 .bitem:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -582,7 +582,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 
 .dealbar{display:none}
 #tresult{scroll-margin-top:84px}
-.helps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.helps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:12px}
 .helpbox{padding:14px 16px;border-radius:var(--r-sm);border:1px solid var(--border);border-left:4px solid var(--c);background:var(--surface-2);display:grid;gap:3px}
 .helpbox.a{--c:var(--s1)}
 .helpbox.b{--c:var(--s2)}
@@ -684,14 +684,14 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .tmini-hd{display:flex;align-items:center;gap:8px;padding:0 4px 8px;font-size:13px}
 .tmini-hd .tray-dot{width:9px;height:9px}
 .tmini-sum{margin-left:auto;font-weight:730;font-size:16px;letter-spacing:-.02em;color:var(--c)}
-.tmini-items{display:grid;gap:7px}
+.tmini-items{display:grid;gap:7px;grid-template-columns:minmax(0,1fr)}
 .tcard .tcols{align-items:start}
 
 .tav-s.sm{width:24px;height:24px;border-radius:8px}
 .tmini-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tmini-lbl{font-size:10px;font-weight:720;letter-spacing:.09em;text-transform:uppercase;color:var(--text-muted);padding:0 4px 5px}
 .tmini.won{box-shadow:0 0 0 1px color-mix(in srgb,var(--good) 40%,transparent)}
-.thist{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;align-items:start}
+.thist{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px;align-items:start}
 
 /* ---- hypothetical editor ---- */
 .hypdest{font-size:11.5px;padding:3px 6px;flex:none;max-width:118px;min-height:30px;border-radius:8px}
@@ -703,7 +703,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .hypgrid .bgrid{grid-template-columns:minmax(0,1fr)}
 
 /* ---- injury report ---- */
-.ifacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ifacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:10px}
 .ifact{padding:11px 13px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);min-width:0}
 .ifact .k{font-size:11px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3)}
 .ifact .v{font-weight:650;font-size:15px;margin:3px 0 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -719,6 +719,87 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .lteam i{width:10px;height:10px;border-radius:50%;flex:none}
 .lteam .lfull{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .lline{border-left:3px solid var(--border);padding:3px 0 3px 9px;border-radius:2px}
+/* ---- simulator ---- */
+.segscroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.segscroll .seg{flex-wrap:nowrap}
+.segscroll .seg button{flex:none;white-space:nowrap}
+.tface{position:relative;display:inline-grid;place-items:center;border-radius:30%;color:#fff;font-weight:720;letter-spacing:.02em;overflow:hidden;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.tface img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:var(--surface-3)}
+.simdesk .bd{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.smodes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.smode{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;font:inherit;transition:background .15s,border-color .15s,box-shadow .15s,transform .15s}
+.smode:hover{border-color:var(--border-strong);color:var(--text-primary)}
+.smode.on{background:linear-gradient(160deg,color-mix(in srgb,var(--brand,var(--s1)) 14%,var(--surface-1)),var(--surface-1));border-color:var(--brand,var(--s1));color:var(--text-primary);box-shadow:0 0 0 1px var(--brand,var(--s1)),var(--shadow)}
+.smode-ic{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--surface-3)}
+.smode.on .smode-ic{background:var(--brand,var(--s1));color:#fff}
+.smode-ic .ic svg{width:19px;height:19px}
+.smode-t{font-size:12.5px;font-weight:660;text-align:center;line-height:1.2}
+.simctl{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.simctl .simrun{flex:0 1 240px;min-height:42px;justify-content:center}
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch}
+.pod{position:relative;display:grid;justify-items:center;align-content:start;gap:3px;padding:16px 8px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);box-shadow:var(--shadow);text-align:center;min-width:0}
+.pod.first{background:linear-gradient(170deg,color-mix(in srgb,var(--brand,var(--s1)) 16%,var(--surface-1)),var(--surface-1) 70%);border-color:color-mix(in srgb,var(--brand,var(--s1)) 45%,var(--border))}
+.pod-rank{position:absolute;top:7px;left:9px;font-size:11px;font-weight:700;color:var(--text-muted)}
+.pod-nm{font-weight:650;font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
+.pod-big{font-size:24px;font-weight:760;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.pod.first .pod-big{font-size:28px;color:var(--brand,var(--s1))}
+.pod-meta{font-size:11px;color:var(--text-secondary);margin-top:3px;line-height:1.35}
+.kstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px}
+.olist{display:grid;gap:8px}
+.orow{display:grid;grid-template-columns:20px 38px minmax(0,1fr);gap:10px;align-items:start;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
+.orank{font-size:12px;font-weight:700;color:var(--text-muted);padding-top:10px;text-align:center}
+.omain{display:grid;gap:7px;min-width:0}
+.onm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.smeter{display:grid;grid-template-columns:52px minmax(0,1fr) 46px;gap:8px;align-items:center}
+.smeter .bar-track{height:8px}
+.smeter b{text-align:right;font-size:12.5px}
+.odet{line-height:1.4}
+.levcard{display:grid;gap:10px;padding:13px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
+.levvs{display:flex;align-items:center;gap:8px;min-width:0}
+.levnm{min-width:0;font-size:14px;line-height:1.2;overflow-wrap:anywhere}
+.levvs .levnm:nth-of-type(1){flex:1}
+.levvs .levnm:nth-of-type(2){flex:1;text-align:right}
+.levgrid{display:grid;grid-template-columns:62px minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}
+.lev-h{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap;text-align:center;font-size:11px}
+.lev-t{display:grid;justify-items:center;gap:2px}
+.lev-c{display:grid;gap:4px;padding:8px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1)}
+.lev-c.win{border-color:color-mix(in srgb,var(--s1) 45%,var(--border));background:color-mix(in srgb,var(--s1) 6%,var(--surface-1))}
+.lev-c.na{place-items:center;color:var(--text-muted)}
+.lev-top{display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+.lev-c .bar-track{height:7px}
+.tstrip{display:flex;gap:7px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.tpill{flex:none;display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 6px;border:1px solid var(--border);border-radius:99px;background:var(--surface-2);color:var(--text-secondary);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.tpill.on{border-color:var(--brand,var(--s1));background:color-mix(in srgb,var(--brand,var(--s1)) 12%,var(--surface-1));color:var(--text-primary);box-shadow:0 0 0 1px var(--brand,var(--s1))}
+.sgame .bd{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.sg-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:start}
+.sg-side{display:grid;justify-items:start;gap:2px;min-width:0}
+.sg-side.r{justify-items:end;text-align:right}
+.sg-nm{font-weight:640;font-size:13.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:5px}
+.sg-pct{font-size:30px;font-weight:760;letter-spacing:-.035em;line-height:1.05;font-variant-numeric:tabular-nums}
+.sg-vs{align-self:center;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+.sg-bar{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--surface-3);gap:2px}
+.sg-bar i{display:block;height:100%}
+.champ{background:linear-gradient(135deg,color-mix(in srgb,var(--brand,var(--s1)) 16%,var(--surface-1)),var(--surface-1) 75%)}
+.champ .bd{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.champ-top{display:flex;align-items:center;gap:10px}
+.champ-cup{font-size:34px;line-height:1}
+.champ-main{display:flex;align-items:center;gap:14px;min-width:0}
+.champ-again{justify-self:start}
+.brkv{display:grid;gap:18px}
+.brkv>div{display:grid!important;gap:9px!important}
+.wkstrip{display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+.wkstrip .btn{flex:none}
+@media (max-width:620px){
+  .simctl .simrun{flex:1 1 180px}
+  .kstrip{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:10px;padding:2px 2px 6px;margin:0 -2px;-webkit-overflow-scrolling:touch}
+  .kstrip .kpi{flex:0 0 162px;scroll-snap-align:start}
+  .levgrid{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:6px}
+  .podium{gap:7px}
+  .pod{padding:14px 5px 10px}
+  .pod-big{font-size:21px}
+  .pod.first .pod-big{font-size:24px}
+  .champ-again{justify-self:stretch;justify-content:center}
+}
 /* ============ simple mode ============
    The Default view: the same data with more air, larger type, rounder edges,
    and the secondary columns and deep-dive cards left out. Everything here hangs
@@ -836,7 +917,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 }
 
 /* ---- start/sit comparison cards ---- */
-.cgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(248px,1fr))}
+.cgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(248px,100%),1fr))}
 .ccard{position:relative;border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;background:var(--surface-1);
   display:grid;gap:10px;min-width:0;align-content:start}
 .ccard.lead{border-color:var(--s1);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--s1) 35%, transparent)}
@@ -982,7 +1063,7 @@ tr.mineline td{background:color-mix(in srgb, var(--brand) 7%, transparent)}
   .lgrow .form{display:none}
   .lgrow .who .avatar{width:30px;height:30px;border-radius:9px}
 }
-.tilegrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(262px,1fr))}
+.tilegrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(262px,100%),1fr))}
 .tile{display:flex;align-items:flex-start;gap:13px;text-align:left;padding:15px 16px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-1);cursor:pointer;min-width:0;
   box-shadow:var(--shadow-xs);transition:border-color .15s,background .15s,transform .18s var(--ease),box-shadow .18s}
 .tile:hover{border-color:color-mix(in srgb, var(--brand) 45%, var(--border));transform:translateY(-2px);box-shadow:var(--shadow)}
@@ -3290,7 +3371,7 @@ function injuryCard(p) {
   }));
   return card('Injury report',
     on ? 'return estimates feed his projection, lineups and the simulator' : 'estimates are switched off in Settings — projections use the status tag only',
-    h('div', { style: { display: 'grid', gap: '14px' } },
+    h('div', { style: { display: 'grid', gap: '14px', gridTemplateColumns: 'minmax(0,1fr)' } },
       h('div.ifacts',
         fact('Status', injuryTag(p.injury, p) || p.injury, j.body ? j.body + (feed && feed.side ? ' (' + feed.side.toLowerCase() + ')' : '') : 'body part not listed'),
         fact('Expected back', back, j.text),
@@ -3756,15 +3837,16 @@ function bracketView(sim) {
           background: 'var(--surface-2)', display: 'grid', gap: '2px'
         }
       },
-        h('div.row', { style: { gap: '6px' } }, h('span.tag', ord(r.seed)), h('b.tiny', r.team.name)),
+        h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, h('span.tag', ord(r.seed)), teamFace(r.team, 22), h('b.tiny', r.team.name)),
         h('div.tiny.muted', 'First-round bye'))));
     }
     round.games.forEach(g => {
       const side = (r, pts, top, won) => h('div.row', {
         style: { justifyContent: 'space-between', gap: '8px', opacity: won ? 1 : .55, padding: '2px 0' }
       },
-        h('div.row', { style: { gap: '6px', minWidth: 0 } },
+        h('div.row', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap' } },
           h('span.tag', { style: { minWidth: '22px', textAlign: 'center' } }, ord(r.seed)),
+          teamFace(r.team, 22),
           h('span', { style: { fontWeight: won ? 680 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12.5px' } }, r.team.name)),
         h('b.mono', { style: { fontSize: '13px', color: won ? 'var(--text-primary)' : 'var(--text-secondary)' } }, fmt(pts, 1)));
       const cardEl = h('div', {
@@ -3795,8 +3877,13 @@ function bracketView(sim) {
         }
       },
         h('div', { style: { fontSize: '22px', lineHeight: 1 } }, '🏆'),
+        h('div', { style: { display: 'grid', placeItems: 'center', marginTop: '6px' } }, teamFace(sim.champion.team, 40)),
         h('div', { style: { fontWeight: 700, marginTop: '5px' } }, sim.champion.team.name),
         h('div.tiny.muted', ord(sim.champion.seed) + ' seed · ' + sim.champion.w + '-' + sim.champion.l))));
+  }
+  if (isNarrow()) {
+    // a phone has no room for rounds side by side: read them top to bottom instead
+    return h('div.brkv', cols.map(c => { c.style.minWidth = '0'; c.style.justifyContent = 'stretch'; return c; }));
   }
   return scrollBox(h('div', { style: { display: 'flex', gap: '16px', padding: '4px 2px 8px', minWidth: 'min-content' } }, cols));
 }
@@ -4171,7 +4258,7 @@ function viewRoster() {
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
     t.window ? h('span.tag', t.window) : null));
 
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(148px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(148px,100%),1fr))' } },
     kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), `${ord(t.valueRank)} of ${teams.length} · ${sgn(Math.round((t.totalValue / leagueAvgValue - 1) * 100), 0)}% vs avg`,
       `<div class="k">Total ${valueWord()} trade value</div>` + (isDynasty()
         ? `Players <b>${kfmt(Math.round(t.rosterValue))}</b><br>Draft picks <b>${kfmt(Math.round(t.pickCapital))}</b>`
@@ -4310,7 +4397,7 @@ function rosterTable(t) {
           h('b.tiny', list.length + (pos === 'PICK' ? ' picks' : ' players')),
           h('span.tiny.muted', kfmt(Math.round(sum(list.map(x => x.dv || 0)))) + ' value'
             + (t.posValue[pos + 'Rank'] ? ' · ' + ord(t.posValue[pos + 'Rank']) + ' in league' : ''))),
-        h('div.grid', { style: { gap: '7px', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))' } }, list.map(tile)));
+        h('div.grid', { style: { gap: '7px', gridTemplateColumns: 'repeat(auto-fill,minmax(min(280px,100%),1fr))' } }, list.map(tile)));
     }));
   }
 
@@ -4359,7 +4446,7 @@ function viewPower() {
 
   if (!future) {
     const top = rows.slice().sort((a, b) => b.s.title - a.s.title)[0];
-    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
       kpi('Title favorite', top.t.name, pct(top.s.title, 1) + ' championship odds',
         '<div class="k">Highest championship odds</div>Not always the top power rating — power weights results already banked, while title odds come from simulating the games left.'),
       kpi('Playoff spots', String(sim.playoffTeams), `of ${teams.length} teams`),
@@ -4455,7 +4542,7 @@ function viewPower() {
 
     if (S.lastWeek >= 2) wrap.appendChild(weeklyTrajectory());
   } else {
-    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))' } },
+    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(320px,100%),1fr))' } },
       proOnly(dynOnly(card('Contend vs. build', 'each team’s two-axis position', contendMatrix()))),
       card('Draft capital', 'total value of picks held', barList(
         S.teams.slice().sort((a, b) => b.pickCapital - a.pickCapital).map(t => ({
@@ -4550,7 +4637,7 @@ function viewStandings() {
   teams.sort((a, b) => (b.wins - a.wins) || (b.fpts - a.fpts));
   const lucky = teams.slice().sort((a, b) => (b.luck || 0) - (a.luck || 0));
 
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
     kpi('Best record', teams[0].name, `${teams[0].wins}-${teams[0].losses}${teams[0].ties ? '-' + teams[0].ties : ''}`),
     kpi('Most points', teams.slice().sort((a, b) => b.fpts - a.fpts)[0].name, fmt(Math.max(...teams.map(t => t.fpts)), 1) + ' PF'),
     kpi('Luckiest', lucky[0].name, sgn(lucky[0].luck, 1) + ' wins vs. expected', '<div class="k">Luck</div>Actual wins minus wins expected from an all-play record — how the schedule treated them.'),
@@ -4605,7 +4692,7 @@ function viewStandings() {
       h('button.btn.sm', { onclick: () => { S.view = 'week'; render(); window.scrollTo(0, 0); } }, 'Open This Week →')));
   }
 
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(330px,100%),1fr))' } },
     card('Schedule luck', 'actual wins minus all-play expected wins',
       divBar(lucky.map(t => ({ label: t.name, v: t.luck, vl: sgn(t.luck, 1) + ' W', tip: `<div class="k">${t.name}</div>Actual <b>${t.wins + 0.5 * t.ties}</b> wins<br>Expected <b>${fmt(t.expWins, 1)}</b> from all-play<br>All-play record <b>${t.apW}-${t.apL}</b>` })), { dec: 1 })),
     card('Points for', 'total scored this season',
@@ -5109,7 +5196,7 @@ function tradeResult(R) {
             isPct ? pct(a, d) : fmt(a, d), ' ', deltaTag(isPct ? (a - b) * 100 : a - b, isPct ? 1 : 1, isPct ? 'pp' : '')))))) : null
     );
   };
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(340px,100%),1fr))' } },
     card('Impact on ' + A.name, null, impact(A, aBefore, aAfter)),
     card('Impact on ' + B.name, null, impact(B, bBefore, bAfter))));
 
@@ -5886,94 +5973,134 @@ function tradeCardRow(r, T, i) {
 }
 
 /* ================= 6. SIMULATOR ================= */
-const SimUI = { mode: 'season', week: null, n: 2000, res: null, team: null, replay: null, openWeek: null };
+const SimUI = { mode: 'season', week: null, n: 2000, res: null, team: null, replay: null, openWeek: null, sort: 'title' };
+/* ================= simulator pieces =================
+   Shared by all three modes: a badge for every team (its Sleeper avatar, or a
+   coloured initial when it has none), a strip to pick a team, and a meter. */
+function teamFace(T, size) {
+  size = size || 32;
+  const hue = ((T.rosterId || 1) * 47) % 360;
+  const e = h('span.tface', {
+    style: { width: size + 'px', height: size + 'px', fontSize: Math.max(9, Math.round(size * 0.36)) + 'px', background: `linear-gradient(135deg,hsl(${hue},55%,52%),hsl(${(hue + 40) % 360},55%,38%))` }
+  }, String(T.short || '?').slice(0, 2));
+  if (T.avatar) e.appendChild(h('img', { src: T.avatar, alt: '', loading: 'lazy', onerror: ev => ev.target.remove() }));
+  return e;
+}
+/** A team as a badge and a name, for the places a table cell has no room for more. */
+function teamLine(T, size) {
+  return h('div.row', { style: { gap: '8px', minWidth: 0, flexWrap: 'nowrap' } }, teamFace(T, size || 26),
+    h('span', { style: { fontWeight: 580, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, title: T.name + ' — ' + T.owner }, T.name));
+}
+/** Pick one team from a scrolling row of badges. */
+function teamStrip(teams, selected, onPick) {
+  return h('div.tstrip', { role: 'radiogroup', 'aria-label': 'Team' }, teams.map(T =>
+    h('button.tpill' + (T.rosterId === selected ? '.on' : ''), { role: 'radio', 'aria-checked': T.rosterId === selected ? 'true' : 'false', title: T.name, onclick: () => onPick(T.rosterId) },
+      teamFace(T, 26), h('span', T.short))));
+}
+/** A labelled bar with its number on the right. */
+function simMeter(label, v, colour, text) {
+  return h('div.smeter', h('span.tiny.muted', label),
+    h('div.bar-track', h('div.bar-fill', { style: { width: (clamp(v, 0, 1) * 100) + '%', background: colour } })),
+    h('b.mono', text));
+}
+const SIM_MODES = [
+  { k: 'season', ic: 'standings', t: 'Season odds', d: 'Playoff, bye and title odds for every team, plus the games that swing them.' },
+  { k: 'week', ic: 'week', t: 'Single week', d: 'Win chances and score ranges for every matchup in one week.' },
+  { k: 'replay', ic: 'power', t: 'Play a season', d: 'One actual season, game by game, through the bracket to a champion.' }
+];
+function simDesk(weeks, isReplay) {
+  const mode = SIM_MODES.find(m => m.k === SimUI.mode) || SIM_MODES[0];
+  const run = () => {
+    const t0 = performance.now();
+    if (isReplay) { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; SimUI.replay.ms = Math.round(performance.now() - t0); }
+    else {
+      SimUI.res = SimUI.mode === 'week' ? simulate(SimUI.n, { onlyWeek: SimUI.week }) : simulate(SimUI.n);
+      SimUI.res.ms = Math.round(performance.now() - t0);
+      if (SimUI.mode === 'season') S.sim = SimUI.res;
+    }
+    render();
+  };
+  const status = !isReplay && SimUI.res ? `${kfmt(SimUI.res.n)} runs in ${SimUI.res.ms} ms`
+    : isReplay && SimUI.replay ? 'season #' + SimUI.replay.seed.toString(36) + (SimUI.replay.ms ? ' · ' + SimUI.replay.ms + ' ms' : '') : null;
+  return h('div.card.simdesk', h('div.bd',
+    h('div.smodes', { role: 'tablist' }, SIM_MODES.map(m =>
+      h('button.smode' + (m.k === SimUI.mode ? '.on' : ''), { role: 'tab', 'aria-selected': m.k === SimUI.mode ? 'true' : 'false', onclick: () => { SimUI.mode = m.k; SimUI.res = null; render(); } },
+        h('span.smode-ic', ico(m.ic)), h('span.smode-t', m.t)))),
+    h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random — the same settings will not give you the same season twice.'),
+    h('div.simctl',
+      SimUI.mode === 'week' ? h('label.fld', 'Week', h('select', { onchange: e => { SimUI.week = +e.target.value; SimUI.res = null; render(); } },
+        weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,
+      isReplay ? null : h('label.fld', 'Simulations', h('select', { onchange: e => { SimUI.n = +e.target.value; SimUI.res = null; render(); } },
+        [1000, 2000, 5000, 10000].map(n => h('option', { value: n, selected: n === SimUI.n }, kfmt(n))))),
+      h('button.btn.pri.simrun', { onclick: run }, isReplay ? '▶ Play the season' : 'Run simulation')),
+    status ? h('div.tiny.muted', status) : null));
+}
+function simEmpty(title, text) {
+  return h('div.card', h('div.bd', h('div.empty',
+    h('div', { style: { fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' } }, title),
+    h('div.tiny', { style: { marginTop: '6px', maxWidth: '540px', margin: '6px auto 0' } }, text))));
+}
+
 function viewSim() {
   const wrap = h('div.grid');
   const firstOpen = Math.min(S.lastWeek + 1, S.regEnd);
   if (SimUI.week === null) SimUI.week = firstOpen;
   const weeks = []; for (let w = 1; w <= S.regEnd; w++) weeks.push(w);
   const isReplay = SimUI.mode === 'replay';
-
-  wrap.appendChild(card('Simulation setup', 'every run is freshly random — the same settings will not give you the same season twice',
-    h('div.row', { style: { gap: '14px' } },
-      h('label.fld', 'Mode', segmented([
-        { k: 'season', label: 'Season odds' }, { k: 'week', label: 'Single week' }, { k: 'replay', label: 'Play a season' }
-      ], SimUI.mode, m => { SimUI.mode = m; SimUI.res = null; render(); })),
-      SimUI.mode === 'week' ? h('label.fld', 'Week', h('select', { onchange: e => { SimUI.week = +e.target.value; SimUI.res = null; render(); } },
-        weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,
-      isReplay ? null : h('label.fld', 'Simulations', h('select', { onchange: e => { SimUI.n = +e.target.value; SimUI.res = null; render(); } },
-        [1000, 2000, 5000, 10000].map(n => h('option', { value: n, selected: n === SimUI.n }, kfmt(n))))),
-      h('label.fld', ' ', h('button.btn.pri', {
-        onclick: () => {
-          const t0 = performance.now();
-          if (isReplay) { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; SimUI.replay.ms = Math.round(performance.now() - t0); }
-          else {
-            SimUI.res = SimUI.mode === 'week' ? simulate(SimUI.n, { onlyWeek: SimUI.week }) : simulate(SimUI.n);
-            SimUI.res.ms = Math.round(performance.now() - t0);
-            if (SimUI.mode === 'season') S.sim = SimUI.res;
-          }
-          render();
-        }
-      }, isReplay ? '▶ Play the season' : 'Run simulation')),
-      h('span', { style: { flex: 1 } }),
-      !isReplay && SimUI.res ? h('span.tiny.muted', `${kfmt(SimUI.res.n)} runs in ${SimUI.res.ms} ms`) : null,
-      isReplay && SimUI.replay ? h('span.tiny.muted', 'season #' + SimUI.replay.seed.toString(36) + (SimUI.replay.ms ? ' · ' + SimUI.replay.ms + ' ms' : '')) : null
-    )));
+  wrap.appendChild(simDesk(weeks, isReplay));
 
   if (isReplay) {
     if (!SimUI.replay) {
-      wrap.appendChild(card(null, null, h('div.empty',
-        h('div', { style: { fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' } }, 'Play one season all the way through'),
-        h('div.tiny', { style: { marginTop: '6px', maxWidth: '540px', margin: '6px auto 0' } },
-          'Not odds — one actual season. Every remaining week gets played out game by game, the table sorts itself out, the bracket runs, and somebody lifts the trophy. '
-          + (S.lastWeek ? `Weeks 1–${S.lastWeek} are your real results; week ${S.lastWeek + 1} onward is where it goes off-script.` : 'Nothing has happened yet, so the whole thing is up for grabs.')))));
+      wrap.appendChild(simEmpty('Play one season all the way through',
+        'Not odds — one actual season. Every remaining week gets played out game by game, the table sorts itself out, the bracket runs, and somebody lifts the trophy. '
+        + (S.lastWeek ? `Weeks 1–${S.lastWeek} are your real results; week ${S.lastWeek + 1} onward is where it goes off-script.` : 'Nothing has happened yet, so the whole thing is up for grabs.')));
       return wrap;
     }
     wrap.appendChild(simReplayView(SimUI.replay));
     return wrap;
   }
-
   if (!SimUI.res) {
-    wrap.appendChild(card(null, null, h('div.empty',
-      h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'Pick a mode and press Run'),
-      h('div.tiny', { style: { marginTop: '6px', maxWidth: '520px', margin: '6px auto 0' } },
-        'Every player gets a projected mean and a weekly standard deviation. Each simulated week draws a score for each starter, adds a team-level swing, resolves your real schedule, then seeds and plays the bracket. Weeks already played are locked to their actual results.'))));
+    wrap.appendChild(simEmpty('Pick a mode and press Run',
+      'Every player gets a projected mean and a weekly standard deviation. Each simulated week draws a score for each starter, adds a team-level swing, resolves your real schedule, then seeds and plays the bracket. Weeks already played are locked to their actual results.'));
     return wrap;
   }
   return SimUI.mode === 'week' ? (wrap.appendChild(simWeekView(SimUI.res)), wrap) : (wrap.appendChild(simSeasonView(SimUI.res)), wrap);
+}
+/** One matchup of the single-week view: both teams, their chances, and where the score should land. */
+function simGameCard(res, a, b) {
+  const A = S.teamById[a], B = S.teamById[b];
+  const ra = res.by[a], rb = res.by[b];
+  if (!A || !B || !ra || !rb) return null;
+  const wk = res.onlyWeek, played = wk <= S.lastWeek, isLive = wk === S.liveWeek;
+  const actual = (played || isLive) ? (S.matchups[wk] || []) : [];
+  const ga = isLive ? { points: liveRoster(A, wk).total } : actual.find(m => m.roster_id === a);
+  const gb = isLive ? { points: liveRoster(B, wk).total } : actual.find(m => m.roster_id === b);
+  const CA = 'var(--s1)', CB = 'var(--s2)';
+  const dist = (r) => {
+    const s = r.weekScores.slice().sort((x, y) => x - y);
+    const q = p => s[clamp(Math.floor(p * s.length), 0, s.length - 1)];
+    return `<b>${fmt(q(.5), 1)}</b> median · ${fmt(q(.1), 0)}–${fmt(q(.9), 0)} typical range`;
+  };
+  const side = (T, r, act, col, right) => h('div.sg-side' + (right ? '.r' : ''),
+    teamFace(T, 44),
+    h('div.sg-nm', { title: T.name }, matchupName(T)),
+    h('div.sg-pct', { style: { color: col } }, pct(r.weekWin, 0)),
+    h('div.tiny.muted', 'proj ' + fmt(r.weekPts, 1)),
+    act ? h('div.tiny', { style: { fontWeight: 650 } }, (isLive ? 'live ' : 'actual ') + fmt(act.points || 0, 1)) : h('div.tiny.muted', 'top scorer ' + pct(r.weekTop, 1)));
+  return h('div.card.sgame', h('div.bd',
+    h('div.row', { style: { justifyContent: 'space-between' } },
+      h('b.tiny', 'Week ' + wk + (played ? ' — final' : '')), isLive ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null),
+    h('div.sg-main', side(A, ra, ga, ra.weekWin >= rb.weekWin ? CA : 'var(--text-muted)', false), h('div.sg-vs', 'vs'), side(B, rb, gb, rb.weekWin > ra.weekWin ? CB : 'var(--text-muted)', true)),
+    h('div.sg-bar', h('i', { style: { width: (ra.weekWin * 100) + '%', background: CA } }), h('i', { style: { width: (rb.weekWin * 100) + '%', background: CB } })),
+    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px', lineHeight: 1.6 }, html: A.short + ': ' + dist(ra) + '<br>' + B.short + ': ' + dist(rb) })));
 }
 function simWeekView(res) {
   const wrap = h('div.grid');
   const games = (schedule()[res.onlyWeek - 1] || []);
   const played = res.onlyWeek <= S.lastWeek;
   if (!games.length) return card('Week ' + res.onlyWeek, null, h('div.empty', 'No matchups found for this week.'));
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))' } },
-    games.map(([a, b]) => {
-      const A = S.teamById[a], B = S.teamById[b];
-      const ra = res.by[a], rb = res.by[b];
-      if (!A || !B || !ra || !rb) return null;
-      const isLive = res.onlyWeek === S.liveWeek;
-      const actual = (played || isLive) ? (S.matchups[res.onlyWeek] || []) : [];
-      const ga = isLive ? { points: liveRoster(A, res.onlyWeek).total } : actual.find(m => m.roster_id === a);
-      const gb = isLive ? { points: liveRoster(B, res.onlyWeek).total } : actual.find(m => m.roster_id === b);
-      const side = (T, r, act, other) => h('div', { style: { display: 'grid', gap: '5px' } },
-        h('div.row', { style: { justifyContent: 'space-between' } }, teamCell(T, { sub: false }),
-          h('b.mono', { style: { fontSize: '17px' } }, pct(r.weekWin, 0))),
-        h('div.bar-track', { style: { height: '7px' } }, h('div.bar-fill', { style: { width: (r.weekWin * 100) + '%', background: r.weekWin > other.weekWin ? 'var(--s1)' : 'var(--seq-200)' } })),
-        h('div.row', { style: { justifyContent: 'space-between' } },
-          h('span.tiny.muted', 'proj ' + fmt(r.weekPts, 1)),
-          act ? h('span.tiny', { style: { fontWeight: 640 } }, (isLive ? 'live ' : 'actual ') + fmt(act.points || 0, 1)) : h('span.tiny.muted', 'top scorer ' + pct(r.weekTop, 1))));
-      const dist = (r) => {
-        const s = r.weekScores.slice().sort((x, y) => x - y);
-        const q = p => s[clamp(Math.floor(p * s.length), 0, s.length - 1)];
-        return `<b>${fmt(q(.5), 1)}</b> median · ${fmt(q(.1), 0)}–${fmt(q(.9), 0)} typical range`;
-      };
-      return card('Week ' + res.onlyWeek + (played ? ' — final' : ''), null, h('div', { style: { display: 'grid', gap: '11px' } },
-        side(A, ra, ga, rb),
-        h('div.tiny.muted', { style: { textAlign: 'center' } }, 'vs'),
-        side(B, rb, gb, ra),
-        h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '7px' }, html: A.short + ': ' + dist(ra) + '<br>' + B.short + ': ' + dist(rb) })));
-    }).filter(Boolean)));
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(320px,100%),1fr))' } },
+    games.map(([a, b]) => simGameCard(res, a, b)).filter(Boolean)));
 
   const teams = S.teams.slice().sort((a, b) => b.now - a.now);
   if (SimUI.team === null) SimUI.team = teams[0].rosterId;
@@ -5985,15 +6112,16 @@ function simWeekView(res) {
   scores.forEach(s => { const i = clamp(Math.floor((s - lo) / bw), 0, NB - 1); bins[i].v++; });
   bins.forEach(b => b.v /= scores.length);
   wrap.appendChild(card('Score distribution — week ' + res.onlyWeek, 'what this team could plausibly put up',
-    h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'score distribution' }),
-      h('div.tiny.muted', { style: { marginTop: '8px' } }, `Median ${fmt(scores[Math.floor(scores.length / 2)], 1)} · 10th–90th percentile ${fmt(scores[Math.floor(scores.length * .1)], 1)}–${fmt(scores[Math.floor(scores.length * .9)], 1)} · top-scorer odds ${pct(r.weekTop, 1)}`)),
-    h('select', { onchange: e => { SimUI.team = +e.target.value; render(); } }, teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === SimUI.team }, t.name)))));
+    h('div', { style: { display: 'grid', gap: '12px', gridTemplateColumns: 'minmax(0,1fr)' } },
+      teamStrip(teams, SimUI.team, id => { SimUI.team = id; render(); }),
+      h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'score distribution' }),
+        h('div.tiny.muted', { style: { marginTop: '8px' } }, `${T.name}: median ${fmt(scores[Math.floor(scores.length / 2)], 1)} · 10th–90th percentile ${fmt(scores[Math.floor(scores.length * .1)], 1)}–${fmt(scores[Math.floor(scores.length * .9)], 1)} · top-scorer odds ${pct(r.weekTop, 1)}`)))));
 
   const rank = simWeekRankCard(res);
   if (rank) wrap.appendChild(rank);
 
   wrap.appendChild(card('Every team this week', null, table([
-    { k: 'name', h: 'Team', sort: r2 => r2.T.name, f: r2 => teamCell(r2.T) },
+    { k: 'name', h: 'Team', sort: r2 => r2.T.name, f: r2 => isNarrow() ? teamLine(r2.T, 24) : teamCell(r2.T) },
     { k: 'pts', h: 'Proj pts', num: true, sort: r2 => r2.r.weekPts, f: r2 => h('b.mono', fmt(r2.r.weekPts, 1)) },
     { k: 'win', h: 'Win prob', num: true, sort: r2 => r2.r.weekWin, f: r2 => pct(r2.r.weekWin, 0) },
     { k: 'top', prio: 2, h: 'Top scorer', num: true, sort: r2 => r2.r.weekTop, f: r2 => pct(r2.r.weekTop, 1) },
@@ -6005,13 +6133,45 @@ function simWeekView(res) {
   })), { sortKey: 'pts', sortDir: -1 })));
   return wrap;
 }
+/** The three likeliest champions, as cards. */
+function simPodium(rows) {
+  const top = rows.slice(0, 3);
+  return h('div.podium', top.map((r, i) => h('div.pod' + (i === 0 ? '.first' : ''),
+    h('span.pod-rank', i === 0 ? '👑' : '#' + (i + 1)),
+    teamFace(r.t, i === 0 ? 58 : 46),
+    h('div.pod-nm', { title: r.t.name }, r.t.name),
+    h('div.pod-big', pct(r.s.title, 1)),
+    h('div.tiny.muted', 'to win it all'),
+    h('div.pod-meta', h('div', h('b', pct(r.s.playoff, 0)), ' playoffs'), h('div', h('b', fmt(r.s.wins, 1)), ' proj W')))));
+}
+/** Every team as a ranked card — the phone's answer to a nine-column table. */
+function simOutcomeList(rows, res) {
+  const key = SimUI.sort;
+  const val = r => key === 'playoff' ? r.s.playoff : key === 'wins' ? r.s.wins : r.s.title;
+  const sorted = rows.slice().sort((a, b) => val(b) - val(a));
+  const top = Math.max(...rows.map(r => r.s.title), 0.01);
+  return h('div', { style: { display: 'grid', gap: '10px' } },
+    h('div.row', { style: { gap: '10px' } }, h('span.tiny.muted', 'Rank by'),
+      segmented([{ k: 'title', label: 'Title' }, { k: 'playoff', label: 'Playoffs' }, { k: 'wins', label: 'Wins' }], key, k => { SimUI.sort = k; render(); })),
+    h('div.olist', sorted.map((r, i) => h('div.orow',
+      h('span.orank.mono', i + 1),
+      teamFace(r.t, 38),
+      h('div.omain',
+        h('div.row', { style: { justifyContent: 'space-between', gap: '8px', flexWrap: 'nowrap' } },
+          h('b.onm', { title: r.t.name }, r.t.name),
+          h('span.tag', { style: { flex: 'none' }, title: 'record now' }, `${r.t.wins}-${r.t.losses}${r.t.ties ? '-' + r.t.ties : ''}`)),
+        simMeter('Playoffs', r.s.playoff, r.s.playoff > .6 ? 'var(--good)' : r.s.playoff > .25 ? 'var(--s4)' : 'var(--s8)', pct(r.s.playoff, 0)),
+        simMeter('Title', r.s.title / top, 'var(--s1)', pct(r.s.title, 1)),
+        h('div.tiny.muted.odet', `${fmt(r.s.wins, 1)} proj W · ${fmt(r.s.pts, 0)} PF · seed ${fmt(r.s.seed, 1)} (${r.s.best}–${r.s.worst}) · bye ${pct(r.s.bye, 0)} · final ${pct(r.s.final, 0)}`))))));
+}
 function simSeasonView(res) {
   const wrap = h('div.grid');
   const rows = S.teams.map(t => ({ t, s: res.by[t.rosterId] })).sort((a, b) => b.s.title - a.s.title);
   const champ = rows[0];
   const lucky = rows.filter(r => r.s.luck !== null).slice().sort((a, b) => b.s.luck - a.s.luck)[0];
   const biggest = (res.leverage || [])[0];
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+  wrap.appendChild(simPodium(rows));
+  wrap.appendChild(h('div.kstrip',
     kpi('Most likely champion', champ.t.name, pct(champ.s.title, 1) + ' of simulations'),
     kpi('Weeks simulated', `${Math.min(S.lastWeek + 1, S.regEnd)}–${S.regEnd}`, S.lastWeek ? `weeks 1–${S.lastWeek} are actual results` : 'full season'),
     kpi('Playoff field', String(res.playoffTeams), 'teams make the bracket'),
@@ -6024,18 +6184,19 @@ function simSeasonView(res) {
 
   // the table is what the run was for, so it comes first — the leverage card and
   // everything under it are reading from the same numbers
-  wrap.appendChild(card('Simulated season outcomes', 'each row is ' + kfmt(res.n) + ' full seasons', table([
+  const outcomes = isNarrow() ? simOutcomeList(rows, res) : table([
     { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
     { k: 'rec', h: 'Now', sort: r => r.t.wins, f: r => `${r.t.wins}-${r.t.losses}` },
     { k: 'wins', h: 'Proj W', num: true, sort: r => r.s.wins, f: r => h('b.mono', fmt(r.s.wins, 1)) },
     { k: 'pts', prio: 2, h: 'Proj PF', num: true, sort: r => r.s.pts, f: r => fmt(r.s.pts, 0) },
     { k: 'seed', prio: 2, h: 'Avg seed', num: true, sort: r => r.s.seed, f: r => fmt(r.s.seed, 1) },
     { k: 'range', prio: 2, h: 'Seed range', num: true, sortable: false, f: r => h('span.tiny.mono.muted', `${r.s.best}–${r.s.worst}`) },
-    { k: 'playoff', h: 'Playoffs', num: true, sort: r => r.s.playoff, f: r => h('div.meter', { style: { justifyContent: 'flex-end' } }, isNarrow() ? null : h('div.bar-track', { style: { width: '50px' } }, h('div.bar-fill', { style: { width: (r.s.playoff * 100) + '%', background: r.s.playoff > .6 ? 'var(--good)' : r.s.playoff > .25 ? 'var(--s4)' : 'var(--s8)' } })), h('span.mono', pct(r.s.playoff, 0))) },
+    { k: 'playoff', h: 'Playoffs', num: true, sort: r => r.s.playoff, f: r => h('div.meter', { style: { justifyContent: 'flex-end' } }, h('div.bar-track', { style: { width: '50px' } }, h('div.bar-fill', { style: { width: (r.s.playoff * 100) + '%', background: r.s.playoff > .6 ? 'var(--good)' : r.s.playoff > .25 ? 'var(--s4)' : 'var(--s8)' } })), h('span.mono', pct(r.s.playoff, 0))) },
     { k: 'bye', prio: 2, h: 'Bye', num: true, sort: r => r.s.bye, f: r => pct(r.s.bye, 0) },
     { k: 'final', prio: 2, h: 'Final', num: true, sort: r => r.s.final, f: r => pct(r.s.final, 0) },
     { k: 'title', h: 'Title', num: true, sort: r => r.s.title, f: r => h('b.mono', pct(r.s.title, 1)) }
-  ], rows, { sortKey: 'title', sortDir: -1 })));
+  ], rows, { sortKey: 'title', sortDir: -1 });
+  wrap.appendChild(card('Simulated season outcomes', 'each row is ' + kfmt(res.n) + ' full seasons', outcomes));
 
   const lever = simLeverageCard(res);
   if (lever) wrap.appendChild(lever);
@@ -6045,10 +6206,11 @@ function simSeasonView(res) {
   const sel = res.by[SimUI.team];
   const bins = sel.winDist.map((v, i) => ({ x: i, v, label: i + ' win' + (i === 1 ? '' : 's') })).filter((b, i) => i <= S.regEnd);
   wrap.appendChild(card('Final win total', S.teamById[SimUI.team].name,
-    h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'win distribution' }),
-      h('div.tiny.muted', { style: { marginTop: '8px' } },
-        `Most likely: ${bins.reduce((a, b) => b.v > a.v ? b : a).x} wins · average ${fmt(sel.wins, 1)} · playoffs ${pct(sel.playoff, 0)} · title ${pct(sel.title, 1)}`)),
-    h('select', { onchange: e => { SimUI.team = +e.target.value; render(); } }, teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === SimUI.team }, t.name)))));
+    h('div', { style: { display: 'grid', gap: '12px', gridTemplateColumns: 'minmax(0,1fr)' } },
+      teamStrip(teams, SimUI.team, id => { SimUI.team = id; render(); }),
+      h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'win distribution' }),
+        h('div.tiny.muted', { style: { marginTop: '8px' } },
+          `Most likely: ${bins.reduce((a, b) => b.v > a.v ? b : a).x} wins · average ${fmt(sel.wins, 1)} · playoffs ${pct(sel.playoff, 0)} · title ${pct(sel.title, 1)}`)))));
 
   const draft = simDraftCard(res);
   if (draft) wrap.appendChild(draft);
@@ -6148,7 +6310,7 @@ function viewDraft() {
     { k: 'exp', prio: 2, h: 'Par', num: true, sort: r => r.expected, f: r => kfmt(Math.round(r.expected)) },
     { k: 'surplus', h: 'Surplus', num: true, sort: r => r.surplus, f: r => deltaTag(r.surplus, 0) }
   ];
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(340px,100%),1fr))' } },
     card('Best value picks', 'biggest gain over slot par', table(cols, best.slice(0, 12), { sortKey: 'surplus', sortDir: -1 })),
     card('Picks that did not work out', 'biggest shortfall', table(cols, best.slice(-12).reverse(), { sortKey: 'surplus', sortDir: 1 }))));
 
@@ -6276,7 +6438,7 @@ function viewStock() {
   const observed = series.filter(s => s.real).length;
   const hi = Math.max(...series.map(s => s.v)), lo = Math.min(...series.map(s => s.v));
 
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(150px,100%),1fr))' } },
     kpi(isTeam ? 'Franchise value' : 'Trade value', kfmt(last), (isTeam ? subject.name : subject.name)),
     kpi(StockUI.range + '-day change', sgn(chg, 0), sgn(chgPct * 100, 1) + '%'),
     kpi('30-day trend', isTeam ? sgn(sum(subject.players.map(p => p.trend30 || 0)), 0) : sgn(subject.trend30 || 0, 0), 'from FantasyCalc'),
@@ -6318,7 +6480,7 @@ function viewStock() {
     { k: 'pctc', prio: 2, h: '%', num: true, sort: r => r.trend30 / Math.max(1, r.dv - r.trend30), f: r => h('span', { class: r.trend30 > 0 ? 'up mono' : 'down mono' }, sgn(r.trend30 / Math.max(1, r.dv - r.trend30) * 100, 1) + '%') },
     { k: 'spark', prio: 2, h: '', sortable: false, f: r => sparkline(playerSeries(r.id, 30), { w: 66, h: 20 }) }
   ];
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(340px,100%),1fr))' } },
     card('Rising', 'biggest 30-day value gains league-wide', table(moverCols, risers, { sortKey: 'trend30', sortDir: -1 })),
     card('Falling', 'biggest 30-day value losses', table(moverCols, fallers, { sortKey: 'trend30', sortDir: 1 }))));
 
@@ -6421,7 +6583,7 @@ function viewPlayer() {
 
   // ---- headline numbers ----
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(146px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(146px,100%),1fr))' } },
     kpi(isDynasty() ? 'Dynasty value' : 'Redraft value', kfmt(Math.round(p.dv || 0)), p.rank ? 'overall #' + p.rank : 'unranked',
       `<div class="k">FantasyCalc ${valueWord()} value</div>Priced for this league's exact format — ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
     kpi('Position rank', (p.pos || '') + (p.posRank || (myIdx >= 0 ? myIdx + 1 : '—')), p.tier ? 'tier ' + p.tier : 'of ' + posPeers.length + ' ranked'),
@@ -6547,23 +6709,23 @@ function simReplayView(sim) {
   const shortOf = (rid) => (S.teamById[rid] || {}).short || '?';
 
   // champion reveal
-  wrap.appendChild(h('div.card', { style: { background: 'linear-gradient(135deg, color-mix(in srgb, var(--s1) 12%, var(--surface-1)), var(--surface-1))' } },
-    h('div.bd', h('div.row', { style: { gap: '18px', alignItems: 'center' } },
-      h('div', { style: { fontSize: '46px', lineHeight: 1 } }, '🏆'),
-      h('div', { style: { minWidth: 0 } },
-        h('div.tiny.muted', { style: { textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 660 } }, 'Your simulated ' + S.season + ' champion'),
-        h('div.hero', ch ? ch.team.name : '—'),
-        ch ? h('div.sec', { style: { marginTop: '3px' } },
-          `${ch.w}-${ch.l}${ch.tie ? '-' + ch.tie : ''} · ${ord(ch.seed)} seed · ${fmt(ch.pf, 1)} points for`
-          + (sim.runnerUp ? ` — beat ${sim.runnerUp.team.name} in the final` : '')) : null),
-      h('div', { style: { flex: 1 } }),
-      h('button.btn.pri', { onclick: () => { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; render(); window.scrollTo(0, 0); } }, '⟳ Run it again')))));
+  wrap.appendChild(h('div.card.champ',
+    h('div.bd',
+      h('div.champ-top', h('span.champ-cup', '🏆'),
+        h('div.tiny', { style: { textTransform: 'uppercase', letterSpacing: '.08em', fontWeight: 700, opacity: .85 } }, 'Your simulated ' + S.season + ' champion')),
+      h('div.champ-main', ch ? teamFace(ch.team, 64) : null,
+        h('div', { style: { minWidth: 0 } },
+          h('div.hero', { style: { overflowWrap: 'anywhere' } }, ch ? ch.team.name : '—'),
+          ch ? h('div.sec', { style: { marginTop: '3px', lineHeight: 1.45 } },
+            `${ch.w}-${ch.l}${ch.tie ? '-' + ch.tie : ''} · ${ord(ch.seed)} seed · ${fmt(ch.pf, 1)} points for`
+            + (sim.runnerUp ? ` — beat ${sim.runnerUp.team.name} in the final` : '')) : null)),
+      h('button.btn.pri.champ-again', { onclick: () => { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; render(); window.scrollTo(0, 0); } }, '⟳ Run it again'))));
 
   wrap.appendChild(card('Playoff bracket', `weeks ${S.regEnd + 1}–${S.regEnd + sim.bracket.length} · top ${sim.playoffTeams} teams`, bracketView(sim)));
 
   // ---- storylines ----
   const story = (label, headline, detail) => h('div.kpi', h('div.lbl', label), h('div', { style: { fontWeight: 660, fontSize: '14.5px', marginTop: '1px' } }, headline), h('div.sub', detail));
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(215px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(215px,100%),1fr))' } },
     A.highScore ? story('Highest score of the year', nameOf(A.highScore.rid),
       `${fmt(A.highScore.pts, 1)} in week ${A.highScore.week}` + (A.highScore.top ? ` — ${A.highScore.top.name} put up ${fmt(A.highScore.top.pts, 1)}` : '')) : null,
     A.blowout ? story('Biggest beatdown', `${nameOf(A.blowout.win)} over ${nameOf(A.blowout.win === A.blowout.a ? A.blowout.b : A.blowout.a)}`,
@@ -6580,7 +6742,7 @@ function simReplayView(sim) {
     table([
       { k: 'seed', h: 'Seed', num: true, f: r => h('b.mono', r.seed) },
       {
-        k: 'name', h: 'Team', sort: r => r.team.name, f: r => h('div.row', { style: { gap: '6px' } }, teamCell(r.team),
+        k: 'name', h: 'Team', sort: r => r.team.name, f: r => h('div.row', { style: { gap: '6px' } }, isNarrow() ? teamLine(r.team, 24) : teamCell(r.team),
           r.divWinner && !isNarrow() ? h('span.tag', 'div') : null,
           sim.field.includes(r) ? h('span.tag', { title: 'made the playoffs', style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, isNarrow() ? 'PO' : 'playoffs') : null)
       },
@@ -6594,7 +6756,7 @@ function simReplayView(sim) {
     ], sim.standings, { sortKey: 'seed', sortDir: 1 })));
 
   // ---- week by week ----
-  const weekBtns = h('div.row', { style: { gap: '4px' } }, sim.weeks.map(w =>
+  const weekBtns = h('div.wkstrip', sim.weeks.map(w =>
     h('button.btn.sm', {
       class: SimUI.openWeek === w.week ? 'pri' : '',
       onclick: () => { SimUI.openWeek = SimUI.openWeek === w.week ? null : w.week; render(); }
@@ -6605,10 +6767,11 @@ function simReplayView(sim) {
       h('b', 'Week ' + w.week),
       w.actual ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'actual result') : h('span.tag', 'simulated'),
       h('span.tiny.muted', w.games.length + ' games')),
-    h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(268px,1fr))', gap: '7px' } },
+    h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(268px,100%),1fr))', gap: '7px' } },
       w.games.map(g => {
         const rowFor = (rid, pts, top, won) => h('div.row', { style: { justifyContent: 'space-between', gap: '8px', opacity: won ? 1 : .6 } },
-          h('div.row', { style: { gap: '6px', minWidth: 0 } },
+          h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
+            S.teamById[rid] ? teamFace(S.teamById[rid], 22) : null,
             h('span', { style: { fontWeight: won ? 660 : 500, fontSize: '12.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, nameOf(rid))),
           h('b.mono', { style: { fontSize: '12.5px' } }, fmt(pts, 1)));
         const el = h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '7px 9px', background: 'var(--surface-1)' }, tabindex: 0 },
@@ -7471,7 +7634,7 @@ function viewScout() {
         t.window ? h('span.tag', t.window) : null,
         h('span.tag', sc.strategy.direction.label),
         h('span.tiny.muted', sc.strategy.detail)),
-      h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
+      h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(150px,100%),1fr))' } },
         kpi('Power', '#' + t.powerRank, fmt(t.power, 1) + ' rating'),
         dynOnly(kpi('Future', '#' + t.futureRank, fmt(t.futurePower, 1) + ' rating')),
         kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), ord(t.valueRank) + ' of ' + S.teams.length),
@@ -7508,7 +7671,7 @@ function viewScout() {
   const depthCard = proOnly(card('Starters and depth — ' + t.name,
     'each group tallest first: filled bars start, hollow bars wait. The dashed rule is what the league gets from its starters at that position, the dotted one is what the wire is worth',
     h('div',
-      h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(236px,1fr))', gap: '12px' } },
+      h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(236px,100%),1fr))', gap: '12px' } },
         prof.map(e => h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '10px 11px', background: 'var(--surface-1)', minWidth: 0 } },
           h('div.row', { style: { gap: '7px', marginBottom: '7px' } },
             posPill(e.pos),
@@ -7585,7 +7748,7 @@ function viewTrades() {
   const busiest = graded.slice().sort((a, b) => b.n - a.n)[0];
   const richest = graded.slice().sort((a, b) => b.net - a.net)[0];
 
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
     kpi('Completed trades', String(trades.length), graded.length + ' of ' + S.teams.length + ' managers involved'),
     kpi('Most active', busiest ? busiest.team.name : '—', busiest ? busiest.n + ' trade' + (busiest.n === 1 ? '' : 's') : ''),
     kpi('Best trader', best ? best.team.name : '—', best ? 'average grade ' + best.grade : '',
@@ -7667,6 +7830,45 @@ function viewTrades() {
 
 /* ---------- leverage: which games actually decide the season ---------- */
 const LevUI = { week: 'all', n: 6 };
+/** One game that moves the season: who plays, and where both teams stand in each of the two worlds it leaves behind. */
+function levGameCard(g, i, res) {
+  const A = g.a.team, B = g.b.team;
+  const total = (g.nA || 0) + (g.nB || 0);
+  const ok = v => v !== null && v !== undefined;
+  const tag = g.thin ? ['too lopsided to weigh', 'var(--text-muted)']
+    : g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
+  const lead = Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b;
+  const heavy = (g.nA || 0) >= (g.nB || 0) ? A : B;
+  const sentence = g.thin
+    ? `${heavy.name} win this in ${pct(Math.max(g.nA || 0, g.nB || 0) / Math.max(1, total), 0)} of simulated seasons, so there is no second world to compare the first one against.`
+    : `${lead.team.name} ${lead.swing >= 0.005 ? 'go from ' + pct(lead.poLose, 0) + ' to ' + pct(lead.poWin, 0) + ' to make the playoffs' : 'barely move either way'}`
+    + (Math.abs(lead.titleSwing) > 0.004 ? `, and from ${pct(lead.tiLose, 1)} to ${pct(lead.tiWin, 1)} to win it` : '')
+    + '.';
+  const cell = (po, ti, win) => !ok(po) ? h('div.lev-c.na', '—')
+    : h('div.lev-c' + (win ? '.win' : ''),
+      h('div.lev-top', h('b.mono', pct(po, 0)), h('span.tiny.muted', ' playoffs')),
+      h('div.bar-track', h('div.bar-fill', { style: { width: (clamp(po, 0, 1) * 100) + '%', background: win ? 'var(--s1)' : 'var(--text-muted)' } })),
+      h('div.tiny.muted', pct(ti, 1) + ' title'));
+  const head = (T) => h('div.lev-h', h('span.tiny.muted', 'If'), teamFace(T, 20), h('b.tiny', T.short), h('span.tiny.muted', 'wins'));
+  const row = (T, w0, w1) => [h('div.lev-t', teamFace(T, 30), h('b.tiny', T.short)), w0, w1];
+  const gridEl = h('div.levgrid', h('span'), head(A), head(B),
+    row(A, cell(g.a.poWin, g.a.tiWin, true), cell(g.a.poLose, g.a.tiLose, false)),
+    row(B, cell(g.b.poLose, g.b.tiLose, false), cell(g.b.poWin, g.b.tiWin, true)));
+  const miss0 = !ok(g.a.poWin) || !ok(g.b.poLose), miss1 = !ok(g.a.poLose) || !ok(g.b.poWin);
+  const next = g.week === res.fromWeek;
+  return h('div.levcard',
+    h('div.row', { style: { gap: '7px', flexWrap: 'wrap' } },
+      h('b.mono.tiny', '#' + (i + 1)),
+      h('span.tag', { style: { borderColor: next ? 'var(--s1)' : null, color: next ? 'var(--s1)' : null } }, 'Week ' + g.week + (next ? ' · next up' : '')),
+      tag ? h('span.tag', { style: { borderColor: tag[1], color: tag[1] } }, tag[0]) : null,
+      h('span', { style: { flex: 1 } }),
+      h('span.tiny.muted', 'up to ' + pct(g.swing, 0) + ' of playoff odds on the line')),
+    h('div.levvs', teamFace(A, 34), h('b.levnm', A.name), h('span.tiny.muted', 'v'), h('b.levnm', B.name), teamFace(B, 34)),
+    gridEl,
+    miss0 ? levUnmeasured(A.name, g.nA || 0, total) : null,
+    miss1 ? levUnmeasured(B.name, g.nB || 0, total) : null,
+    h('div.tiny.sec', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px' } }, sentence));
+}
 function simLeverageCard(res) {
   if (!res.leverage || !res.leverage.length) return null;
   const weeks = []; for (let w = res.fromWeek; w <= S.regEnd; w++) if (res.leverage.some(g => g.week === w)) weeks.push(w);
@@ -7676,61 +7878,11 @@ function simLeverageCard(res) {
 
   const opts = [{ k: 'all', label: 'Rest of season' }].concat(weeks.map(w => ({ k: w, label: 'Wk ' + w })));
   const controls = h('div.row', { style: { gap: '12px', marginBottom: '12px' } },
-    segmented(opts, LevUI.week, k => { LevUI.week = k; LevUI.n = 6; render(); }),
+    h('div.segscroll', segmented(opts, LevUI.week, k => { LevUI.week = k; LevUI.n = 6; render(); })),
     h('span', { style: { flex: 1 } }),
     h('span.tiny.muted', picked.length + ' game' + (picked.length === 1 ? '' : 's') + ' weighed'));
 
-  const body = h('div', { style: { display: 'grid', gap: '12px' } }, shown.map((g, i) => {
-    const A = g.a.team, B = g.b.team;
-    // the two worlds this game leaves behind. Exactly one of them happens, so
-    // "if A wins" is A's win-branch and B's lose-branch, and vice versa.
-    const total = (g.nA || 0) + (g.nB || 0);
-    const worlds = [
-      { win: A, runs: g.nA || 0, rows: [{ t: A, po: g.a.poWin, ti: g.a.tiWin, won: true }, { t: B, po: g.b.poLose, ti: g.b.tiLose, won: false }] },
-      { win: B, runs: g.nB || 0, rows: [{ t: A, po: g.a.poLose, ti: g.a.tiLose, won: false }, { t: B, po: g.b.poWin, ti: g.b.tiWin, won: true }] }
-    ];
-    // a branch the run barely visited has no odds in it — say so rather than 0%
-    const worldBox = (wd) => h('div', {
-      style: {
-        minWidth: 0, border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
-        padding: '9px 11px', background: 'var(--surface-1)',
-        opacity: wd.rows.some(x => x.po === null || x.po === undefined) ? .72 : 1
-      }
-    },
-      h('div.tiny', { style: { fontWeight: 700, marginBottom: '7px', color: 'var(--text-primary)' } },
-        'If ', h('span', { style: { color: 'var(--s1)' } }, wd.win.name), ' wins'),
-      wd.rows.some(x => x.po === null || x.po === undefined) ? levUnmeasured(wd.win.name, wd.runs, total) : null,
-      wd.rows.some(x => x.po === null || x.po === undefined) ? null : h('div', { style: { display: 'grid', gap: '6px' } }, wd.rows.map(r2 => h('div', {
-        style: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: '8px', alignItems: 'center' }
-      },
-        h('span.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: r2.won ? 640 : 500, color: r2.won ? 'var(--text-primary)' : 'var(--text-secondary)' } }, r2.t.short),
-        h('div.bar-track', { style: { width: isNarrow() ? '52px' : '74px', height: '8px' } },
-          h('div.bar-fill', { style: { width: (clamp(r2.po, 0, 1) * 100) + '%', background: r2.won ? 'var(--s1)' : 'var(--text-muted)' } })),
-        h('span.mono.tiny', { style: { minWidth: '92px', textAlign: 'right' } },
-          h('b', pct(r2.po, 0)), h('span.muted', ' playoffs · '), h('b', pct(r2.ti, 1)), h('span.muted', ' title'))))));
-
-    const tag = g.thin ? ['too lopsided to weigh', 'var(--text-muted)']
-      : g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
-    const lead = Math.abs(g.a.swing) >= Math.abs(g.b.swing) ? g.a : g.b;
-    const heavy = (g.nA || 0) >= (g.nB || 0) ? A : B;
-    const sentence = g.thin
-      ? `${heavy.name} win this in ${pct(Math.max(g.nA || 0, g.nB || 0) / Math.max(1, total), 0)} of simulated seasons, so there is no second world to compare the first one against.`
-      : `${lead.team.name} ${lead.swing >= 0.005 ? 'go from ' + pct(lead.poLose, 0) + ' to ' + pct(lead.poWin, 0) + ' to make the playoffs' : 'barely move either way'}`
-      + (Math.abs(lead.titleSwing) > 0.004 ? `, and from ${pct(lead.tiLose, 1)} to ${pct(lead.tiWin, 1)} to win it` : '')
-      + '.';
-
-    return h('div', { style: { border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '11px 13px', background: 'var(--surface-2)' } },
-      h('div.row', { style: { justifyContent: 'space-between', marginBottom: '8px', gap: '8px' } },
-        h('div.row', { style: { gap: '8px', minWidth: 0 } },
-          h('b.mono.tiny', '#' + (i + 1)),
-          h('span.tag', { style: { flex: 'none', borderColor: g.week === res.fromWeek ? 'var(--s1)' : null, color: g.week === res.fromWeek ? 'var(--s1)' : null } },
-            'Week ' + g.week + (g.week === res.fromWeek ? ' · next up' : '')),
-          h('b', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, A.name + '  v  ' + B.name),
-          tag ? h('span.tag', { style: { borderColor: tag[1], color: tag[1], flex: 'none' } }, tag[0]) : null),
-        h('span.tiny.muted', { style: { flex: 'none' } }, 'up to ' + pct(g.swing, 0) + ' of playoff odds on the line')),
-      h('div.grid.split2', worldBox(worlds[0]), h('div.tiny.muted', { style: { textAlign: 'center', alignSelf: 'center' } }, 'or'), worldBox(worlds[1])),
-      h('div.tiny.sec', { style: { marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '7px' } }, sentence));
-  }));
+  const body = h('div', { style: { display: 'grid', gap: '12px' } }, shown.map((g, i) => levGameCard(g, i, res)));
 
   const more = picked.length > shown.length
     ? h('div.row', { style: { marginTop: '11px', justifyContent: 'center' } },
@@ -8042,7 +8194,7 @@ function viewH2H() {
       h('div.h2hmargin', h('span.tiny.muted', 'Typical margin'), h('b', (favA ? A.short : B.short) + ' by ' + fmt(Math.abs(r.medMargin), 1))),
       h('div.tiny.muted', 'median across ' + kfmt(r.n) + ' runs')),
     side(B, 'b', r.pB, r.meanB)));
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(150px,100%),1fr))' } },
     kpi('One-score game', pct(r.closeGame, 0), 'within 10 points'),
     kpi('Blowout', pct(Math.max(r.blowoutA, r.blowoutB), 0), (r.blowoutA > r.blowoutB ? A.short : B.short) + ' by 30+')
   ));
@@ -8263,7 +8415,7 @@ function simDraftCard(res) {
 
   const tbl = table([
     { k: 'slot', h: 'Proj. slot', num: true, sort: r => r.s.draftSlot, f: r => h('b.mono', slotLabel(r.s.draftSlot)) },
-    { k: 'name', h: 'Original owner', sort: r => r.t.name, f: r => teamCell(r.t) },
+    { k: 'name', h: 'Original owner', sort: r => r.t.name, f: r => isNarrow() ? teamLine(r.t, 24) : teamCell(r.t) },
     {
       k: 'likely', prio: 2, h: 'Most likely', num: true, sortable: false,
       f: r => { const m = modal(r.s.draftDist); return h('span', h('b.mono', '1.' + String(m).padStart(2, '0')), h('span.tiny.muted', ' ' + pct(r.s.draftDist[m], 0))); }
@@ -8962,7 +9114,7 @@ function viewWeek() {
   }
 
   /* ---- the matchups ---- */
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))' } },
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(330px,100%),1fr))' } },
     games.map(g => {
       const favA = g.pA >= g.pB;
       const body = h('div', { style: { display: 'grid', gap: '10px' } },
@@ -9312,7 +9464,7 @@ function viewHome() {
   if (me) {
     const rec = `${me.wins}-${me.losses}${me.ties ? '-' + me.ties : ''}`;
     const simBy = S.sim && S.sim.by ? S.sim.by[me.rosterId] : null;
-    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' } },
+    wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
       kpi('Your record', rec, S.gamesPlayed ? fmt(me.avgPts, 1) + ' per week' : 'no games yet'),
       kpi('Power rank', '#' + me.powerRank, 'of ' + S.teams.length),
       dynOnly(kpi('Future rank', '#' + me.futureRank, 'two to three years out')),
@@ -10059,7 +10211,7 @@ function hypEditor(T) {
   });
   pool.sort((x, y) => y.dv - x.dv);
 
-  return h('div.grid.hypgrid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', borderTop: '1px solid var(--border)', paddingTop: '12px' } },
+  return h('div.grid.hypgrid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(300px,100%),1fr))', gap: '14px', borderTop: '1px solid var(--border)', paddingTop: '12px' } },
     h('div', { style: { minWidth: 0 } },
       h('div.row', { style: { justifyContent: 'space-between', marginBottom: '6px' } },
         h('label.fld', { style: { gap: 0 } }, T.name + ' — ' + mine.length + ' assets'),
