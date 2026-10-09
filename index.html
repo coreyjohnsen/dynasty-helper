@@ -329,7 +329,7 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxlink:focus-visible{outline:2px solid var(--s1);outline-offset:4px}
 .pcxhand{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 8px}
 .pcxhandi{display:grid;justify-items:center;gap:6px}
-.pcxdeck{display:flex;align-items:flex-end;padding:44px 26px 12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:0}
+.pcxdeck{display:flex;align-items:flex-end;padding:44px 26px 12px;overflow-x:auto;overflow-y:hidden;min-height:0}
 .pcxdeck .pcxfit{margin-left:-88px;transition:transform .38s var(--ease),margin .38s var(--ease),filter .3s}
 .pcxdeck .pcxfit:first-child{margin-left:0}
 .pcxdeck .pcxfit:hover,.pcxdeck .pcxfit:focus-visible{transform:translateY(-34px) scale(1.07);z-index:5}
@@ -340,6 +340,16 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 @media (hover:none){ .pcxdeck .pcxfit{margin-left:-60px} }
 /* room on the right for the cards that slide aside when one is pulled up, so a full deck never grows a scrollbar on hover */
 @media (hover:hover){ .pcxdeck{padding-right:56px} }
+/* the deck's scrollbar: a slim rounded pill instead of the system bar. Chrome, Edge and Safari take the
+   -webkit rules (and ignore them once scrollbar-color is set, so it is given to Firefox alone); a phone
+   keeps its own overlay bar. */
+@media (hover:hover){
+  .pcxdeck::-webkit-scrollbar{height:10px}
+  .pcxdeck::-webkit-scrollbar-track{margin:0 26px;border-radius:99px;background:color-mix(in srgb,var(--text-muted) 14%,transparent)}
+  .pcxdeck::-webkit-scrollbar-thumb{border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-2));border:2px solid transparent;background-clip:padding-box;min-width:48px}
+  .pcxdeck::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,var(--brand-2),var(--brand));background-clip:padding-box}
+  @supports (-moz-appearance:none){ .pcxdeck{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--brand) 70%,transparent) color-mix(in srgb,var(--text-muted) 14%,transparent)} }
+}
 
 /* ---- hover preview + deal cards ---- */
 .pcxpop{position:fixed;z-index:1200;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);transition:opacity .18s var(--ease),transform .22s var(--ease);filter:drop-shadow(0 18px 28px rgba(18,22,48,.35))}
