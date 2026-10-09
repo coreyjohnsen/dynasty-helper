@@ -8004,6 +8004,9 @@ function psrcRaw(id, p, wk) {
 /** Not expected to play: the injury report says so, unless the manager has overridden it for that week. */
 function ruledOutAuto(p, wk) {
   if (!p) return false;
+  // listed questionable/doubtful and a projection source has him at zero: they are saying he is not playing
+  if ((p.injury === 'Questionable' || p.injury === 'Doubtful') && wk <= injCurrentWeek()
+    && ['sleeper', 'espn'].some(id => { const v = psrcRaw(id, p, wk); return v !== null && v <= 0; })) return true;
   if (p.inj) return availability(p, wk) < 0.1;
   return OUT_TAGS.includes(p.injury) && wk <= injCurrentWeek();
 }
