@@ -405,6 +405,19 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 
 .vq .ax{font-size:10px}
 @media (max-width:760px){ .vq .ax{font-size:10.5px} }
+/* ---- compact card: when a card is shown small, keep only what stays readable ---- */
+.pcxcard.sm .pcxface{padding:12px 12px 12px;gap:10px}
+.pcxcard.sm .pcxname{font-size:28px;line-height:1.05}
+.pcxcard.sm .pcxrank{font-size:17px}
+.pcxcard.sm .pcxmeta,.pcxcard.sm .pcxsub,.pcxcard.sm .pcxdraft{display:none}
+.pcxcard.sm .pcxstats{grid-template-columns:repeat(2,1fr);gap:10px}
+.pcxcard.sm .pcxs{padding:8px 4px 7px;border-radius:12px}
+.pcxcard.sm .pcxk{font-size:15px}
+.pcxcard.sm .pcxv{font-size:33px}
+.pcxcard.sm .pcxteam{width:64px;height:64px;right:8px;top:8px}
+.pcxcard.sm .pcxteam .tlogo{width:62px;height:62px}
+.pcxcard.sm .pcxpos{font-size:110px}
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -4734,8 +4747,6 @@ function viewPower() {
   if (!isDynasty() && PowerUI.mode === 'future') PowerUI.mode = 'now';
   const teams = S.teams.slice();
   const wrap = h('div.grid');
-  if (!S.sim) S.sim = simulate(S.simN);
-  const sim = S.sim;
 
   wrap.appendChild(h('div.row', { style: { justifyContent: 'space-between' } },
     segmented(isDynasty()
@@ -4747,6 +4758,15 @@ function viewPower() {
       : 'Preseason — rating is 100% projection')));
 
   if (PowerUI.mode === 'pos') return wrap.appendChild(powerByPosition()), wrap;
+  // The first look runs a few thousand simulated seasons, which holds the page for about half a second. Show the
+  // page at once with a note, and run the simulation just after it has painted. (The tab above never needs it.)
+  if (!S.sim) {
+    setTimeout(() => { if (!S.sim) S.sim = simulate(S.simN); if (S.view === 'power') render(); }, 40);
+    wrap.appendChild(card('Power rankings', 'blended rating, then simulated playoff and championship odds',
+      h('div.empty', { style: { padding: '34px 18px' } }, h('span.spin'), h('div', { style: { marginTop: '10px' } }, 'Simulating ' + kfmt(S.simN) + ' seasons…'))));
+    return wrap;
+  }
+  const sim = S.sim;
   // a redraft league has no second timeline to rank, so that tab does not exist
   const future = PowerUI.mode === 'future' && isDynasty();
   const key = future ? 'futurePower' : 'power';
@@ -6886,9 +6906,9 @@ function tradingCard(p, opts) {
     h('div.pcxstats',
       cell('Value', kfmt(Math.round(p.dv || 0)), isDynasty() ? 'dynasty' : 'redraft'),
       cell('Pts / wk', fmt(p.ppg || 0, 1), 'projected'),
-      cell('Draft', dl.top, dl.sub)),
+      h('div.pcxs.pcxdraft', h('div.pcxk', 'Draft'), h('div.pcxv', dl.top), dl.sub ? h('div.pcxsub', dl.sub) : null)),
     h('div.pcxglare'));
-  const card = h('div.pcxcard.' + tier + (medalMode() === 'animated' ? '.anim' : ''), { title: p.medal ? medalTitle(p) : null }, face);
+  const card = h('div.pcxcard.' + tier + (medalMode() === 'animated' ? '.anim' : '') + (opts.w && opts.w < 220 ? '.sm' : ''), { title: p.medal ? medalTitle(p) : null }, face);
   // the card leans toward the pointer; the glare and foil follow the same point
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = !!opts.w;   // small cards live in scrolling rows, where a finger means scroll, not tilt
@@ -7776,11 +7796,12 @@ function viewLineup() {
     return { s, p, o, alts, gap, locked, close: gap !== null && gap < 2.5 };
   });
   const cols = [
-    { k: 'slot', h: 'Slot', sortable: false, f: r => h('span.tag', { style: { minWidth: '44px', textAlign: 'center' } }, SLOT_LABEL[r.s.slot] || r.s.slot) },
+    { k: 'slot', h: 'Slot', sortable: false, f: r => h('span.tag', { style: { minWidth: isNarrow() ? '34px' : '44px', textAlign: 'center' } }, SLOT_LABEL[r.s.slot] || r.s.slot) },
     {
       k: 'player', h: 'Player', sortable: false, f: r => r.p
         ? h('div', { style: { minWidth: 0 } }, h('div.row', { style: { gap: '7px', minWidth: 0 } },
-          isSimple() ? playerFace(r.p) : null, posPill(r.p.pos), pname(r.p, { face: false }),
+          // on a phone the face and the slot already say who and where, so the position pill gives up its room
+          isSimple() ? playerFace(r.p) : null, isNarrow() && isSimple() ? null : posPill(r.p.pos), pname(r.p, { face: false }),
           injuryTag(r.p.injury, r.p),
           // on a phone the tag costs more width than it earns — the card directly
           // below this table is the real place these calls get made
@@ -7820,7 +7841,8 @@ function viewLineup() {
           : h('span.muted.tiny', '—')
     },
     {
-      k: 'cmp', h: '', sortable: false, f: r => r.p ? h('button.btn.sm.cmpbtn', {
+      // on a phone the compare picker further down the page does this job, and the button's column was what pushed the projection off the edge
+      k: 'cmp', prio: 2, keepSimple: true, h: '', sortable: false, f: r => r.p ? h('button.btn.sm.cmpbtn', {
         title: 'Compare', 'aria-label': 'Compare ' + r.p.name, onclick: () => { toggleCompare(r.p.id); render(); }
       }, ico(LineupUI.compare.includes(r.p.id) ? 'check' : 'plus')) : null
     }
@@ -10111,7 +10133,8 @@ function teamValueAxes(t) {
 }
 function valueQuadrants() {
   const teams = S.teams;
-  if (teams.length < 4) return null;
+  // a redraft league has no future to plot: dynasty value is not what its trades are priced in
+  if (!isDynasty() || teams.length < 4) return null;
   const pts = teams.map(t => Object.assign({ t, me: t.rosterId === S.myRosterId }, teamValueAxes(t)));
   const med = (a) => { const v = a.slice().sort((x, y) => x - y), n = v.length; return n % 2 ? v[(n - 1) / 2] : (v[n / 2 - 1] + v[n / 2]) / 2; };
   const mx = med(pts.map(p => p.dyn)), my = med(pts.map(p => p.red));
@@ -10311,7 +10334,7 @@ function myHeadliners(me) {
    has picked up. Two lists on one page because they answer the two questions
    people actually bring to a rankings page: where does this player sit, and who
    could I go and get for nothing. */
-const PlayersUI = { pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15, market: 'any', window: 'any' };
+const PlayersUI = { moreOpen: false, pos: [], picks: true, limit: 50, owner: 'all', faPos: [], faLimit: 15, market: 'any', window: 'any' };
 const RANK_POS = ['QB', 'RB', 'WR', 'TE'];
 
 function viewPlayers() {
@@ -10416,9 +10439,18 @@ function viewPlayers() {
   ];
 
   const total = players.length;
+  // On a phone six filter groups would sit above the first player, so only the position chips stay in view and the
+  // rest open from one button that says how many of them are doing something.
+  const posFld = h('label.fld', 'Position', chips(RANK_POS, PlayersUI.pos, v => { PlayersUI.pos = v; PlayersUI.limit = 50; }));
+  const activeFilters = (PlayersUI.owner !== 'all' ? 1 : 0) + (isDynasty() && !PlayersUI.picks ? 1 : 0) + (PlayersUI.market !== 'any' ? 1 : 0) + (isDynasty() && PlayersUI.window !== 'any' ? 1 : 0);
+  const fold = isNarrow();
   const controls = h('div', { style: { display: 'grid', gap: '10px' } },
-    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
-      h('label.fld', 'Position', chips(RANK_POS, PlayersUI.pos, v => { PlayersUI.pos = v; PlayersUI.limit = 50; })),
+    fold ? posFld : null,
+    fold ? h('button.btn.sm', { style: { justifySelf: 'start' }, 'aria-expanded': PlayersUI.moreOpen ? 'true' : 'false',
+      onclick: () => { PlayersUI.moreOpen = !PlayersUI.moreOpen; render(); } },
+      ico('sliders'), PlayersUI.moreOpen ? 'Hide filters' : 'More filters' + (activeFilters ? ' · ' + activeFilters + ' on' : '')) : null,
+    fold && !PlayersUI.moreOpen ? null : h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+      fold ? null : posFld,
       h('label.fld', 'Rostered',
         segmented(isNarrow()
           ? [{ k: 'all', label: 'All' }, { k: 'mine', label: 'Mine' }, { k: 'rostered', label: 'Taken' }, { k: 'fa', label: 'FA' }]
@@ -10426,7 +10458,7 @@ function viewPlayers() {
           PlayersUI.owner, v => { PlayersUI.owner = v; PlayersUI.limit = 50; render(); })),
       isDynasty() ? h('label.fld', 'Draft picks',
         segmented([{ k: true, label: 'Show' }, { k: false, label: 'Hide' }], PlayersUI.picks, v => { PlayersUI.picks = v; render(); })) : null),
-    h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
+    fold && !PlayersUI.moreOpen ? null : h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
       h('label.fld', 'Market', segmented([{ k: 'any', label: 'Any' }, { k: 'buy', label: 'Buy low' }, { k: 'sell', label: 'Sell high' }],
         PlayersUI.market, v => { PlayersUI.market = v; PlayersUI.limit = 50; render(); })),
       isDynasty() ? h('label.fld', 'Timeline', segmented([{ k: 'any', label: 'Any' }, { k: 'now', label: 'Win now' }, { k: 'later', label: 'Rebuild' }],
