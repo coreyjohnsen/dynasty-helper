@@ -168,6 +168,13 @@ run to compare against. The player page explains any flag in words.
 
 ---
 
+### Simulator
+
+Three modes behind one picker (Season odds, Single week, Play a season). Every team is drawn with its
+Sleeper avatar (a coloured initial when it has none). On a phone the season table becomes ranked cards
+with playoff and title meters, each "game that matters" shows both teams in both worlds side by side,
+and the replay bracket reads top to bottom instead of scrolling sideways. Wide screens keep the tables.
+
 ## Injury return dates
 
 Sleeper's tag says a player is hurt, not for how long. `availability(p, week)` is the chance a
