@@ -8175,18 +8175,22 @@ function slotNames(slots) {
 /** The lineup the consensus recommends, and for each slot the two or three players who could fill it. */
 function startSitPlan(T, wk) {
   const act = activePlayers(T);
+  const live = wk === S.liveWeek;
   const val = p => consensusPts(p, wk);
-  const lineup = optimalLineup(act, val);
+  // in the week being played the lineup is whatever was set, and a game that has started can no longer be changed
+  const lineup = live ? liveLineupSlots(T, wk) : optimalLineup(act, val);
   const names = slotNames(lineup);
   const chosen = new Set(lineup.filter(s => s.player).map(s => s.player.id));
+  const open = p => !live || livePlayerState(p, wk) === 'upcoming';
   return lineup.map((s, i) => {
     const rec = s.player;
     const elig = SLOT_ELIG[s.slot] || [s.slot];
+    if (live && rec && !open(rec)) return { slot: s.slot, name: names[i], rec, cands: [rec], conf: null, locked: true };
     // someone already starting in a different slot is not a free choice here
-    const pool = act.filter(p => elig.includes(p.pos) && (!chosen.has(p.id) || (rec && p.id === rec.id)));
+    const pool = act.filter(p => elig.includes(p.pos) && open(p) && (!chosen.has(p.id) || (rec && p.id === rec.id)));
     const cands = pool.sort((a, b) => val(b) - val(a)).filter((p, k) => (rec && p.id === rec.id) || val(p) > 0.05).slice(0, 3);
     if (rec && cands.length && cands[0].id !== rec.id) { cands.splice(cands.indexOf(rec), 1); cands.unshift(rec); }
-    return { slot: s.slot, name: names[i], rec, cands, conf: cands.length >= 2 ? psrcConfidence(cands, wk) : null };
+    return { slot: s.slot, name: names[i], rec, cands, conf: cands.length >= 2 ? psrcConfidence(cands, wk) : null, locked: false };
   });
 }
 
@@ -8203,17 +8207,19 @@ function wins1(w) { return String(+w.toFixed(1)); }
 function srcValue(v) { return v === null || v === undefined ? '—' : fmt(v, 1); }
 function slotCard(sl, wk, open, onToggle) {
   const p = sl.rec;
-  const cons = p ? consensusPts(p, wk) : 0;
+  const cons = p ? (sl.locked ? pwShown(p, wk) : consensusPts(p, wk)) : 0;
   const opp = p ? (onBye(p, wk) ? 'BYE' : pwOpp(p, wk)) : null;
   return h('button.ssc' + (open ? '.open' : '') + (p ? medalCls(p).replace(' medal', '.medal').replace(/ /g, '.') : ''), { onclick: onToggle, 'aria-expanded': open ? 'true' : 'false', 'aria-label': sl.name + (p ? ': ' + p.name : ': nobody') },
-    h('div.ssc-top', h('span.ssc-slot', sl.name), p ? confChip(sl.conf, 0) : null),
+    h('div.ssc-top', h('span.ssc-slot', sl.name), p ? (sl.locked ? h('span.ssc-conf.solo', { title: 'his game has started, so this slot can no longer be changed' }, '🔒 locked') : confChip(sl.conf, 0)) : null),
     p ? h('div.ssc-who', playerFace(p),
       h('div.ssc-id', h('div.ssc-nm', p.name),
         h('div.tiny.muted', [p.pos, p.team || 'FA', opp ? (opp === 'BYE' ? 'BYE' : (/^@|vs/.test(opp) ? opp : 'vs ' + opp)) : null].filter(Boolean).join(' · '))))
       : h('div.ssc-who', h('span.muted.tiny', 'nobody eligible')),
-    p ? h('div.ssc-bot', h('span.ssc-pts', h('b', fmt(cons, 1)), h('span', ' proj')), injuryTag(p.injury, p), h('span.chev', ico('chev'))) : null);
+    p ? h('div.ssc-bot', h('span.ssc-pts', h('b', fmt(cons, 1)), h('span', sl.locked ? ' pts' : ' proj')), sl.locked ? liveBadge(p, wk) : injuryTag(p.injury, p), h('span.chev', ico('chev'))) : null);
 }
 function slotPanel(sl, wk) {
+  if (sl.locked) return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' locked' },
+    h('div.ssp-hd', h('b', sl.name + ' — locked in'), h('span.tiny.muted', sl.rec.name + '’s game has started, so nothing here can change any more.')));
   const conf = sl.conf;
   const srcs = PSRC_LIST;
   const rowFor = (p, i) => {
@@ -8255,7 +8261,9 @@ function srcStrip(wk) {
 function startSitSlots(T, wk, act) {
   psrcKick(wk, act);
   const plan = startSitPlan(T, wk);
-  const total = sum(plan.map(x => x.rec ? consensusPts(x.rec, wk) : 0));
+  const live = wk === S.liveWeek;
+  const total = sum(plan.map(x => x.rec ? (x.locked ? pwShown(x.rec, wk) : consensusPts(x.rec, wk)) : 0));
+  const nLocked = plan.filter(x => x.locked).length;
   const grid = h('div.ssgrid');
   plan.forEach((sl, i) => {
     const key = T.rosterId + ':' + wk + ':' + i, open = LineupUI.openKey === key;
@@ -8263,8 +8271,9 @@ function startSitSlots(T, wk, act) {
     if (open) grid.appendChild(slotPanel(sl, wk));
   });
   const byes = act.filter(p => onBye(p, wk));
-  return card('Recommended lineup — week ' + wk,
-    fmt(total, 1) + ' projected points · tap a slot to see the alternatives and how sure each call is'
+  return card(live ? 'Your lineup — week ' + wk + ' (live)' : 'Recommended lineup — week ' + wk,
+    fmt(total, 1) + (live ? ' points so far plus what is still projected' : ' projected points')
+    + (live ? ' · ' + nLocked + ' of ' + plan.length + ' slots locked' : '') + ' · tap ' + (live ? 'an open' : 'a') + ' slot to see the alternatives and how sure each call is'
     + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
     h('div', { style: { display: 'grid', gap: '14px' } }, grid, srcStrip(wk)));
 }
@@ -8370,7 +8379,7 @@ function viewLineup() {
       }, ico(LineupUI.compare.includes(r.p.id) ? 'check' : 'plus')) : null
     }
   ];
-  if (upcoming) wrap.appendChild(startSitSlots(T, wk, act));
+  if (wk > S.lastWeek) wrap.appendChild(startSitSlots(T, wk, act));
   else {
   wrap.appendChild(card(isLive ? 'Your lineup — week ' + wk : 'Optimal lineup — week ' + wk,
     (isLive
