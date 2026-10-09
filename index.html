@@ -465,6 +465,28 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
   .tpod-nm{font-size:14px}
 }
 
+/* ---- the games that matter most: one line each, detail on demand ---- */
+.levitem{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden;transition:border-color .15s}
+.levitem.open{border-color:var(--border-strong);background:var(--surface-1);box-shadow:var(--shadow-xs)}
+.levrow{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:28px minmax(150px,.8fr) minmax(0,1.2fr) 150px 22px;gap:14px;align-items:center;padding:10px 14px;cursor:pointer}
+.levrow:hover{background:color-mix(in srgb,var(--brand) 5%,transparent)}
+.levrow:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.levteams{display:flex;align-items:center;gap:7px;min-width:0}
+.levteams b{font-size:13.5px}
+.levmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-start}
+.levmeter{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.levmeter .bar-track{width:74px;flex:none}
+.levrow .chev{display:grid;place-items:center;color:var(--text-muted);transition:transform .2s var(--ease)}
+.levrow.open .chev{transform:rotate(180deg)}
+.levdetail{display:grid;gap:10px;padding:2px 14px 14px;border-top:1px solid var(--border);padding-top:12px;animation:rise .25s var(--ease) both}
+@media (max-width:760px){
+  .levrow{grid-template-columns:24px minmax(0,1fr) 20px;grid-template-areas:"n teams chev" ". meta meta" ". meter meter";gap:6px 10px;padding:11px 12px}
+  .levn{grid-area:n}.levteams{grid-area:teams}.levmeta{grid-area:meta;justify-content:flex-start}.levmeter{grid-area:meter;justify-content:flex-start}.levrow .chev{grid-area:chev}
+  .levmeter .bar-track{width:auto;flex:1;max-width:160px}
+  .levdetail{padding:12px 12px 12px}
+}
+@media (prefers-reduced-motion:reduce){ .levdetail{animation:none} .levrow .chev{transition:none} }
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -4483,6 +4505,10 @@ function go(view) { S.view = view; moreOpen = false; render(); window.scrollTo(0
 
 function render() {
   hideCardPop();
+  // Redrawing the page you are already on (opening a row, a filter, "show more") should leave you where you were: on a phone
+  // the browser drops the scroll to the top the moment the page is emptied. A change of page, or a deliberate scrollTo(0, 0) after the
+  // render, still goes to the top.
+  const keepY = _lastView === S.view ? (window.scrollY || 0) : 0;
   const app = $('#app');
   clear(app);
   if (!S.league) return app.appendChild(splash());
@@ -4556,6 +4582,7 @@ function render() {
       NAV_ORDER.map(g => [h('div.sg', g), h('div.sgrid', VIEWS.filter(v => v.grp === g).map(v =>
         h('button.sitem' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label)))])));
   }
+  if (keepY > 0) window.scrollTo(0, keepY);
 }
 /* Charts are sized for the viewport they were drawn in, so a rotation or a
    resize across the phone/desktop boundary needs a redraw — but only then,
@@ -8452,9 +8479,9 @@ function viewTrades() {
    ================================================================== */
 
 /* ---------- leverage: which games actually decide the season ---------- */
-const LevUI = { week: 'all', n: 6 };
+const LevUI = { week: 'all', n: 6, open: null };
 /** One game that moves the season: who plays, and where both teams stand in each of the two worlds it leaves behind. */
-function levGameCard(g, i, res) {
+function levGameCard(g, i, res, embedded) {
   const A = g.a.team, B = g.b.team;
   const total = (g.nA || 0) + (g.nB || 0);
   const ok = v => v !== null && v !== undefined;
@@ -8479,6 +8506,10 @@ function levGameCard(g, i, res) {
     row(B, cell(g.b.poLose, g.b.tiLose, false), cell(g.b.poWin, g.b.tiWin, true)));
   const miss0 = !ok(g.a.poWin) || !ok(g.b.poLose), miss1 = !ok(g.a.poLose) || !ok(g.b.poWin);
   const next = g.week === res.fromWeek;
+  if (embedded) return h('div.levdetail', gridEl,
+    miss0 ? levUnmeasured(A.name, g.nA || 0, total) : null,
+    miss1 ? levUnmeasured(B.name, g.nB || 0, total) : null,
+    h('div.tiny.sec', { style: { paddingTop: '4px' } }, sentence));
   return h('div.levcard',
     h('div.row', { style: { gap: '7px', flexWrap: 'wrap' } },
       h('b.mono.tiny', '#' + (i + 1)),
@@ -8491,6 +8522,30 @@ function levGameCard(g, i, res) {
     miss0 ? levUnmeasured(A.name, g.nA || 0, total) : null,
     miss1 ? levUnmeasured(B.name, g.nB || 0, total) : null,
     h('div.tiny.sec', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px' } }, sentence));
+}
+/** One game as a single line; click it and the two worlds it leaves behind open underneath. Only one is open at a time. */
+function levRow(g, i, res) {
+  const A = g.a.team, B = g.b.team;
+  const key = g.week + '|' + A.rosterId + '|' + B.rosterId;
+  const open = LevUI.open === key;
+  const next = g.week === res.fromWeek;
+  const tag = g.thin ? ['unweighable', 'var(--text-muted)']
+    : g.swing > 0.22 ? ['season-defining', 'var(--critical)'] : g.swing > 0.12 ? ['big one', 'var(--s4)'] : g.swing < 0.04 ? ['low stakes', 'var(--text-muted)'] : null;
+  const meter = g.thin ? h('span.muted.tiny', 'not weighable')
+    : h('div.levmeter', h('div.bar-track', h('div.bar-fill', { style: { width: (clamp(g.swing / 0.35, 0, 1) * 100) + '%', background: g.swing > 0.22 ? 'var(--critical)' : g.swing > 0.12 ? 'var(--s4)' : 'var(--s1)' } })),
+      h('b.mono', pct(g.swing, 0)));
+  const head = h('button.levrow' + (open ? '.open' : ''), {
+    'aria-expanded': open ? 'true' : 'false', title: open ? 'Hide the detail' : 'Show where both teams stand if it goes either way',
+    onclick: () => { LevUI.open = open ? null : key; render(); }
+  },
+    h('b.mono.tiny.levn', '#' + (i + 1)),
+    h('span.levteams', teamFace(A, 26), h('b', A.short), h('span.tiny.muted', 'v'), h('b', B.short), teamFace(B, 26)),
+    h('span.levmeta',
+      h('span.tag', { style: { borderColor: next ? 'var(--s1)' : null, color: next ? 'var(--s1)' : null } }, 'Wk ' + g.week + (next ? ' · next' : '')),
+      tag ? h('span.tag', { style: { borderColor: tag[1], color: tag[1] } }, tag[0]) : null),
+    meter,
+    h('span.chev', ico('chev')));
+  return h('div.levitem' + (open ? '.open' : ''), head, open ? levGameCard(g, i, res, true) : null);
 }
 function simLeverageCard(res) {
   if (!res.leverage || !res.leverage.length) return null;
@@ -8505,7 +8560,7 @@ function simLeverageCard(res) {
     h('span', { style: { flex: 1 } }),
     h('span.tiny.muted', picked.length + ' game' + (picked.length === 1 ? '' : 's') + ' weighed'));
 
-  const body = h('div', { style: { display: 'grid', gap: '12px' } }, shown.map((g, i) => levGameCard(g, i, res)));
+  const body = h('div', { style: { display: 'grid', gap: '8px' } }, shown.map((g, i) => levRow(g, i, res)));
 
   const more = picked.length > shown.length
     ? h('div.row', { style: { marginTop: '11px', justifyContent: 'center' } },
@@ -8527,7 +8582,7 @@ function simLeverageCard(res) {
   const wt = withTable(h('div', controls, body, more), allTbl);
 
   return card(LevUI.week === 'all' ? 'Games that matter most — rest of season' : 'Games that matter most — week ' + LevUI.week,
-    'every simulated season is split by who won each game, then read back. Each box is one of the two worlds the game leaves behind: where both teams stand if it goes that way.',
+    'ranked by how much of the playoff picture each game moves — open one to see where both teams stand if it goes either way',
     wt.body, wt.btn);
 }
 
