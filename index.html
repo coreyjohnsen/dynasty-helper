@@ -260,11 +260,11 @@ button{font-family:inherit;font-size:inherit;color:inherit}
   transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .5s var(--ease),box-shadow .3s;touch-action:pan-y;
   background:var(--pcx-frame);box-shadow:0 18px 40px -14px rgba(18,22,48,.5),0 2px 6px rgba(18,22,48,.2);background-size:260% 260%;background-position:calc(50% + var(--hx)*.85) calc(50% + var(--hy)*.85)}
 .pcxcard.pcxon{transition:transform .08s linear,box-shadow .3s;box-shadow:0 30px 50px -16px rgba(18,22,48,.55),0 2px 6px rgba(18,22,48,.2)}
-.pcxcard.none{--pcx-frame:linear-gradient(140deg,#c9cfdf,#8d95ad 50%,#c9cfdf);--pcx-bg:linear-gradient(170deg,#f4f6fb,#dfe3ee);--pcx-art:linear-gradient(160deg,#cdd3e4,#e8ebf4)}
-.pcxcard.bronze{--pcx-frame:linear-gradient(140deg,#e0a070,#a8622f 50%,#e8b186);--pcx-bg:linear-gradient(170deg,#fff4ea,#f0d3b8);--pcx-art:linear-gradient(160deg,#e9c3a0,#f8e4d1)}
-.pcxcard.silver{--pcx-frame:linear-gradient(140deg,#f2f5fa,#9aa5ba 45%,#fff 70%,#aab4c8);--pcx-bg:linear-gradient(170deg,#fbfcff,#dde2ee);--pcx-art:linear-gradient(160deg,#cdd5e6,#eef1f8)}
-.pcxcard.gold{--pcx-frame:linear-gradient(140deg,#fff0b0,#f2a900 40%,#ffe27a 65%,#d99200);--pcx-bg:linear-gradient(170deg,#fffaf0,#fbe9bd);--pcx-art:linear-gradient(160deg,#ffe9a8,#fff6dc)}
-.pcxcard.diamond{--pcx-frame:linear-gradient(140deg,#7de8ff,#a98bff 40%,#ff9ad5 65%,#7de8ff);--pcx-bg:linear-gradient(170deg,#f6fcff,#e4e2ff);--pcx-art:linear-gradient(160deg,#c4efff,#e2d6ff 55%,#ffd9ee)}
+.pcxcard.none,.pxm.none{--pcx-frame:linear-gradient(140deg,#c9cfdf,#8d95ad 50%,#c9cfdf);--pcx-bg:linear-gradient(170deg,#f4f6fb,#dfe3ee);--pcx-art:linear-gradient(160deg,#cdd3e4,#e8ebf4)}
+.pcxcard.bronze,.pxm.bronze{--pcx-frame:linear-gradient(140deg,#e0a070,#a8622f 50%,#e8b186);--pcx-bg:linear-gradient(170deg,#fff4ea,#f0d3b8);--pcx-art:linear-gradient(160deg,#e9c3a0,#f8e4d1)}
+.pcxcard.silver,.pxm.silver{--pcx-frame:linear-gradient(140deg,#f2f5fa,#9aa5ba 45%,#fff 70%,#aab4c8);--pcx-bg:linear-gradient(170deg,#fbfcff,#dde2ee);--pcx-art:linear-gradient(160deg,#cdd5e6,#eef1f8)}
+.pcxcard.gold,.pxm.gold{--pcx-frame:linear-gradient(140deg,#fff0b0,#f2a900 40%,#ffe27a 65%,#d99200);--pcx-bg:linear-gradient(170deg,#fffaf0,#fbe9bd);--pcx-art:linear-gradient(160deg,#ffe9a8,#fff6dc)}
+.pcxcard.diamond,.pxm.diamond{--pcx-frame:linear-gradient(140deg,#7de8ff,#a98bff 40%,#ff9ad5 65%,#7de8ff);--pcx-bg:linear-gradient(170deg,#f6fcff,#e4e2ff);--pcx-art:linear-gradient(160deg,#c4efff,#e2d6ff 55%,#ffd9ee)}
 .pcxcard.diamond{box-shadow:0 18px 44px -12px rgba(125,150,255,.55),0 2px 6px rgba(18,22,48,.2)}
 .pcxcard.gold{box-shadow:0 18px 44px -12px rgba(242,169,0,.5),0 2px 6px rgba(18,22,48,.2)}
 .pcxface{position:relative;height:100%;border-radius:15px;overflow:hidden;background:var(--pcx-bg);color:#14182c;display:flex;flex-direction:column;padding:11px 11px 10px;gap:8px}
@@ -320,6 +320,33 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxdeck .pcxfit:nth-child(n){z-index:auto}
 @media (prefers-reduced-motion:reduce){ .pcxdeck .pcxfit{transition:none} }
 @media (hover:none){ .pcxdeck .pcxfit{margin-left:-60px} }
+
+/* ---- hover preview + deal cards ---- */
+.pcxpop{position:fixed;z-index:1200;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);transition:opacity .18s var(--ease),transform .22s var(--ease);filter:drop-shadow(0 18px 28px rgba(18,22,48,.35))}
+.pcxpop.in{opacity:1;transform:none}
+.pcxpop .pcxcard{transform:none!important}
+.tray-items.cards,.tmini-items.cards{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.tray-items.cards .tray-foot{flex-basis:100%}
+.pxmwrap{display:grid;gap:5px;justify-items:center;align-content:start}
+.pxm{position:relative;width:96px;height:134px;padding:3px;border-radius:12px;background:var(--pcx-frame);background-size:260% 260%;box-shadow:0 6px 14px -8px rgba(18,22,48,.5),0 1px 2px rgba(18,22,48,.2);transition:transform .22s var(--ease),box-shadow .22s;flex:none}
+.pxm:hover{transform:translateY(-4px);box-shadow:0 14px 22px -10px rgba(18,22,48,.5),0 1px 2px rgba(18,22,48,.2)}
+.pxm.pcxlink:focus-visible{outline:2px solid var(--s1);outline-offset:3px}
+.pxmface{height:100%;border-radius:9px;overflow:hidden;background:var(--pcx-bg);color:#14182c;display:flex;flex-direction:column;padding:4px 4px 5px;gap:3px;min-width:0}
+.pxmart{position:relative;flex:1;min-height:0;border-radius:6px;overflow:hidden;background:var(--pcx-art);box-shadow:inset 0 0 0 1px rgba(18,22,48,.14)}
+.pxmart img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.pxmpick{position:absolute;inset:0;display:grid;place-items:center;color:rgba(18,22,48,.4)}
+.pxmpick svg{width:30px;height:30px}
+.pxmpos{position:absolute;left:3px;top:3px;font-size:8.5px;font-weight:800;letter-spacing:.04em;padding:1px 5px;border-radius:99px;background:rgba(20,24,44,.82);color:#fff}
+.pxmval{position:absolute;right:3px;bottom:3px;font-size:10px;font-weight:800;padding:0 5px;border-radius:99px;background:rgba(255,255,255,.92);font-variant-numeric:tabular-nums}
+.pxmname{font-size:10.5px;font-weight:760;letter-spacing:-.01em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pxmsub{font-size:8.5px;color:#5a6180;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pxmx{position:absolute;right:-7px;top:-7px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-1);color:var(--text-secondary);display:grid;place-items:center;cursor:pointer;padding:0;opacity:0;transition:opacity .15s;z-index:2}
+.pxm:hover .pxmx,.pxmx:focus-visible{opacity:1}
+.pxmx svg{width:11px;height:11px}
+@media (hover:none){ .pxmx{opacity:1} }
+.pxm.anim.diamond:not(:hover){animation:pcx-frame 7s ease-in-out infinite alternate}
+.pxm.anim.gold:not(:hover){animation:pcx-frame 9s ease-in-out infinite alternate}
+@media (prefers-reduced-motion:reduce){ .pxm{animation:none!important;transition:none} .pcxpop{transition:none} }
 
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
@@ -4217,6 +4244,10 @@ function settingsMenu() {
         m => { setMedalMode(m); render(); }),
       MEDALS.map((m, i) => m.label + ' ' + (i ? MEDALS[i - 1].upTo + 1 : 1) + '–' + m.upTo).join(' · ')
       + ' overall by value. Anyone lower has no tier. Animation stops if your device asks for reduced motion.') : null,
+    S.ui === 'simple' ? group('Hover cards',
+      segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], LS.get('hovercards', true) !== false,
+        v => { LS.set('hovercards', v); hideCardPop(); render(); }),
+      'Rest on a player’s name and his card floats up beside it. Mouse only.') : null,
     S.league ? group('Injury return dates',
       segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], INJ.enabled(), v => { setInjuryEstimates(v); render(); }),
       injFeedLine()) : null,
@@ -4241,6 +4272,7 @@ const TAB_VIEWS = ['home', 'week', 'roster', 'players'];
 function go(view) { S.view = view; moreOpen = false; render(); window.scrollTo(0, 0); }
 
 function render() {
+  hideCardPop();
   const app = $('#app');
   clear(app);
   if (!S.league) return app.appendChild(splash());
@@ -5123,7 +5155,7 @@ function deskTray(o) {
       h('div.tray-t', h('span.tray-dot'), h('b', o.title)),
       o.total !== undefined && o.total !== null ? h('span.tray-sum.mono', o.total) : null),
     o.items && o.items.length
-      ? h('div.tray-items', o.items,
+      ? h('div.tray-items' + (o.cards ? '.cards' : ''), o.items,
         h('div.tray-foot', h('span.tiny.muted', o.count || (o.items.length + (o.items.length === 1 ? ' item' : ' items'))),
           o.onClear ? h('button.btn.sm', { onclick: o.onClear }, 'Clear') : null))
       : h('button.tray-empty', { onclick: o.onEmpty || null },
@@ -5224,7 +5256,8 @@ function viewTrade() {
     const T = T_OF[which], out = outOf(which), total = which === 'a' ? sumA : sumB;
     return deskTray({
       which, title: who(T) === 'You' ? 'You send' : T.name + ' sends', total: kfmt(Math.round(total)),
-      items: out.map(a => assetCard(a, { onRemove: () => setOut(which, outOf(which).filter(x => x.id !== a.id)) })),
+      cards: isSimple(),
+      items: out.map(a => dealItem(a, { back: 'trade', onRemove: () => setOut(which, outOf(which).filter(x => x.id !== a.id)) })),
       count: out.length + (out.length === 1 ? ' asset' : ' assets'), onClear: () => setOut(which, []),
       emptyTitle: 'Add what ' + (who(T) === 'You' ? 'you send' : T.short + ' sends'), emptySub: 'Pick players and draft picks from the roster below',
       onEmpty: () => { TradeUI.tab = which; render(); setTimeout(() => { const el = $('#tbrowse'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30); }
@@ -6097,7 +6130,7 @@ function tradeCardRow(r, T, i) {
   const verdict = tradeVerdict(r.fair);
   const tray = (arr, which, title) => h('div.tmini.' + which,
     h('div.tmini-hd', h('span.tray-dot'), h('b', title), h('span.tmini-sum.mono', kfmt(Math.round(sum(arr.map(a => a.dv)))))),
-    h('div.tmini-items', arr.map(a => assetCard(a, { compact: true, extra: angle(a, which === 'a' ? 'give' : 'get') }))));
+    h('div.tmini-items' + (isSimple() ? '.cards' : ''), arr.map(a => dealItem(a, { compact: true, back: 'finder', extra: angle(a, which === 'a' ? 'give' : 'get') }))));
   return h('div.tcard',
     h('div.tc-hd',
       h('div.tc-who',
@@ -6684,6 +6717,7 @@ function pname(p, opts) {
     onclick: (e) => { e.stopPropagation(); openPlayer(p.id); },
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openPlayer(p.id); } }
   }, p.name);
+  attachCardPop(el, p);
   if (!isSimple() || opts.face === false) return opts.mirror ? h('span.pnf.mir', el) : el;
   // mirrored puts the headshot on the outside, so two of these facing each other
   // read as a pair rather than as two left-aligned lists
@@ -6756,6 +6790,73 @@ function tradingCard(p, opts) {
   }
   return fit;
 }
+/* ---- hover preview: rest on any player's name and his card floats up beside it ---- */
+const PCXPOP = { el: null, timer: null };
+function hoverCardsOn() {
+  return isSimple() && LS.get('hovercards', true) !== false && typeof matchMedia === 'function' && matchMedia('(hover: hover)').matches;
+}
+function hideCardPop() {
+  clearTimeout(PCXPOP.timer);
+  if (PCXPOP.el) { PCXPOP.el.remove(); PCXPOP.el = null; }
+}
+function attachCardPop(el, p) {
+  if (!el || !p || !p.id || p.pos === 'PICK') return el;
+  const show = () => {
+    const full = (S.index && S.index[p.id]) || p;
+    if (!full || !full.pos || full.pos === 'PICK' || !el.isConnected) return;
+    hideCardPop();
+    const pop = h('div.pcxpop', tradingCard(full, { w: 210 }));
+    document.body.appendChild(pop); PCXPOP.el = pop;
+    const r = el.getBoundingClientRect(), w = pop.offsetWidth, ph = pop.offsetHeight;
+    let x = r.right + 14; if (x + w > innerWidth - 8) x = Math.max(8, r.left - w - 14);
+    const y = clamp(r.top + r.height / 2 - ph / 2, 8, Math.max(8, innerHeight - ph - 8));
+    pop.style.left = x + 'px'; pop.style.top = y + 'px';
+    requestAnimationFrame(() => pop.classList.add('in'));
+  };
+  const arm = () => { if (!hoverCardsOn()) return; clearTimeout(PCXPOP.timer); PCXPOP.timer = setTimeout(show, 260); };
+  el.addEventListener('mouseenter', arm);
+  el.addEventListener('focus', arm);
+  el.addEventListener('mouseleave', hideCardPop);
+  el.addEventListener('blur', hideCardPop);
+  el.addEventListener('mousedown', hideCardPop);
+  return el;
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('scroll', hideCardPop, true);
+  window.addEventListener('keydown', e => { if (e.key === 'Escape') hideCardPop(); });
+}
+
+/** A small card for a deal: a player's headshot in his tier frame, or a plain card for a pick or waiver budget. */
+function assetMiniCard(a, o) {
+  o = o || {};
+  const p = a.kind === 'player' ? a.ref : null;
+  const tier = p ? (medalOf(p) || 'none') : 'none';
+  const short = (nm) => { const w = String(nm || '').trim().split(/\s+/); return w.length > 1 ? w[0][0] + '. ' + w.slice(1).join(' ') : nm; };
+  const art = h('div.pxmart');
+  if (p && /^\d+$/.test(String(p.id))) art.appendChild(h('img', {
+    src: 'https://sleepercdn.com/content/nfl/players/thumb/' + p.id + '.jpg', alt: '', loading: 'lazy',
+    onerror: e => { e.target.style.visibility = 'hidden'; }
+  }));
+  else art.appendChild(h('div.pxmpick', ico('draft')));
+  art.appendChild(h('span.pxmpos', a.kind === 'faab' ? 'FAAB' : (a.pos === 'PICK' ? 'PICK' : a.pos)));
+  art.appendChild(h('span.pxmval', o.value !== undefined ? o.value : kfmt(Math.round(a.dv || 0))));
+  const el = h('div.pxm.' + tier + (medalMode() === 'animated' ? '.anim' : '') + (o.back && p ? '.pcxlink' : ''),
+    { title: a.name },
+    h('div.pxmface', art, h('div.pxmname', p ? short(a.name) : a.name),
+      h('div.pxmsub', p ? [p.team || 'FA', p.age ? fmt(p.age, 0) + ' yrs' : null].filter(Boolean).join(' · ') : (a.kind === 'faab' ? 'Waiver budget' : 'Draft pick'))),
+    o.onRemove ? h('button.pxmx', { title: 'Remove', 'aria-label': 'Remove ' + a.name, onclick: e => { e.stopPropagation(); hideCardPop(); o.onRemove(); } }, ico('close')) : null);
+  if (p) {
+    attachCardPop(el, p);
+    if (o.back) {
+      el.tabIndex = 0; el.setAttribute('role', 'button');
+      el.addEventListener('click', () => openPlayer(p.id, o.back));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(p.id, o.back); } });
+    }
+  }
+  return o.extra ? h('div.pxmwrap', el, o.extra) : el;
+}
+/** One side of a deal: cards in the Default view, the compact rows otherwise. */
+function dealItem(a, o) { return isSimple() ? assetMiniCard(a, o) : assetCard(a, Object.assign({ compact: !!o.compact }, o)); }
 function tradingCardStage(p, owner) {
   const bits = [p.college || null, p.exp !== null && p.exp !== undefined ? (p.exp === 0 ? 'rookie' : p.exp + ' yrs exp') : null].filter(Boolean).join(' · ');
   return h('div.pcxstage',
