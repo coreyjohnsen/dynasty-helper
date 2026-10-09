@@ -4447,10 +4447,10 @@ function viewRoster() {
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
     t.window ? h('span.tag', t.window) : null));
 
-  // Default view: the roster's best players as a deck; hover one to pull it up
+  // Default view: the whole roster as a deck, best first; hover one to pull it up
   if (isSimple()) {
-    const top = t.players.filter(p => (p.dv || 0) > 0 && POS4.includes(p.pos)).sort((a, b) => b.dv - a.dv).slice(0, 12);
-    if (top.length) wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — top players' }, top.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+    const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0));
+    if (all.length) wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — every player, best first' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
   }
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(148px,100%),1fr))' } },
