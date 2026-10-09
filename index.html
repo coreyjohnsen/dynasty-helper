@@ -348,6 +348,17 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pxm.anim.gold:not(:hover){animation:pcx-frame 9s ease-in-out infinite alternate}
 @media (prefers-reduced-motion:reduce){ .pxm{animation:none!important;transition:none} .pcxpop{transition:none} }
 
+/* ---- phones: the deck is a swipeable strip ---- */
+.pcxfit .pcxcard{touch-action:manipulation}
+.pcxdeck{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.pcxhint{display:none;text-align:center;margin-top:-6px}
+@media (hover:none){
+  .pcxdeck{padding-top:18px;padding-right:40px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+  .pcxdeck .pcxfit:hover,.pcxdeck .pcxfit:hover~.pcxfit{transform:none}
+  .pcxdeck .pcxfit:active{transform:translateY(-10px);transition-duration:.12s}
+  .pcxhint{display:block}
+}
+
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -4450,7 +4461,10 @@ function viewRoster() {
   // Default view: the whole roster as a deck, best first; hover one to pull it up
   if (isSimple()) {
     const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0));
-    if (all.length) wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — every player, best first' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+    if (all.length) {
+      wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — every player, best first' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+      wrap.appendChild(h('div.pcxhint.tiny.muted', 'Swipe along the deck · tap a card to open it'));
+    }
   }
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(148px,100%),1fr))' } },
@@ -6763,15 +6777,17 @@ function tradingCard(p, opts) {
   const card = h('div.pcxcard.' + tier + (medalMode() === 'animated' ? '.anim' : ''), { title: p.medal ? medalTitle(p) : null }, face);
   // the card leans toward the pointer; the glare and foil follow the same point
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const small = !!opts.w;   // small cards live in scrolling rows, where a finger means scroll, not tilt
   if (!still) {
     const move = e => {
+      if (small && e.pointerType === 'touch') return;
       const r = card.getBoundingClientRect();
       const x = clamp((e.clientX - r.left) / r.width, 0, 1), y = clamp((e.clientY - r.top) / r.height, 0, 1);
       card.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); card.style.setProperty('--my', (y * 100).toFixed(1) + '%');
       card.style.setProperty('--rx', ((0.5 - y) * 18).toFixed(2) + 'deg'); card.style.setProperty('--ry', ((x - 0.5) * 18).toFixed(2) + 'deg');
       card.style.setProperty('--hx', ((x - 0.5) * 100).toFixed(1) + '%'); card.style.setProperty('--hy', ((y - 0.5) * 100).toFixed(1) + '%');
     };
-    card.addEventListener('pointerenter', () => { card.classList.add('pcxon'); });
+    card.addEventListener('pointerenter', e => { if (small && e.pointerType === 'touch') return; card.classList.add('pcxon'); });
     card.addEventListener('pointermove', move);
     card.addEventListener('pointerleave', () => {
       card.classList.remove('pcxon');
