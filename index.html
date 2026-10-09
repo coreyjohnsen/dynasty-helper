@@ -228,7 +228,7 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .lupface .mring.lg{border-radius:50%;padding:3px}
 .lupface .mring>.face.lg{border-width:0}
 .mring>.face{box-shadow:0 0 0 1px var(--surface-1)}
-.mring:not(.anim),.mgem:not(.anim){background-size:100% 100%}
+.mring:not(.anim){background-size:100% 100%}
 .mring.diamond{box-shadow:0 0 10px -1px rgba(125,232,255,.55)}
 .mring.gold{box-shadow:0 0 9px -2px rgba(242,169,0,.5)}
 .pcard.medal,.card.medal.mhero{position:relative;overflow:hidden;border-color:var(--m-edge);
@@ -237,21 +237,17 @@ button{font-family:inherit;font-size:inherit;color:inherit}
   background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);background-size:250% 100%;background-position:150% 0}
 .pcard.medal.diamond::after,.pcard.medal.gold::after,.card.medal.mhero.diamond::after,.card.medal.mhero.gold::after{opacity:.5}
 .card.medal.mhero{box-shadow:var(--shadow),0 0 0 1px var(--m-edge) inset}
-.mgem{display:inline-block;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.03em;white-space:nowrap;
   color:#1a1405;background:var(--m-grad);background-size:300% 100%;vertical-align:middle}
-.mgem.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a))}
-.mgem.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b))}
-.mgem.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b))}
-.mgem.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));color:#fff}
 @keyframes medal-flow{to{background-position:-300% 0}}
 @keyframes medal-sweep{0%,55%{background-position:150% 0}100%{background-position:-50% 0}}
-.mring.anim.diamond,.mgem.anim.diamond{animation:medal-flow 5s linear infinite}
-.mring.anim.gold,.mgem.anim.gold{animation:medal-flow 8s linear infinite}
-.mring.anim.silver,.mgem.anim.silver{animation:medal-flow 14s linear infinite}
+.mring.anim.diamond{animation:medal-flow 5s linear infinite}
+.mring.anim.gold{animation:medal-flow 8s linear infinite}
+.mring.anim.silver{animation:medal-flow 14s linear infinite}
 .pcard.medal.anim.diamond::after,.card.medal.mhero.anim.diamond::after{animation:medal-sweep 4.5s ease-in-out infinite}
 .pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
-@media (max-width:760px){ .mring.anim.silver,.mgem.anim.silver,.pcard.medal.anim.gold::after{animation:none} }
-@media (prefers-reduced-motion:reduce){ .mring,.mgem,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
+.pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
+@media (max-width:760px){ .mring.anim.silver,.pcard.medal.anim.gold::after{animation:none} }
+@media (prefers-reduced-motion:reduce){ .mring,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
 :root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}
 :root[data-theme="dark"] .medal.diamond{--m-tint:rgba(125,232,255,.1)}
 :root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.12)}
@@ -3373,12 +3369,6 @@ function medalTitle(p) {
   const m = MEDALS.find(x => x.k === p.medal);
   return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
 }
-/** A small tier mark for the places a ring would be lost; shape as well as colour, so it reads without hue. */
-function medalGem(p) {
-  const m = medalOf(p); if (!m) return null;
-  const glyph = { diamond: '◆', gold: '●', silver: '●', bronze: '●' }[m];
-  return h('span.mgem.' + m + (medalMode() === 'animated' ? '.anim' : ''), { title: medalTitle(p) }, glyph + ' ' + MEDALS.find(x => x.k === m).label);
-}
 function teamLogo(abbr) {
   if (!abbr || typeof abbr !== 'string') return null;
   return h('img.tlogo', {
@@ -3393,7 +3383,7 @@ function playerCard(p, opts) {
     playerFace(p),
     h('div.meta',
       h('div.nm', pname(p, { face: false })),
-      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null, medalGem(p),
+      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
         opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury, p))),
     opts.value !== undefined ? h('div.val', opts.value) : null);
 }
@@ -6670,7 +6660,6 @@ function viewPlayer() {
         owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
   if (medalOf(p)) {
     hdr.className += medalCls(p).replace(' medal', ' medal mhero');
-    hdr.querySelector('h2').after(medalGem(p));
     const pic = hdr.querySelector('.bd > .row > :first-child');
     const ring = h('span.mring.mhero' + medalCls(p).replace(' medal', '.medal').replace(/ /g, '.'));
     pic.replaceWith(ring); ring.appendChild(pic);
