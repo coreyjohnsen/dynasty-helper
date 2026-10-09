@@ -211,26 +211,30 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 
 /* ============ player tiers ============ */
 :root{
-  --m-diamond-a:#7de8ff; --m-diamond-b:#a98bff; --m-diamond-c:#ff9ad5;
-  --m-gold-a:#ffe27a; --m-gold-b:#f2a900; --m-gold-c:#fff0b0;
-  --m-silver-a:#e9edf5; --m-silver-b:#9aa5ba; --m-silver-c:#ffffff;
-  --m-bronze-a:#e0a070; --m-bronze-b:#a8622f; --m-bronze-c:#f2c299;
+  --m-diamond-a:#3fd9ff; --m-diamond-b:#8b6bff; --m-diamond-c:#ff62c8;
+  --m-gold-a:#ffd84a; --m-gold-b:#e08a00; --m-gold-c:#fff2b0;
+  --m-silver-a:#f6f8fc; --m-silver-b:#6f7e9c; --m-silver-c:#ffffff;
+  --m-bronze-a:#eaa062; --m-bronze-b:#9c4f17; --m-bronze-c:#f7c999;
 }
-.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(125,232,255,.16);--m-edge:#8fb6ff}
-.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.14);--m-edge:#e8a800}
-.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(154,165,186,.16);--m-edge:#a3adc0}
-.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,98,47,.13);--m-edge:#c07840}
-.mring{display:inline-flex;flex:none;padding:3px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
-.mring.lg{padding:3px;border-radius:17px}
-.mring.mhero{padding:4px;border-radius:17px}
+.medal.diamond{--m-grad:linear-gradient(115deg,var(--m-diamond-a),var(--m-diamond-b),var(--m-diamond-c),var(--m-diamond-a));--m-tint:rgba(110,160,255,.14);--m-edge:#7f9bff;--m-bar:linear-gradient(180deg,#3fd9ff,#8b6bff 55%,#ff62c8)}
+.medal.gold{--m-grad:linear-gradient(115deg,var(--m-gold-b),var(--m-gold-a),var(--m-gold-c),var(--m-gold-b));--m-tint:rgba(242,169,0,.15);--m-edge:#e8a000;--m-bar:linear-gradient(180deg,#ffd84a,#e08a00)}
+.medal.silver{--m-grad:linear-gradient(115deg,var(--m-silver-b),var(--m-silver-a),var(--m-silver-c),var(--m-silver-b));--m-tint:rgba(120,135,165,.14);--m-edge:#8493b0;--m-bar:linear-gradient(180deg,#f6f8fc,#6f7e9c 60%,#c9d2e3)}
+.medal.bronze{--m-grad:linear-gradient(115deg,var(--m-bronze-b),var(--m-bronze-a),var(--m-bronze-c),var(--m-bronze-b));--m-tint:rgba(168,90,30,.14);--m-edge:#b8662a;--m-bar:linear-gradient(180deg,#eaa062,#9c4f17)}
+.mring{display:inline-flex;flex:none;padding:3.5px;border-radius:50%;background:var(--m-grad);background-size:300% 100%;line-height:0;vertical-align:middle}
+.mring.lg{padding:4px;border-radius:17px}
+.mring.mhero{padding:5px;border-radius:17px}
 .mring.mhero>*{border-radius:13px!important;display:block}
-.mring.xs,.mring.sm{padding:2px}
-.lupface .mring.lg{border-radius:50%;padding:3px}
+.mring.sm{padding:3px}
+.mring.xs{padding:2.5px}
+.lupface .mring.lg{border-radius:50%;padding:4px}
 .lupface .mring>.face.lg{border-width:0}
 .mring>.face{box-shadow:0 0 0 1px var(--surface-1)}
 .mring:not(.anim){background-size:100% 100%}
-.mring.diamond{box-shadow:0 0 10px -1px rgba(125,232,255,.55)}
-.mring.gold{box-shadow:0 0 9px -2px rgba(242,169,0,.5)}
+.mring{box-shadow:0 0 0 1px rgba(20,30,60,.22)}
+.mring.diamond{box-shadow:0 0 0 1px rgba(90,110,255,.45),0 0 12px 0 rgba(90,170,255,.6)}
+.mring.gold{box-shadow:0 0 0 1px rgba(170,100,0,.45),0 0 11px -1px rgba(242,169,0,.65)}
+.mring.silver{box-shadow:0 0 0 1px rgba(60,75,110,.42),0 0 6px -1px rgba(130,150,190,.55)}
+.mring.bronze{box-shadow:0 0 0 1px rgba(110,50,10,.45),0 0 6px -2px rgba(184,102,42,.5)}
 .pcard.medal,.card.medal.mhero{position:relative;overflow:hidden;border-color:var(--m-edge);
   background:linear-gradient(100deg,var(--m-tint),transparent 62%),var(--surface-1)}
 .pcard.medal::after,.card.medal.mhero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
@@ -250,7 +254,16 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){ .mring,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
 :root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}
 :root[data-theme="dark"] .medal.diamond{--m-tint:rgba(125,232,255,.1)}
-:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.12)}
+:root[data-theme="dark"] .medal.gold{--m-tint:rgba(242,169,0,.14)}
+:root[data-theme="dark"] .medal.silver{--m-tint:rgba(170,185,215,.1)}
+:root[data-theme="dark"] .medal.bronze{--m-tint:rgba(210,120,50,.14)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .medal{--m-tint:rgba(255,255,255,.05)}
+  :root:not([data-theme="light"]) .medal.diamond{--m-tint:rgba(125,232,255,.1)}
+  :root:not([data-theme="light"]) .medal.gold{--m-tint:rgba(242,169,0,.14)}
+  :root:not([data-theme="light"]) .medal.silver{--m-tint:rgba(170,185,215,.1)}
+  :root:not([data-theme="light"]) .medal.bronze{--m-tint:rgba(210,120,50,.14)}
+}
 :root[data-theme="dark"] .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .pcard.medal::after{background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);background-size:250% 100%} }
 
@@ -358,6 +371,14 @@ button{font-family:inherit;font-size:inherit;color:inherit}
   .pcxdeck .pcxfit:active{transform:translateY(-10px);transition-duration:.12s}
   .pcxhint{display:block}
 }
+
+/* ---- row accent: a tier bar down the left edge and a faint wash across the row ---- */
+.trm{--m-wash:color-mix(in srgb,var(--m-tint) 50%,transparent)}
+.lnrow{display:grid;grid-template-columns:46px 1fr auto;gap:9px;align-items:center;padding:3px 0;border-bottom:1px solid var(--grid)}
+.lnrow.trm{padding-left:10px;border-radius:6px 0 0 6px}
+table.tbl tbody tr.trm td{background-image:linear-gradient(var(--m-wash),var(--m-wash))}
+table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradient(var(--m-wash),var(--m-wash));background-size:4px 100%,auto;background-repeat:no-repeat,repeat;background-position:left top,0 0}
+.bitem.trm,.sigrow.trm,.dealitem.trm,.lnrow.trm,.pcard.trm:not(.hypin){background-image:var(--m-bar),linear-gradient(90deg,var(--m-tint),transparent 80%);background-size:4px 100%,auto;background-repeat:no-repeat;background-position:left top,0 0}
 
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
@@ -1460,6 +1481,11 @@ function assignMedals(all) {
 function medalOf(p) {
   if (!p || !p.medal || !isSimple() || medalMode() === 'off') return null;
   return p.medal;
+}
+/** Class names that give a row its tier accent (empty when there is none to show). */
+function rowMedal(p) {
+  const m = medalOf(p);
+  return m ? 'trm medal ' + m : null;
 }
 function medalCls(p) {
   const m = medalOf(p);
@@ -3676,7 +3702,7 @@ function table(allCols, rows, opts) {
       }, c.h, st.key === c.k ? (st.dir < 0 ? ' ↓' : ' ↑') : '')))),
       h('tbody', data.map((r, i) => h('tr', {
         onclick: opts.onRow ? () => opts.onRow(r) : null, style: opts.onRow ? { cursor: 'pointer' } : null,
-        class: opts.rowClass ? (opts.rowClass(r) || null) : null
+        class: [opts.rowClass ? opts.rowClass(r) : null, rowMedal(r && r.p && r.p.id ? r.p : r)].filter(Boolean).join(' ') || null
       },
         cols.map(c => h('td', { class: c.num ? 'num' : '' }, c.f ? c.f(r, i) : r[c.k]))))));
     wrap.appendChild(tb);
@@ -4537,7 +4563,7 @@ function injuryReportCard(t) {
 function lineupTable(t) {
   return h('div', { style: { display: 'grid', gap: '3px' } }, t.starters.map(s => {
     const p = s.player;
-    return h('div', { style: { display: 'grid', gridTemplateColumns: '46px 1fr auto', gap: '9px', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid var(--grid)' } },
+    return h('div.lnrow', { class: p ? rowMedal(p) : null },
       h('span.tag', { style: { textAlign: 'center' } }, SLOT_LABEL[s.slot] || s.slot),
       p ? h('div.row', { style: { gap: '7px', minWidth: 0 } },
         isSimple() ? playerFace(p) : posPill(p.pos),
@@ -5154,7 +5180,7 @@ function assetFace(a) {
 /** A chosen asset, large enough to read: face, name, position, where he plays, value. */
 function assetCard(a, o) {
   o = o || {};
-  return h('div.dealitem' + (o.compact ? '.compact' : ''),
+  return h('div.dealitem' + (o.compact ? '.compact' : ''), { class: a.kind === 'player' ? rowMedal(a.ref) : null },
     assetFace(a),
     h('div.dealmain',
       h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos), h('span.dealnm', a.name), a.kind === 'player' && a.ref ? injuryTag(a.ref.injury, a.ref) : null, o.extra || null),
@@ -5188,7 +5214,7 @@ function assetBrowser(o) {
   const list = h('div.bgrid'), more = h('div.row', { style: { justifyContent: 'center', marginTop: '10px' } });
   const item = (a) => {
     const inDeal = chosen.has(a.id), face = assetFace(a);
-    return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', onclick: () => o.onToggle(a, inDeal) },
+    return h('button.bitem' + (inDeal ? '.in' : ''), { 'aria-pressed': inDeal ? 'true' : 'false', class: a.kind === 'player' ? rowMedal(a.ref) : null, onclick: () => o.onToggle(a, inDeal) },
       face ? h('span.bface', face) : null,
       h('span.bmain',
         h('span.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, posPill(a.pos), h('span.bnm', a.name), a.kind === 'player' ? injuryTag(a.ref.injury, a.ref) : null),
@@ -6099,7 +6125,7 @@ function signalBoard(T, shop) {
   const holds = mine.filter(x => x.s.kind === 'buy').sort(rank).slice(0, 3);
   const buys = rows.filter(x => x.o.rosterId !== T.rosterId && x.s.kind === 'buy').sort(rank).slice(0, 6);
   const pips = pipsOf;
-  const rowEl = (x, verb, where) => h('div.sigrow',
+  const rowEl = (x, verb, where) => h('div.sigrow', { class: rowMedal(x.p) },
     isSimple() ? playerFace(x.p) : posPill(x.p.pos),
     h('div.sigmain',
       h('div.row', { style: { gap: '6px', flexWrap: 'nowrap' } }, pname(x.p, { face: false, style: { fontWeight: '640' } }), pips(x.s.strength)),
