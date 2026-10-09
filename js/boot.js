@@ -13,6 +13,7 @@ async function boot(leagueId, onStep) {
     if (S.view === 'roster') S.view = 'home';
     S.busy = false;
     S.sim = null;
+    shareApplyPending();
     render();
   } catch (e) {
     S.busy = false; console.error(e);
@@ -32,7 +33,9 @@ setAccent(currentAccent());
 setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer view
 setNameMode(LS.get('names', 'user')); // people know each other by handle, not by team name
 watchViewport();
-const _last = LS.get('last', null);
+const _link = shareParse(location.hash);
+if (_link) SHARE.pending = _link;
+const _last = _link ? _link.league : LS.get('last', null);
 render();
 if (_last && /^\d{6,25}$/.test(String(_last))) {
   const st = $('.splash .sp-status');

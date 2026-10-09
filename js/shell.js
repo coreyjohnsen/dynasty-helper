@@ -28,7 +28,8 @@ const ICON = {
   back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
-  close: '<path d="M6 6l12 12M18 6 6 18"/>'
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  share: '<path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M5 12v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V12"/>'
 };
 function ico(name) {
   return h('span.ic', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>' });
@@ -179,7 +180,7 @@ function settingsMenu() {
   return h('div.menuwrap',
     h('button.btn' + (settingsOpen ? '.pri' : ''), {
       title: 'Settings', 'aria-label': 'Settings', 'aria-expanded': settingsOpen ? 'true' : 'false',
-      onclick: () => { settingsOpen = !settingsOpen; render(); }
+      onclick: () => { settingsOpen = !settingsOpen; shareOpen = false; render(); }
     }, ico('sliders'), h('span.bl', 'Settings')),
     settingsOpen ? panel : null);
 }
@@ -233,6 +234,7 @@ function render() {
       title: 'Try roster changes and see every page recompute', 'aria-label': 'Hypothetical roster sandbox',
       onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
     }, ico('flask'), h('span.bl', HYP.on ? 'Hypothetical · ' + hypCount() : 'Hypothetical')),
+    shareMenu(),
     settingsMenu()
   );
   const entering = _lastView !== S.view; _lastView = S.view;
@@ -270,6 +272,7 @@ function render() {
       NAV_ORDER.map(g => [h('div.sg', g), h('div.sgrid', VIEWS.filter(v => v.grp === g).map(v =>
         h('button.sitem' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label)))])));
   }
+  shareSyncUrl();
   if (keepY > 0) window.scrollTo(0, keepY);
 }
 /* Charts are sized for the viewport they were drawn in, so a rotation or a

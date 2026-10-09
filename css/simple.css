@@ -320,3 +320,12 @@ td .pnf,.asset .pnf{vertical-align:middle}
   .rankrow .hidenarrow{display:none}
 }
 
+
+/* ---- share menu and toast ---- */
+.sharepanel{width:340px}
+.sharepanel .sharelink{width:100%;font-size:12px;font-family:var(--mono,monospace);text-overflow:ellipsis}
+#sharetoast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,12px);z-index:200;
+  background:var(--surface-inv,#10131f);color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;
+  box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#sharetoast.on{opacity:1;transform:translate(-50%,0)}
+@media (max-width:560px){ .sharepanel{width:min(340px,calc(100vw - 28px))} #sharetoast{bottom:calc(84px + env(safe-area-inset-bottom))} }
