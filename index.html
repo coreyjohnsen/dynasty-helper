@@ -329,8 +329,8 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxlink:focus-visible{outline:2px solid var(--s1);outline-offset:4px}
 .pcxhand{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 8px}
 .pcxhandi{display:grid;justify-items:center;gap:6px}
-.pcxdeck{display:flex;align-items:flex-end;padding:44px 26px 12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;min-height:0}
-.pcxdeck .pcxfit{margin-left:-82px;transition:transform .38s var(--ease),margin .38s var(--ease),filter .3s}
+.pcxdeck{display:flex;align-items:flex-end;padding:44px 26px 12px;overflow-x:auto;overflow-y:hidden;min-height:0}
+.pcxdeck .pcxfit{margin-left:-88px;transition:transform .38s var(--ease),margin .38s var(--ease),filter .3s}
 .pcxdeck .pcxfit:first-child{margin-left:0}
 .pcxdeck .pcxfit:hover,.pcxdeck .pcxfit:focus-visible{transform:translateY(-34px) scale(1.07);z-index:5}
 .pcxdeck:hover .pcxfit:not(:hover){filter:brightness(.97)}
@@ -338,6 +338,18 @@ button{font-family:inherit;font-size:inherit;color:inherit}
 .pcxdeck .pcxfit:nth-child(n){z-index:auto}
 @media (prefers-reduced-motion:reduce){ .pcxdeck .pcxfit{transition:none} }
 @media (hover:none){ .pcxdeck .pcxfit{margin-left:-60px} }
+/* room on the right for the cards that slide aside when one is pulled up, so a full deck never grows a scrollbar on hover */
+@media (hover:hover){ .pcxdeck{padding-right:56px} }
+/* the deck's scrollbar: a slim rounded pill instead of the system bar. Chrome, Edge and Safari take the
+   -webkit rules (and ignore them once scrollbar-color is set, so it is given to Firefox alone); a phone
+   keeps its own overlay bar. */
+@media (hover:hover){
+  .pcxdeck::-webkit-scrollbar{height:10px}
+  .pcxdeck::-webkit-scrollbar-track{margin:0 26px;border-radius:99px;background:color-mix(in srgb,var(--text-muted) 14%,transparent)}
+  .pcxdeck::-webkit-scrollbar-thumb{border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-2));border:2px solid transparent;background-clip:padding-box;min-width:48px}
+  .pcxdeck::-webkit-scrollbar-thumb:hover{background:linear-gradient(90deg,var(--brand-2),var(--brand));background-clip:padding-box}
+  @supports (-moz-appearance:none){ .pcxdeck{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--brand) 70%,transparent) color-mix(in srgb,var(--text-muted) 14%,transparent)} }
+}
 
 /* ---- hover preview + deal cards ---- */
 .pcxpop{position:fixed;z-index:1200;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);transition:opacity .18s var(--ease),transform .22s var(--ease);filter:drop-shadow(0 18px 28px rgba(18,22,48,.35))}
@@ -391,6 +403,8 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 @media (max-width:1180px){ .pcxhero>.grid{grid-template-columns:repeat(2,minmax(0,1fr))!important} }
 @media (max-width:900px){ .pcxhero{grid-template-columns:minmax(0,1fr)} .pcxhero>.grid{grid-template-columns:repeat(auto-fit,minmax(min(146px,100%),1fr))!important} }
 
+.vq .ax{font-size:10px}
+@media (max-width:760px){ .vq .ax{font-size:10.5px} }
 /* ============ atoms ============ */
 .card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);min-width:0}
 .card .hd{padding:17px 20px 0;display:flex;align-items:baseline;gap:6px 12px;flex-wrap:wrap}
@@ -4500,6 +4514,35 @@ function splash() {
 
 /* ================= 1. ROSTERS ================= */
 const RosterUI = { team: null, sort: 'dv', group: true };
+/** The roster's best players as an overlapping deck. It holds as many cards as fit across
+ *  the width it has — no sideways scrolling on a big screen — but never fewer than ten, so a
+ *  small screen gets a deck to swipe along. It re-counts whenever the width changes. */
+function rosterDeck(t) {
+  const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0));
+  if (!all.length) return null;
+  const CARD = 168, MIN = 10;
+  const deck = h('div.pcxdeck', { 'aria-label': t.name + ' — best players first' });
+  let shown = -1;
+  const draw = n => {
+    n = Math.min(n, all.length);
+    if (n === shown) return;
+    shown = n; clear(deck);
+    all.slice(0, n).forEach(p => deck.appendChild(tradingCard(p, { w: CARD, back: 'roster' })));
+  };
+  // how many cards fit: the first takes a whole card, every one after it only its visible stride
+  const fit = () => {
+    const cs = getComputedStyle(deck), a = deck.children[0], b = deck.children[1];
+    const usable = deck.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const stride = a && b ? b.offsetLeft - a.offsetLeft : CARD - 88;
+    if (!(usable > 0) || !(stride > 0)) return MIN;
+    return Math.max(MIN, Math.floor((usable - CARD) / stride) + 1);
+  };
+  const settle = () => draw(fit());
+  draw(MIN);
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(settle);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(settle).observe(deck);
+  return deck;
+}
 function viewRoster() {
   const teams = S.teams;
   if (RosterUI.team === null || !teams.find(t => t.rosterId === RosterUI.team)) RosterUI.team = teams[0].rosterId;
@@ -4514,11 +4557,11 @@ function viewRoster() {
     h('div.row', h('label.fld', { style: { minWidth: '260px' } }, 'Team', picker)),
     t.window ? h('span.tag', t.window) : null));
 
-  // Default view: the ten best players as a deck; hover one to pull it up
+  // Default view: the best players as a deck, as many as fit across the screen; hover one to pull it up
   if (isSimple()) {
-    const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0)).slice(0, 10);
-    if (all.length) {
-      wrap.appendChild(h('div.pcxdeck', { 'aria-label': t.name + ' — ten best players' }, all.map(p => tradingCard(p, { w: 168, back: 'roster' }))));
+    const deck = rosterDeck(t);
+    if (deck) {
+      wrap.appendChild(deck);
       wrap.appendChild(h('div.pcxhint.tiny.muted', 'Swipe along the deck · tap a card to open it'));
     }
   }
@@ -10070,7 +10113,9 @@ function valueQuadrants() {
     p.dynRk = dynRank.indexOf(p.t.rosterId) + 1; p.redRk = redRank.indexOf(p.t.rosterId) + 1;
   });
 
-  const W = chartW(900, 380), H = isNarrow() ? 400 : 440, m = isNarrow() ? { t: 14, r: 12, b: 42, l: 44 } : { t: 16, r: 18, b: 46, l: 56 };
+  // on a desktop the chart is drawn at the width it will be shown (the card is the window less the sidebar and
+  // padding), so one drawing unit is one pixel and text and logos stay a fixed size on any monitor
+  const W = isNarrow() ? 380 : Math.round(clamp(innerWidth - 350, 560, 1500)), H = isNarrow() ? 400 : Math.round(clamp(W * 0.46, 380, 520)), m = isNarrow() ? { t: 14, r: 12, b: 42, l: 44 } : { t: 16, r: 18, b: 46, l: 56 };
   const iw = W - m.l - m.r, ih = H - m.t - m.b;
   // the quadrant captions live in the top and bottom bands, so the redraft axis keeps those
   // bands clear of dots; the dynasty axis only needs a little air
@@ -10083,7 +10128,7 @@ function valueQuadrants() {
     for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
     return out;
   };
-  const g = svg('svg', { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'each team by dynasty value and redraft value' });
+  const g = svg('svg', { class: 'chart vq', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'each team by dynasty value and redraft value' });
   // the quadrant captions live in the corners; the viewBox keeps its own proportions
   g.style.width = '100%'; g.style.height = 'auto';
   // the two corners where the axes disagree get a faint wash
@@ -10104,23 +10149,23 @@ function valueQuadrants() {
   // quadrant names ride the corners, away from the cross where the dots bunch
   const reserved = [];
   const corner = (q, x, y, anchor) => {
-    const d = VALUE_QUADS[q], nm = svg('text', { x, y, 'text-anchor': anchor, 'font-size': 11.5, 'font-weight': 700, 'letter-spacing': '.05em', fill: 'var(--text-secondary)' });
+    const d = VALUE_QUADS[q], nm = svg('text', { x, y, 'text-anchor': anchor, 'font-size': isNarrow() ? 11.5 : 10.5, 'font-weight': 700, 'letter-spacing': '.05em', fill: 'var(--text-secondary)' });
     nm.textContent = d.name.toUpperCase(); g.appendChild(nm);
     const sb = svg('text', { class: 'ax', x, y: y + 14, 'text-anchor': anchor }); sb.textContent = d.sub; g.appendChild(sb);
-    const w = Math.max(d.name.length * 8.2, d.sub.length * 5.8) + 6;
+    const w = Math.max(d.name.length * (isNarrow() ? 8.2 : 7.6), d.sub.length * (isNarrow() ? 5.8 : 5.4)) + 6;
     reserved.push([anchor === 'start' ? x - 3 : x - w + 3, y - 12, w, 30]);
   };
   corner('tl', m.l + 10, m.t + 20, 'start'); corner('tr', W - m.r - 10, m.t + 20, 'end');
   corner('bl', m.l + 10, m.t + ih - 24, 'start'); corner('br', W - m.r - 10, m.t + ih - 24, 'end');
 
   // labels: you first, then everyone who still fits; the tooltip and the table carry the rest
-  const R = isNarrow() ? 11 : 14;                         // a team's logo is a disc this big
+  const R = isNarrow() ? 11 : 12;                         // a team's logo is a disc this big
   const rOf = p => p.me ? R + 3 : R;
   const placed = reserved.slice(), dots = pts.map(p => ({ x: X(p.dyn), y: Y(p.red), r: rOf(p) }));
   const hit = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
   const labels = [];
   pts.slice().sort((a, b) => (b.me ? 1 : 0) - (a.me ? 1 : 0)).forEach(p => {
-    const cx = X(p.dyn), cy = Y(p.red), txt = p.t.short || p.t.name, w = txt.length * 6.6 + 4, hh = 13, gap = rOf(p) + 6;
+    const cx = X(p.dyn), cy = Y(p.red), txt = p.t.short || p.t.name, w = txt.length * (isNarrow() ? 6.6 : 6.1) + 4, hh = 13, gap = rOf(p) + 6;
     const cands = [
       { x: cx + gap, y: cy + 4, a: 'start', r: [cx + gap - 2, cy - hh + 4, w, hh] },
       { x: cx - gap, y: cy + 4, a: 'end', r: [cx - gap - w + 2, cy - hh + 4, w, hh] },
