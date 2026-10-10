@@ -83,7 +83,7 @@ function updateThemeColor() {
       const cs = getComputedStyle(document.documentElement);
       const hue = parseFloat(cs.getPropertyValue('--hue')), sat = parseFloat(cs.getPropertyValue('--cs'));
       color = isFinite(hue) && isFinite(sat) && typeof CSS !== 'undefined' && CSS.supports && CSS.supports('color', 'oklch(50% .1 200)')
-        ? oklchToHex(0.165, 0.034 * sat, hue) : '#0a0d17';   // same numbers as --plane in the stylesheet
+        ? oklchToHex(0.145, 0.014 * sat, hue) : '#0a0d17';   // same numbers as --plane in the stylesheet
     }
     let m = document.querySelector('meta[name="theme-color"]:not([media])');
     if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.insertBefore(m, document.head.firstChild); }

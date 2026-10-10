@@ -6,7 +6,7 @@
    a dark rail makes the working surface beside it read as lighter and calmer */
 .side{
   background:
-    radial-gradient(320px 220px at 0% 0%, color-mix(in srgb, var(--brand) 26%, transparent), transparent 70%),
+    radial-gradient(320px 220px at 0% 0%, color-mix(in srgb, var(--brand) var(--side-wash,26%), transparent), transparent 70%),
     linear-gradient(180deg,var(--ink-2),var(--ink));
   color:var(--ink-text);padding:16px 12px 14px;display:flex;flex-direction:column;gap:1px;
   position:sticky;top:0;height:100vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent;
@@ -33,7 +33,7 @@
 .side .foot{padding:12px 11px 2px;border-top:1px solid rgba(255,255,255,.08);margin-top:10px;font-size:11px;color:rgba(170,176,204,.7);line-height:1.6}
 
 .main{min-width:0;display:flex;flex-direction:column;
-  background:radial-gradient(900px 380px at 78% -60px, color-mix(in srgb, var(--brand) 9%, transparent), transparent 70%)}
+  background:radial-gradient(900px 380px at 78% -60px, color-mix(in srgb, var(--brand) var(--page-wash,9%), transparent), transparent 70%)}
 .topbar{position:sticky;top:0;z-index:30;
   background:color-mix(in srgb, var(--plane) 82%, transparent);
   -webkit-backdrop-filter:saturate(1.6) blur(16px);backdrop-filter:saturate(1.6) blur(16px);

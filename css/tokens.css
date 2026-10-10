@@ -92,22 +92,24 @@
       --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
       --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
       --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
-      --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
-      /* the dark surfaces are the accent's own hue, very dark and barely saturated, at the lightness the old blue-greys had */
-      --plane:oklch(16.5% calc(.034*var(--cs)) var(--hue)); --surface-1:oklch(21% calc(.034*var(--cs)) var(--hue));
-      --surface-2:oklch(18% calc(.034*var(--cs)) var(--hue)); --surface-3:oklch(26% calc(.038*var(--cs)) var(--hue));
-      --grid:oklch(29% calc(.04*var(--cs)) var(--hue)); --axis:oklch(38% calc(.044*var(--cs)) var(--hue)); --div-neutral:oklch(38% calc(.044*var(--cs)) var(--hue));
+      --side-wash:14%; --page-wash:3.5%;
+    --ink:oklch(9.5% calc(.024*var(--cs)) var(--hue)); --ink-2:oklch(13% calc(.032*var(--cs)) var(--hue));
+      /* the dark surfaces carry only a whisper of the accent's hue, so they read as near-neutral charcoal; the sidebar (--ink) sits darker than the page */
+      --plane:oklch(14.5% calc(.014*var(--cs)) var(--hue)); --surface-1:oklch(18.5% calc(.016*var(--cs)) var(--hue));
+      --surface-2:oklch(16.3% calc(.015*var(--cs)) var(--hue)); --surface-3:oklch(23% calc(.018*var(--cs)) var(--hue));
+      --grid:oklch(26% calc(.02*var(--cs)) var(--hue)); --axis:oklch(35% calc(.024*var(--cs)) var(--hue)); --div-neutral:oklch(35% calc(.024*var(--cs)) var(--hue));
     }
   }
   :root[data-theme="dark"]{
     --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
     --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
     --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
-    --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
-    /* the dark surfaces are the accent's own hue, very dark and barely saturated, at the lightness the old blue-greys had */
-    --plane:oklch(16.5% calc(.034*var(--cs)) var(--hue)); --surface-1:oklch(21% calc(.034*var(--cs)) var(--hue));
-    --surface-2:oklch(18% calc(.034*var(--cs)) var(--hue)); --surface-3:oklch(26% calc(.038*var(--cs)) var(--hue));
-    --grid:oklch(29% calc(.04*var(--cs)) var(--hue)); --axis:oklch(38% calc(.044*var(--cs)) var(--hue)); --div-neutral:oklch(38% calc(.044*var(--cs)) var(--hue));
+    --side-wash:14%; --page-wash:3.5%;
+    --ink:oklch(9.5% calc(.024*var(--cs)) var(--hue)); --ink-2:oklch(13% calc(.032*var(--cs)) var(--hue));
+    /* the dark surfaces carry only a whisper of the accent's hue, so they read as near-neutral charcoal; the sidebar (--ink) sits darker than the page */
+    --plane:oklch(14.5% calc(.014*var(--cs)) var(--hue)); --surface-1:oklch(18.5% calc(.016*var(--cs)) var(--hue));
+    --surface-2:oklch(16.3% calc(.015*var(--cs)) var(--hue)); --surface-3:oklch(23% calc(.018*var(--cs)) var(--hue));
+    --grid:oklch(26% calc(.02*var(--cs)) var(--hue)); --axis:oklch(35% calc(.024*var(--cs)) var(--hue)); --div-neutral:oklch(35% calc(.024*var(--cs)) var(--hue));
   }
 }
 
