@@ -8,14 +8,17 @@
      Last 3    the average of his last three games with a recorded score (injured, bye
                and inactive weeks are skipped)
      Market    the model built from the market price / positional rank
-   A slot's confidence is how often each candidate comes out ahead across those sources,
-   weighting each source's vote by how decisive its gap is. */
+   A slot's confidence is how often each candidate comes out ahead across those sources:
+   each source casts one vote (a wide gap is a firm vote, a near tie is a coin flip), the
+   projections count 3x each and the derived readings 1x, and the shares always add to 100%. */
 const PSRC_LIST = [
-  { id: 'sleeper', label: 'Sleeper (Rotowire)', short: 'Sleeper', kind: 'ext' },
-  { id: 'espn', label: 'ESPN', short: 'ESPN', kind: 'ext' },
-  { id: 'form', label: 'Last 3 healthy games', short: 'Last 3', kind: 'form' },
-  { id: 'market', label: 'Market model', short: 'Market', kind: 'model' }
+  { id: 'sleeper', label: 'Sleeper (Rotowire)', short: 'Sleeper', kind: 'ext', w: 3 },
+  { id: 'espn', label: 'ESPN', short: 'ESPN', kind: 'ext', w: 3 },
+  { id: 'form', label: 'Last 3 healthy games', short: 'Last 3', kind: 'form', w: 1 },
+  { id: 'market', label: 'Market model', short: 'Market', kind: 'model', w: 1 }
 ];
+/* Projections are somebody's actual forecast for this week; Last 3 and Market are our own derivations from
+   past scores and trade value. So the two projections carry three times the weight of each derived reading. */
 const PSRC = { data: {}, status: {}, pending: {}, espnMap: null, espnScale: {} };
 PSRC_LIST.forEach(x => { PSRC.status[x.id] = { state: 'idle', msg: '', n: 0 }; });
 let _psrcTimer = null;
@@ -119,18 +122,41 @@ async function psrcLoadForm(wk, players) {
 }
 
 /* ---- ESPN ---- */
-function espnParse(j, wk) {
+/* ESPN's own team and position numbering, for matching a player Sleeper has no ESPN id for. */
+const ESPN_TEAM = { 1: 'ATL', 2: 'BUF', 3: 'CHI', 4: 'CIN', 5: 'CLE', 6: 'DAL', 7: 'DEN', 8: 'DET', 9: 'GB', 10: 'TEN', 11: 'IND', 12: 'KC', 13: 'LV', 14: 'LAR', 15: 'MIA', 16: 'MIN', 17: 'NE', 18: 'NO', 19: 'NYG', 20: 'NYJ', 21: 'PHI', 22: 'ARI', 23: 'PIT', 24: 'LAC', 25: 'SF', 26: 'SEA', 27: 'TB', 28: 'WAS', 29: 'CAR', 30: 'JAX', 33: 'BAL', 34: 'HOU' };
+const ESPN_POS = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K', 16: 'DEF' };
+const SLEEPER_TEAM_ALIAS = { WSH: 'WAS', JAC: 'JAX', LA: 'LAR', OAK: 'LV' };
+/** The Sleeper player an ESPN row is: by ESPN id when Sleeper has one, otherwise by name + position (+ team to tell namesakes apart). */
+function espnMatch(pl, eid) {
   if (!PSRC.espnMap) {
-    PSRC.espnMap = new Map();
-    for (const id in S.players) { const e = S.players[id] && S.players[id].e; if (e) PSRC.espnMap.set(String(e), id); }
+    PSRC.espnMap = new Map(); PSRC.espnNames = new Map();
+    for (const id in S.players) {
+      const sp = S.players[id]; if (!sp) continue;
+      if (sp.e) PSRC.espnMap.set(String(sp.e), id);
+      if (sp.p === 'DEF') continue;
+      const k = normName(sp.n) + '|' + sp.p;
+      if (!PSRC.espnNames.has(k)) PSRC.espnNames.set(k, []);
+      PSRC.espnNames.get(k).push(id);
+    }
   }
+  if (PSRC.espnMap.has(eid)) return PSRC.espnMap.get(eid);
+  const pos = ESPN_POS[pl.defaultPositionId], team = ESPN_TEAM[pl.proTeamId];
+  if (!pos) return null;
+  if (pos === 'DEF') return team && S.players[team] ? team : null;
+  const c = PSRC.espnNames.get(normName(pl.fullName || ((pl.firstName || '') + ' ' + (pl.lastName || ''))) + '|' + pos) || [];
+  if (c.length === 1) return c[0];
+  const same = c.filter(id => { const t = S.players[id].t; return t && (SLEEPER_TEAM_ALIAS[t] || t) === team; });
+  return same.length === 1 ? same[0] : null;
+}
+function espnParse(j, wk) {
   const list = Array.isArray(j) ? j : (j && (j.players || (j.data && j.data.players))) || [];
   const raw = new Map(), noLine = [];
+  let unmatched = 0;
   for (const e of list) {
     const pl = (e && e.player) || e || {};
     const eid = String(e && e.id !== undefined ? e.id : pl.id);
-    const sid = PSRC.espnMap.get(eid);
-    if (!sid) continue;
+    const sid = espnMatch(pl, eid);
+    if (!sid) { unmatched++; continue; }
     const stats = pl.stats || [];
     const s1 = stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk && (x.statSplitTypeId === undefined || x.statSplitTypeId === 1))
       || stats.find(x => x.statSourceId === 1 && x.scoringPeriodId === wk);
@@ -151,6 +177,7 @@ function espnParse(j, wk) {
     if (a.length >= 8) { const m = a[a.length >> 1]; if (m < 0.93 || m > 1.07) scale[pos] = clamp(m, 0.5, 2); }
   }
   PSRC.espnScale = scale;
+  PSRC.espnDiag = { returned: list.length, unmatched, withLine: raw.size, noLine: noLine.length };
   (PSRC.espnNoLine = PSRC.espnNoLine || {})[wk] = new Set(noLine);
   const out = new Map();
   raw.forEach((v, id) => { const p = S.index[id]; out.set(id, v / ((p && scale[p.pos]) || 1)); });
@@ -158,7 +185,7 @@ function espnParse(j, wk) {
 }
 /** Why ESPN has no number for him, in words. */
 function espnWhy(p, wk) {
-  const sp = S.players[p.id]; if (!(sp && sp.e)) return 'Sleeper has no ESPN id for him, so ESPN’s numbers cannot be matched to him';
+  const sp = S.players[p.id]; if (!(sp && sp.e)) return 'Sleeper has no ESPN id for him and ESPN has nobody under his name, so its numbers cannot be matched to him';
   if (!PSRC.data.espn || !PSRC.data.espn[wk]) return 'ESPN has not loaded';
   if (PSRC.espnNoLine && PSRC.espnNoLine[wk] && PSRC.espnNoLine[wk].has(p.id)) return 'ESPN lists him but has no projection for week ' + wk;
   return 'ESPN did not return him at all this week (inactive, unprojected, or outside its most-owned list)';
@@ -166,7 +193,7 @@ function espnWhy(p, wk) {
 async function psrcLoadEspn(wk) {
   psrcSet('espn', 'loading', 'Asking ESPN…', 0, true);
   try {
-    const season = S.season, ck = 'psrc:espn:' + season + ':' + wk;
+    const season = S.season, ck = 'psrc:espn2:' + season + ':' + wk;
     let map = null;
     const rec = await idbGet(ck);
     if (rec && rec.d && Date.now() - rec.t < 6 * 3600 * 1000) { map = new Map(rec.d); (PSRC.espnNoLine = PSRC.espnNoLine || {})[wk] = new Set(rec.nl || []); }
@@ -187,7 +214,7 @@ async function psrcLoadEspn(wk) {
     }
     (PSRC.data.espn = PSRC.data.espn || {})[wk] = map;
     const sc = Object.keys(PSRC.espnScale).map(k => k + ' ×' + fmt(1 / PSRC.espnScale[k], 2)).join(', ');
-    psrcSet('espn', 'ok', map.size + ' players' + (sc ? ' · scaled to this league’s scoring (' + sc + ')' : ''), map.size);
+    psrcSet('espn', 'ok', map.size + ' players' + (PSRC.espnDiag ? ' (of ' + PSRC.espnDiag.returned + ' ESPN returned' + (PSRC.espnDiag.unmatched ? '; ' + PSRC.espnDiag.unmatched + ' could not be matched to a Sleeper player' : '') + ')' : '') + (sc ? ' · scaled to this league’s scoring (' + sc + ')' : ''), map.size);
   } catch (e) {
     const blocked = e && /Failed to fetch|NetworkError|Load failed|TypeError/i.test(String(e.message || e) + String(e));
     psrcSet('espn', 'fail', blocked ? 'ESPN did not answer — the browser blocked the request or ESPN is unreachable.' : 'ESPN: ' + (e && e.message || e));
@@ -212,9 +239,10 @@ const PSRC_TAU = 0.45;      // how many weekly standard deviations of gap make a
  */
 function psrcConfidence(cands, wk) {
   const rows = cands.map(p => psrcAll(p, wk));
-  // a player ESPN has no line for votes with his Sleeper number there, so one gap does not take ESPN out of the vote for everyone
-  rows.forEach(r => { r.vote = Object.assign({}, r.per); if (r.vote.espn === null && r.vote.sleeper !== null) r.vote.espn = r.vote.sleeper; });
+  rows.forEach(r => { r.vote = r.per; });
+  // a source with no number for one of the candidates sits the slot out: it cannot compare them
   const voters = PSRC_LIST.filter(x => rows.every(r => r.vote[x.id] !== null));
+  const wSum = sum(voters.map(x => x.w));
   let probs;
   if (voters.length) {
     probs = cands.map(() => 0);
@@ -223,7 +251,7 @@ function psrcConfidence(cands, wk) {
       const sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(vals[i], 1))));
       const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...vals);
       const e = vals.map(v => Math.exp((v - top) / tau)), tot = sum(e);
-      e.forEach((v, i) => { probs[i] += v / tot / voters.length; });
+      e.forEach((v, i) => { probs[i] += v / tot * x.w / wSum; });
     });
   } else {
     // no source covers all of them: fall back to whatever average each has
@@ -235,13 +263,14 @@ function psrcConfidence(cands, wk) {
   const raw = probs.map(p => p * 100), floor = raw.map(Math.floor);
   let left = 100 - sum(floor);
   raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { floor[i]++; left--; } });
-  // how many sources put each candidate on top (ties split)
-  const wins = cands.map(() => 0);
+  // who each voting source clearly puts on top; a near tie backs nobody
+  const backers = cands.map(() => []), leader = {};
   voters.forEach(x => {
-    const vals = rows.map(r => r.vote[x.id]), top = Math.max(...vals), tied = vals.filter(v => Math.abs(v - top) < 0.05).length;
-    vals.forEach((v, i) => { if (Math.abs(v - top) < 0.05) wins[i] += 1 / tied; });
+    const vals = rows.map(r => r.vote[x.id]), top = Math.max(...vals), i = vals.indexOf(top);
+    const next = Math.max(...vals.filter((_, k) => k !== i));
+    if (top - next > 0.05) { backers[i].push(x); leader[x.id] = i; }
   });
-  return { rows, voters, pct: floor, wins, n: voters.length };
+  return { rows, voters, pct: floor, backers, leader, n: voters.length };
 }
 
 /* ---- the slots ---- */
@@ -277,16 +306,22 @@ function startSitPlan(T, wk) {
   });
 }
 
-const LineupUI = { team: null, week: null, compare: [], openKey: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
+const LineupUI = { drawerY: 0, team: null, week: null, compare: [], openKey: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
 /* ---- the slot cards ---- */
 function confChip(conf, i) {
   if (!conf) return h('span.ssc-conf.solo', 'only option');
   const pct = conf.pct[i];
   const cls = pct >= 70 ? '.hi' : pct >= 55 ? '.mid' : '.lo';
-  return h('span.ssc-conf' + cls, { title: conf.n ? wins1(conf.wins[i]) + ' of ' + conf.n + ' sources put him on top' : 'no source covers every candidate, so this rests on the average alone' }, pct + '%');
+  return h('span.ssc-conf' + cls, { title: backedBy(conf, i, true) }, pct + '%');
 }
-/** 4 not 4.0, but 1.5 when two sources tie. */
-function wins1(w) { return String(+w.toFixed(1)); }
+/** Which sources clearly put him on top, in words. */
+function backedBy(conf, i, long) {
+  if (!conf.n) return long ? 'no source covers every candidate, so this rests on the average alone' : 'by average';
+  const b = conf.backers[i];
+  if (!b.length) return long ? 'no voting source puts him clearly on top' : 'no clear backer';
+  const who = b.length === conf.n && conf.n > 2 ? 'all ' + conf.n + ' sources' : b.map(x => x.short).join(' + ');
+  return (long ? 'Put on top by ' : 'backed by ') + who;
+}
 function srcValue(v) { return v === null || v === undefined ? '—' : fmt(v, 1); }
 function slotCard(sl, wk, open, onToggle) {
   const p = sl.rec;
@@ -320,23 +355,40 @@ function slotPanel(sl, wk) {
         playerFace(p, { sm: true }),
         h('div.sspc-id', h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, pname(p, { face: false, style: { fontWeight: 650 } }), injuryTag(p.injury, p), i === 0 ? h('span.tag.sspc-rec', 'recommended') : null),
           h('div.tiny.muted', [p.pos + (p.posRank || ''), p.team || 'FA', opp ? (opp === 'BYE' ? 'BYE' : (/^@|vs/.test(opp) ? opp : 'vs ' + opp)) : null].filter(Boolean).join(' · '))),
-        conf && !ruledOut(p, wk) ? h('div.sspc-pct', { class: lead ? 'lead' : '' }, h('b', conf.pct[i] + '%'), h('span', conf.n ? wins1(conf.wins[i]) + ' of ' + conf.n + ' sources' : 'by average')) : ruledOut(p, wk) ? h('div.sspc-pct', h('b', 'Out'), h('span', 'not expected to play')) : h('div.sspc-pct', h('b', fmt(all.cons || 0, 1)), h('span', 'proj'))),
+        conf && !ruledOut(p, wk) ? h('div.sspc-pct', { class: lead ? 'lead' : '' }, h('b', conf.pct[i] + '%'), h('span', backedBy(conf, i))) : ruledOut(p, wk) ? h('div.sspc-pct', h('b', 'Out'), h('span', 'not expected to play')) : h('div.sspc-pct', h('b', fmt(all.cons || 0, 1)), h('span', 'proj'))),
       outToggle(p, wk),
       conf ? h('div.sspc-bar', { 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(2, conf.pct[i]) + '%' } })) : null,
       h('div.sspc-src', srcs.map(x => {
         const v = all.per[x.id];
-        const others = conf ? conf.rows.filter((_, k) => k !== i).map(r => r.per[x.id]).filter(z => z !== null) : [];
-        const wins = v !== null && others.length && v >= Math.max(...others) - 0.05 && conf && conf.rows.every(r => r.per[x.id] !== null);
-        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : '') }, h('span', x.short), h('b', srcValue(v)), v === null && x.id === 'espn' ? h('em.ssrc-why', conf && conf.rows[i].vote && conf.rows[i].vote.espn !== null ? 'votes as Sleeper' : espnWhy(p, wk).startsWith('Sleeper has no') ? 'no ESPN id' : 'no line') : null);
+        const voting = conf && conf.voters.includes(x);
+        const wins = voting && conf.leader[x.id] === i;
+        const note = v === null ? (x.id === 'espn' ? (espnWhy(p, wk).startsWith('Sleeper has no') ? 'no ESPN id' : 'no line') : null)
+          : conf && !voting ? 'sits out' : null;
+        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + ' (counts ' + x.w + '×)' + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : conf && !voting ? ' — some other candidate has no number from it, so it does not vote here' : wins ? ' — its pick' : '') }, h('span', x.short), h('b', srcValue(v)), note ? h('em.ssrc-why', note) : null);
       }).concat([h('div.ssrc.avg', { title: 'average of the sources that have a number' }, h('span', 'Avg'), h('b', srcValue(all.cons)))])));
   };
   const note = !conf ? h('div.tiny.muted', 'Nobody else on your roster can play this slot, so there is nothing to compare.')
     : conf.n === 0 ? h('div.tiny.sec', 'No source has a number for every one of these players, so the percentages rest on the average of what is available — treat them as rough.')
       : conf.n === 1 ? h('div.tiny.sec', 'Only one source covers all of them, so this is one opinion, not a consensus.') : null;
   return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' candidates' },
-    h('div.ssp-hd', h('b', sl.name + ' — who to start'), h('span.tiny.muted', conf ? 'confidence = how often each one comes out ahead across ' + conf.n + ' source' + (conf.n === 1 ? '' : 's') + ', weighting each by how big its gap is' : '')),
+    h('div.ssp-hd', h('b', sl.name + ' — who to start'), h('span.tiny.muted', conf ? 'each source gets one vote — Sleeper and ESPN count 3×, Last 3 and Market 1×. Green marks the source’s pick; a near tie picks nobody.' : '')),
     sl.cands.map(rowFor), (sl.outs || []).length ? h('div.sspc-outs', h('span.tiny.muted', 'Not expected to play:'), sl.outs.map(p => h('span.sspc-o', pname(p, { face: false }), injuryTag(p.injury, p), outToggle(p, wk)))) : null, note);
 }
+/** The slot's candidates float over the page — a side drawer on a wide screen, a bottom sheet on a phone — so opening one
+ *  never pushes the rest of the lineup down. A redraw (marking someone out) keeps its scroll position. */
+function slotDrawer(sl, wk) {
+  const close = () => { LineupUI.openKey = null; render(); };
+  const body = h('div.ssdrawer', { role: 'dialog', 'aria-label': sl.name + ' options' },
+    h('div.grab'),
+    h('button.btn.sm.ssdrawer-x', { 'aria-label': 'Close', onclick: close }, ico('close')),
+    slotPanel(sl, wk));
+  body.addEventListener('scroll', () => { LineupUI.drawerY = body.scrollTop; });
+  setTimeout(() => { body.scrollTop = LineupUI.drawerY || 0; }, 0);
+  return h('div', h('div.ssdrawer-back', { onclick: close }), body);
+}
+if (typeof document !== 'undefined') document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && typeof S !== 'undefined' && S.view === 'lineup' && LineupUI.openKey) { LineupUI.openKey = null; render(); }
+});
 function srcStrip(wk) {
   const chip = x => {
     const st = PSRC.status[x.id] || { state: 'idle', msg: '' };
@@ -355,17 +407,18 @@ function startSitSlots(T, wk, act) {
   const total = sum(plan.map(x => x.rec ? (x.locked ? pwShown(x.rec, wk) : consensusPts(x.rec, wk)) : 0));
   const nLocked = plan.filter(x => x.locked).length;
   const grid = h('div.ssgrid');
+  let drawer = null;
   plan.forEach((sl, i) => {
     const key = T.rosterId + ':' + wk + ':' + i, open = LineupUI.openKey === key;
-    grid.appendChild(slotCard(sl, wk, open, () => { LineupUI.openKey = open ? null : key; render(); }));
-    if (open) grid.appendChild(slotPanel(sl, wk));
+    grid.appendChild(slotCard(sl, wk, open, () => { LineupUI.openKey = open ? null : key; LineupUI.drawerY = 0; render(); }));
+    if (open) drawer = slotDrawer(sl, wk);
   });
   const byes = act.filter(p => onBye(p, wk));
   return card(live ? 'Your lineup — week ' + wk + ' (live)' : 'Recommended lineup — week ' + wk,
     fmt(total, 1) + (live ? ' points so far plus what is still projected' : ' projected points')
     + (live ? ' · ' + nLocked + ' of ' + plan.length + ' slots locked' : '') + ' · tap ' + (live ? 'an open' : 'a') + ' slot to see the alternatives and how sure each call is'
     + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
-    h('div', { style: { display: 'grid', gap: '14px' } }, grid, srcStrip(wk)));
+    h('div', { style: { display: 'grid', gap: '14px' } }, grid, srcStrip(wk), drawer));
 }
 function viewLineup() {
   const wrap = h('div.grid');

@@ -397,3 +397,26 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 @media (max-width:339px){ .ssgrid{grid-template-columns:minmax(0,1fr)} }
 @media (prefers-reduced-motion:reduce){ .ssp{animation:none} .ssc{transition:none} }
 
+
+/* ---- start / sit options: float over the page instead of pushing the lineup down ---- */
+.ssdrawer-back{position:fixed;inset:0;z-index:90;background:rgba(5,7,12,.5);animation:fade .18s ease both}
+.ssdrawer{position:fixed;z-index:91;top:0;right:0;bottom:0;width:min(480px,100vw);overflow-y:auto;overscroll-behavior:contain;
+  background:var(--surface-1);border-left:1px solid var(--border-strong);box-shadow:var(--shadow-lg);padding:18px 18px 28px;
+  animation:slidein .24s var(--ease) both}
+.ssdrawer .grab{display:none}
+.ssdrawer-x{position:absolute;top:12px;right:12px;z-index:1}
+.ssdrawer .ssp{padding:0;border:0;background:none;animation:none;padding-right:44px}
+.ssdrawer .ssp-hd{flex-direction:column;gap:4px}
+@keyframes slidein{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (max-width:760px){
+  .ssdrawer{top:auto;left:0;right:0;width:auto;max-height:86vh;max-height:86dvh;border-left:0;border-top:1px solid var(--border-strong);
+    border-radius:var(--r) var(--r) 0 0;padding-bottom:calc(28px + env(safe-area-inset-bottom));animation:sheetup .26s var(--ease) both}
+  .ssdrawer .grab{display:block;width:40px;height:4px;border-radius:99px;background:var(--axis);margin:0 auto 12px}
+  .ssdrawer .ssp{padding-right:0}
+  .ssdrawer .ssp-hd{padding-right:44px}
+}
+@keyframes sheetup{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){ .ssdrawer,.ssdrawer-back{animation:none} }
+.sspc-pct{flex:none;max-width:44%;text-align:right}
+.sspc-pct span{display:block;line-height:1.25}
