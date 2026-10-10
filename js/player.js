@@ -274,7 +274,7 @@ function viewPlayer() {
     bars.push({
       x: g.week, v: g.rostered || g.fromStats ? g.pts : null, kind: g.state === 'live' ? 'live' : 'actual',
       note: g.fromStats ? 'On no roster in this league — scored from his raw stats with this league’s settings'
-        : !g.rostered ? (WSTATS.state[g.week] === 'fail' ? 'Not rostered in this league, and his stats could not be loaded' : blank.includes(g.week) ? 'Not rostered in this league — loading his stats…' : 'Not rostered in this league — no stats listed for him this week')
+        : !g.rostered ? (WSTATS.state[g.week] === 'fail' ? 'Not rostered in this league, and his stats could not be loaded' + (WSTATS.err[g.week] ? ' (' + WSTATS.err[g.week] + ')' : '') : blank.includes(g.week) ? 'Not rostered in this league — loading his stats…' : 'Not rostered in this league — no stats listed for him this week')
         : g.state === 'live' ? `In progress${g.quarter ? ' (' + g.quarter + ')' : ''} — ${fmt(g.pts || 0, 1)} so far${vsProj}`
           : (g.started ? 'Started' : 'On the bench') + (g.week === S.liveWeek ? ' · final' + vsProj : '')
     });
