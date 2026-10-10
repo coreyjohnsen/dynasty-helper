@@ -82,7 +82,9 @@ const SHARE = {
         if ([1000, 2000, 5000, 10000].includes(+p.n)) SimUI.n = +p.n;
         if (S.teamById[+p.t]) SimUI.team = +p.t;
         if (p.run === '1' && SimUI.mode !== 'replay') {
+          const t0 = performance.now();
           SimUI.res = SimUI.mode === 'week' ? simulate(SimUI.n, { onlyWeek: SimUI.week }) : simulate(SimUI.n);
+          SimUI.res.ms = Math.round(performance.now() - t0);
           if (SimUI.mode === 'season') S.sim = SimUI.res;
         }
       },
