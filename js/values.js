@@ -329,29 +329,50 @@ function scoreLine(stats) {
    there. Sleeper also serves every player's raw stat line for a finished week; scored with this league's own
    settings (the same scoreLine() used for projections) it gives the same points a roster would have got.
    Only a player's own page asks for it, and only for the weeks he sat on no roster. */
-const WSTATS = { pts: {}, state: {}, inflight: {} };           // week -> { playerId: points }, week -> 'ok' | 'fail'
+const WSTATS = { pts: {}, state: {}, inflight: {}, err: {} };           // week -> { playerId: points }, week -> 'ok' | 'fail'
 async function loadWeekStats(week) {
   if (WSTATS.state[week]) return WSTATS.state[week] === 'ok';
   if (WSTATS.inflight[week]) return WSTATS.inflight[week];
-  const season = S.season, key = 'wstats:' + S.leagueId + ':' + season + ':' + week;
+  const season = S.season, key = 'wstats2:' + S.leagueId + ':' + season + ':' + week;
   WSTATS.inflight[week] = (async () => {
     try {
       // a finished week's stats do not change, so a saved copy is good for days
       const rec = await idbGet(key);
       if (rec && rec.d && Date.now() - rec.t < 3 * 86400 * 1000) { WSTATS.pts[week] = rec.d; WSTATS.state[week] = 'ok'; return true; }
-      const j = await getJSON(`https://api.sleeper.app/stats/nfl/regular/${season}/${week}`, 2);
-      if (!j || typeof j !== 'object') throw new Error('no stats');
+      // Sleeper has served these under more than one address and in more than one shape, so try each in turn
+      // and say which one answered (or why none did) rather than reporting a bare failure.
+      const urls = [
+        `https://api.sleeper.app/v1/stats/nfl/regular/${season}/${week}`,
+        `https://api.sleeper.app/stats/nfl/regular/${season}/${week}`,
+        `https://api.sleeper.com/stats/nfl/${season}/${week}?season_type=regular`
+      ];
+      let j = null; const tried = [];
+      for (const u of urls) {
+        try {
+          const r = await fetch(u, { cache: 'no-store' });
+          if (!r.ok) { tried.push(u.replace(/^https:\/\//, '').split('?')[0] + ' → HTTP ' + r.status); continue; }
+          const body = await r.json();
+          if (body && (Array.isArray(body) ? body.length : Object.keys(body).length)) { j = body; break; }
+          tried.push(u.replace(/^https:\/\//, '').split('?')[0] + ' → empty');
+        } catch (e) { tried.push(u.replace(/^https:\/\//, '').split('?')[0] + ' → ' + (e && e.message || 'blocked')); }
+      }
+      if (!j) throw new Error(tried.join('; '));
+      // either { playerId: stats } or [ { player_id, stats } ]
+      const byId = {};
+      if (Array.isArray(j)) j.forEach(r => { const id = r && (r.player_id || (r.player && r.player.player_id)); if (id && r.stats) byId[String(id)] = r.stats; });
+      else for (const id in j) byId[id] = j[id] && j[id].stats && typeof j[id].stats === 'object' ? j[id].stats : j[id];
       const out = {};
-      // keep the players this app knows, as points, so the saved copy stays small
-      for (const id in S.index) {
-        const st = j[id]; if (!st || typeof st !== 'object') continue;
+      // everyone with a recorded line, not just the players this app prices: an unrostered free agent is exactly who is asked for here
+      for (const id in byId) {
+        const st = byId[id]; if (!st || typeof st !== 'object') continue;
         if (!Object.keys(st).some(k => typeof st[k] === 'number')) continue;
         out[id] = scoreLine(st);
       }
+      if (!Object.keys(out).length) throw new Error('stats came back with no scored lines');
       WSTATS.pts[week] = out; WSTATS.state[week] = 'ok';
       idbSet(key, { t: Date.now(), d: out });
       return true;
-    } catch (e) { WSTATS.state[week] = 'fail'; return false; }
+    } catch (e) { WSTATS.state[week] = 'fail'; (WSTATS.err = WSTATS.err || {})[week] = String(e && e.message || e); console.warn('week ' + week + ' stats:', WSTATS.err[week]); return false; }
     finally { delete WSTATS.inflight[week]; }
   })();
   return WSTATS.inflight[week];
