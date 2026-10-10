@@ -1,0 +1,129 @@
+/* ============ tokens ============
+   One scale of cool neutrals, one brand (indigo into violet) and the data
+   palette (--s1…--s8, --seq-*) that every chart reads from. The brand is chrome
+   only — navigation, primary actions, focus — so it never competes with the
+   colours that carry meaning in a chart or a position pill. */
+:root{
+  color-scheme: light;
+  --surface-1:#ffffff; --surface-2:#f8f9fc; --surface-3:#eef0f6; --plane:#f2f3f8;
+  --text-primary:#0d1020; --text-secondary:#454b63; --text-muted:#6a7089;
+  --grid:#e8eaf2; --axis:#c8ccdb; --border:rgba(18,22,48,0.085); --border-strong:rgba(18,22,48,0.16);
+  --s1:#2f6df0; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6a4fd8; --s8:#e34948;
+  --seq-100:#d3e3fc; --seq-150:#bdd5f8; --seq-200:#a3c6f5; --seq-250:#89b7f1; --seq-300:#6fa7ee;
+  --seq-350:#5798ea; --seq-400:#3f89e6; --seq-450:#2f6df0; --seq-500:#2960d6; --seq-550:#2252b8;
+  --seq-600:#1c4499; --seq-650:#15367d; --seq-700:#0f2961;
+  --div-neutral:#eff0f5;
+  --good:#12a150; --warning:#fab219; --serious:#ec835a; --critical:#d93b45;
+  --good-text:#0a7a3b; --bad-text:#c0303a;
+  --brand:#4f5bf0; --brand-2:#8a5cf6; --brand-soft:color-mix(in srgb, var(--brand) 9%, transparent);
+  --brand-grad:linear-gradient(135deg,#4468f5 0%,#6a55f2 55%,#8a5cf6 100%);
+  --ring:0 0 0 3px color-mix(in srgb, var(--brand) 28%, transparent);
+  --ink:#0e1226; --ink-2:#161b36; --ink-text:#aab0cc; --ink-text-hi:#ffffff;
+  --hero-a:#10143a; --hero-b:#1c2160; --hero-c:#2d2078;
+  --glow-a:rgba(168,108,255,.5); --glow-b:rgba(70,118,255,.42);
+  --title-a:#9fb0ff; --title-b:#d2a6ff; --nav-on:#b9c2ff;
+  --shadow-xs: 0 1px 2px rgba(18,22,48,.06);
+  --shadow: 0 1px 2px rgba(18,22,48,.04), 0 10px 28px -12px rgba(18,22,48,.12);
+  --shadow-lg: 0 2px 4px rgba(18,22,48,.05), 0 24px 56px -16px rgba(18,22,48,.22);
+  --r:16px; --r-sm:10px;
+  --font: "Inter var","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --surface-1:#141826; --surface-2:#0f1320; --surface-3:#1c2132; --plane:#0a0d17;
+    --text-primary:#f3f5fb; --text-secondary:#b9bfd3; --text-muted:#8b92ab;
+    --grid:#232940; --axis:#343b57; --border:rgba(255,255,255,0.075); --border-strong:rgba(255,255,255,0.15);
+    --s1:#4b8cf2; --s2:#e0652f; --s3:#22b585; --s4:#d9981a; --s5:#df5f8e; --s6:#1a9a1a; --s7:#9b8cf0; --s8:#ee6b6b;
+    --div-neutral:#343b57;
+    --good:#22b15f; --good-text:#3fcf80; --bad-text:#f27a7a;
+    --brand:#7480ff; --brand-2:#a37bff;
+    --brand-grad:linear-gradient(135deg,#5b78ff 0%,#7a62f7 55%,#9a68fb 100%);
+    --ink:#070912; --ink-2:#0d1020;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px -12px rgba(0,0,0,.6);
+    --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 28px 60px -16px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#141826; --surface-2:#0f1320; --surface-3:#1c2132; --plane:#0a0d17;
+  --text-primary:#f3f5fb; --text-secondary:#b9bfd3; --text-muted:#8b92ab;
+  --grid:#232940; --axis:#343b57; --border:rgba(255,255,255,0.075); --border-strong:rgba(255,255,255,0.15);
+  --s1:#4b8cf2; --s2:#e0652f; --s3:#22b585; --s4:#d9981a; --s5:#df5f8e; --s6:#1a9a1a; --s7:#9b8cf0; --s8:#ee6b6b;
+  --div-neutral:#343b57;
+  --good:#22b15f; --good-text:#3fcf80; --bad-text:#f27a7a;
+  --brand:#7480ff; --brand-2:#a37bff;
+  --brand-grad:linear-gradient(135deg,#5b78ff 0%,#7a62f7 55%,#9a68fb 100%);
+  --ink:#070912; --ink-2:#0d1020;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.4);
+  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 32px -12px rgba(0,0,0,.6);
+  --shadow-lg: 0 2px 4px rgba(0,0,0,.4), 0 28px 60px -16px rgba(0,0,0,.75);
+}
+
+/* ---- accent themes ----
+   The brand is one hue. Everything that is "brand" — buttons, links, focus, the
+   sidebar's tint, the home banner, the landing page — is derived from --hue, so a
+   theme is a single number (plus --cs, how saturated: 0 is graphite). The hex
+   values above are what a browser without oklch() keeps: the original indigo. */
+:root{--hue:278;--cs:1}
+:root[data-accent="blue"]{--hue:252}
+:root[data-accent="teal"]{--hue:200}
+:root[data-accent="green"]{--hue:157}
+:root[data-accent="orange"]{--hue:48}
+:root[data-accent="rose"]{--hue:8}
+:root[data-accent="graphite"]{--hue:265;--cs:.12}
+@supports (color: oklch(50% .1 200)){
+  :root{
+    --brand:oklch(53% calc(.21*var(--cs)) var(--hue));
+    --brand-2:oklch(57% calc(.2*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(58% calc(.2*var(--cs)) calc(var(--hue) - 14)) 0%,var(--brand) 55%,var(--brand-2) 100%);
+    --ink:oklch(15.5% calc(.04*var(--cs)) var(--hue)); --ink-2:oklch(20.5% calc(.052*var(--cs)) var(--hue));
+    --hero-a:oklch(19% calc(.075*var(--cs)) var(--hue)); --hero-b:oklch(27% calc(.125*var(--cs)) var(--hue)); --hero-c:oklch(31% calc(.14*var(--cs)) calc(var(--hue) + 24));
+    --glow-a:oklch(62% calc(.2*var(--cs)) calc(var(--hue) + 36) / .5); --glow-b:oklch(60% calc(.2*var(--cs)) calc(var(--hue) - 6) / .42);
+    --title-a:oklch(82% calc(.11*var(--cs)) var(--hue)); --title-b:oklch(84% calc(.12*var(--cs)) calc(var(--hue) + 40));
+    --nav-on:oklch(84% calc(.09*var(--cs)) var(--hue));
+  }
+}
+@supports (color: oklch(50% .1 200)){
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+      --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+      --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+      --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+      /* the dark surfaces are the accent's own hue, very dark and barely saturated, at the lightness the old blue-greys had */
+      --plane:oklch(16.5% calc(.034*var(--cs)) var(--hue)); --surface-1:oklch(21% calc(.034*var(--cs)) var(--hue));
+      --surface-2:oklch(18% calc(.034*var(--cs)) var(--hue)); --surface-3:oklch(26% calc(.038*var(--cs)) var(--hue));
+      --grid:oklch(29% calc(.04*var(--cs)) var(--hue)); --axis:oklch(38% calc(.044*var(--cs)) var(--hue)); --div-neutral:oklch(38% calc(.044*var(--cs)) var(--hue));
+    }
+  }
+  :root[data-theme="dark"]{
+    --brand:oklch(71% calc(.17*var(--cs)) var(--hue));
+    --brand-2:oklch(73% calc(.17*var(--cs)) calc(var(--hue) + 32));
+    --brand-grad:linear-gradient(135deg,oklch(66% calc(.19*var(--cs)) calc(var(--hue) - 14)) 0%,oklch(62% calc(.2*var(--cs)) var(--hue)) 55%,oklch(64% calc(.2*var(--cs)) calc(var(--hue) + 32)) 100%);
+    --ink:oklch(11.5% calc(.03*var(--cs)) var(--hue)); --ink-2:oklch(16% calc(.04*var(--cs)) var(--hue));
+    /* the dark surfaces are the accent's own hue, very dark and barely saturated, at the lightness the old blue-greys had */
+    --plane:oklch(16.5% calc(.034*var(--cs)) var(--hue)); --surface-1:oklch(21% calc(.034*var(--cs)) var(--hue));
+    --surface-2:oklch(18% calc(.034*var(--cs)) var(--hue)); --surface-3:oklch(26% calc(.038*var(--cs)) var(--hue));
+    --grid:oklch(29% calc(.04*var(--cs)) var(--hue)); --axis:oklch(38% calc(.044*var(--cs)) var(--hue)); --div-neutral:oklch(38% calc(.044*var(--cs)) var(--hue));
+  }
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--plane);color:var(--text-primary);font-family:var(--font);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;
+  font-feature-settings:"cv11","ss03","tnum" 0}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.018em}
+a{color:var(--brand)}
+button{font-family:inherit;font-size:inherit;color:inherit}
+::selection{background:color-mix(in srgb, var(--brand) 30%, transparent)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--axis);border-radius:6px;border:3px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted);background-clip:content-box}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+

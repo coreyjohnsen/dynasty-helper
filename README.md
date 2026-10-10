@@ -16,8 +16,8 @@ screen.
 ## How it works
 
 Everything runs in the visitor's browser. There is no server, no build step and no
-API key. `index.html` is a single self-contained file; the other files are icons
-and site metadata.
+API key. `index.html` is a thin shell that loads plain stylesheets from `css/` and plain
+scripts from `js/` (see **Files**); the other files are icons and site metadata.
 
 | Source | What it provides |
 |---|---|
@@ -65,7 +65,7 @@ Two things that catch people out:
 
 ### Updating
 
-Replace `index.html`, commit, push. GitHub Pages serves with a ten-minute cache,
+Commit and push; the whole folder is the site. GitHub Pages serves with a ten-minute cache,
 so allow a few minutes before a hard refresh shows the change.
 
 ---
@@ -74,7 +74,9 @@ so allow a few minutes before a hard refresh shows the change.
 
 | File | Why it's here |
 |---|---|
-| `index.html` | The whole application. Self-contained: all CSS and JS inline, no dependencies. |
+| `index.html` | Page shell: metadata, then `css/*.css` and `js/*.js` in load order. |
+| `css/` | `tokens` (colours, themes) → `layout` (shell, cards) → `components` (page-specific parts) → `simple` (Default view, menus, share) → `responsive` (narrow screens). |
+| `js/` | Classic scripts sharing one global scope, loaded in the order `index.html` lists them: `core` (dom helpers, storage, state) → `values`/`league`/`simulation` (data and models) → `ui`/`shell` (shared widgets, app frame) → one file per page → `share` → `boot`. No build step; order matters because later files use earlier ones. |
 | `CNAME` | Tells GitHub Pages which custom domain serves this repo. |
 | `.nojekyll` | Skips Jekyll processing — nothing here needs it, and it makes deploys quicker. |
 | `favicon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Tab icon and home-screen icons. |
@@ -205,3 +207,18 @@ are untouched. **Settings → Injury return dates** switches all of it off and s
   those players sit at replacement level.
 - Playoff seeding follows Sleeper's default (division winners first, then best
   records). Custom tiebreakers are not modelled.
+
+---
+
+## Sharing
+
+The **Share** button in the top bar copies a link to the page you are on. The
+link carries its own recipe in the URL hash — `#/trade?l=<leagueId>&a=…&ao=…` —
+so there is still no server: whoever opens it loads the league live and lands on
+the same page. Pages that carry state: trade calculator (both teams and every
+asset), head to head (teams and week), this week (week and open matchup),
+simulator (mode, week, run size, and whether it had been run — it re-runs on
+open), roster and player pages. The address bar is kept in sync, so copying it
+works too. Trade, matchup, week and simulator pages also offer **Copy summary**,
+a plain-text snapshot of the numbers on screen. Hypothetical sandbox moves are
+never included. Codecs live in `js/share.js` (`SHARE.pages`).
