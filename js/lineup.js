@@ -40,12 +40,24 @@ function psrcRaw(id, p, wk) {
   return v === undefined ? null : v;
 }
 /** The same, as the app plays it: nothing on a bye, and scaled by the chance he is healthy to play. */
+/** Has this source's feed for the week actually arrived? Without that, "no number" would just mean "not asked yet". */
+let _sleeperWk = { ref: null };
+function psrcLoadedFor(id, wk) {
+  if (id === 'espn') return !!(PSRC.data.espn && PSRC.data.espn[wk]);
+  if (id !== 'sleeper') return false;
+  if (_sleeperWk.ref !== S.wproj) _sleeperWk = { ref: S.wproj };   // a data refresh starts the cache over
+  if (_sleeperWk[wk] === undefined) _sleeperWk[wk] = Object.values(S.index || {}).some(p => p.wk && p.wk[wk]);
+  return _sleeperWk[wk];
+}
 /** Not expected to play: the injury report says so, unless the manager has overridden it for that week. */
 function ruledOutAuto(p, wk) {
   if (!p) return false;
-  // listed questionable/doubtful and a projection source has him at zero: they are saying he is not playing
-  if ((p.injury === 'Questionable' || p.injury === 'Doubtful') && wk <= injCurrentWeek()
-    && ['sleeper', 'espn'].some(id => { const v = psrcRaw(id, p, wk); return v !== null && v <= 0; })) return true;
+  // listed questionable/doubtful and the projection sources that have loaded either put him at zero or carry no
+  // line for him at all (a player expected to miss the game is dropped from the weekly feeds): they are saying he is not playing
+  if ((p.injury === 'Questionable' || p.injury === 'Doubtful') && wk <= injCurrentWeek()) {
+    const loaded = ['sleeper', 'espn'].filter(id => psrcLoadedFor(id, wk));
+    if (loaded.length && loaded.every(id => { const v = psrcRaw(id, p, wk); return v === null || v <= 0; })) return true;
+  }
   if (p.inj) return availability(p, wk) < 0.1;
   return OUT_TAGS.includes(p.injury) && wk <= injCurrentWeek();
 }
