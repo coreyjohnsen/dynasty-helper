@@ -337,8 +337,11 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 .ssc{all:unset;box-sizing:border-box;display:grid;gap:8px;padding:11px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-1);cursor:pointer;min-width:0;transition:border-color .15s,transform .15s,box-shadow .15s;position:relative}
 .ssc:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow-xs)}
 .ssc:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.ssc.open{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
-.ssc.medal{border-color:var(--m-edge)}
+.ssc.open{box-shadow:0 0 0 1px var(--pc,var(--brand)) inset}
+/* the card's edge is the player's position colour (the same hues as the position pills); the tier lives on the headshot ring */
+.ssc.ssc-QB{--pc:#e34948}.ssc.ssc-RB{--pc:#16a56f}.ssc.ssc-WR{--pc:#2f6df0}.ssc.ssc-TE{--pc:#eb6834}.ssc.ssc-K{--pc:#7d8099}.ssc.ssc-DEF{--pc:#5b46c8}
+.ssc[class*="ssc-"]{border:2px solid var(--pc);padding:10px 11px}
+.ssc[class*="ssc-"]:hover{border-color:var(--pc)}
 .ssc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .ssc-slot{font-size:11px;font-weight:800;letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:var(--surface-3);color:var(--text-secondary)}
 .ssc-conf{font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;font-variant-numeric:tabular-nums;border:1px solid var(--border-strong);color:var(--text-secondary)}

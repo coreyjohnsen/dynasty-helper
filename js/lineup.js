@@ -327,7 +327,7 @@ function slotCard(sl, wk, open, onToggle) {
   const p = sl.rec;
   const cons = p ? (sl.locked ? pwShown(p, wk) : consensusPts(p, wk)) : 0;
   const opp = p ? (onBye(p, wk) ? 'BYE' : pwOpp(p, wk)) : null;
-  return h('button.ssc' + (open ? '.open' : '') + (p ? medalCls(p).replace(' medal', '.medal').replace(/ /g, '.') : ''), { onclick: onToggle, 'aria-expanded': open ? 'true' : 'false', 'aria-label': sl.name + (p ? ': ' + p.name : ': nobody') },
+  return h('button.ssc' + (open ? '.open' : '') + (p && /^[A-Z]+$/.test(p.pos) ? '.ssc-' + p.pos : '') + (p ? medalCls(p).replace(' medal', '.medal').replace(/ /g, '.') : ''), { onclick: onToggle, 'aria-expanded': open ? 'true' : 'false', 'aria-label': sl.name + (p ? ': ' + p.name : ': nobody') },
     h('div.ssc-top', h('span.ssc-slot', sl.name), p ? (sl.locked ? h('span.ssc-conf.solo', { title: 'his game has started, so this slot can no longer be changed' }, '🔒 locked') : confChip(sl.conf, 0)) : null),
     p ? h('div.ssc-who', playerFace(p),
       h('div.ssc-id', h('div.ssc-nm', p.name),
