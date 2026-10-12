@@ -1,4 +1,4 @@
-# Dynasty Command Center
+# Dynasty Labs
 
 Live analysis for Sleeper dynasty leagues, served as a static site at
 **[fantasy.johnsencorey.com](https://fantasy.johnsencorey.com)**.

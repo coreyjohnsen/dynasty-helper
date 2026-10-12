@@ -214,7 +214,7 @@ function render() {
       v.k === 'hypo' && HYP.on ? h('span.navdot', { title: hypCount() + ' hypothetical change' + (hypCount() === 1 ? '' : 's') + ' in effect' }, hypCount()) : null));
   });
   const side = h('div.side',
-    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
+    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Labs'))),
     navItems,
     h('div.spacer'),
     h('div.foot',
@@ -345,8 +345,8 @@ function splash() {
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
   return h('div.splash',
     h('div.sp-art',
-      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Command Center')),
-      h('h1', 'Every dynasty decision, ', h('span', 'one command center.')),
+      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Labs')),
+      h('h1', 'Every dynasty decision, ', h('span', 'tested in the lab.')),
       h('p', 'Live analysis for any Sleeper league: who’s really winning, what a trade is worth, and what the season looks like when you play it a thousand times.'),
       h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
     h('div.sp-form', box));
