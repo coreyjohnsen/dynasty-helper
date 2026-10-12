@@ -1,6 +1,6 @@
 "use strict";
 /* ================= 12. HEAD TO HEAD ================= */
-const H2HUI = { a: null, b: null, week: null, sims: 4000, res: null };
+const H2HUI = { a: null, b: null, week: null, sims: 4000, res: null, mode: 'overall', sum: null };
 
 /** One week, both teams, many times: the distribution of the margin between them. */
 function h2hSim(A, B, wk, n) {
@@ -72,6 +72,101 @@ function h2hHistory(A, B) {
   return out;
 }
 
+/* ================= comparison helpers =================
+   The overall comparison asks "who has the better team", not "who wins Sunday", so it
+   sets both rosters at full strength: nobody injured, nobody on bye. */
+
+/** A player's points per game when he is on the field. An injured player's own `ppg` is
+ *  discounted for the games he will miss, so his healthy line is read back from the weekly
+ *  projections (all of them), or from the market curve when Sleeper has none. */
+function healthyPpg(p) {
+  if (!p) return 0;
+  if (!p.injury || p.injury === 'NA') return p.ppg || 0;
+  if (p.projGames && p.projSeason / p.projGames > 0.5) return p.projSeason / p.projGames;
+  return p.ppgHealthy !== undefined ? p.ppgHealthy : (p.ppgLegacy !== undefined ? p.ppgLegacy : (p.ppg || 0));
+}
+/** The best lineup a team could field with everyone healthy (taxi players cannot start). */
+function h2hHealthy(T) {
+  const pool = T.players.filter(p => !T.taxi.has(p.id));
+  const slots = optimalLineup(pool, healthyPpg);
+  const pos = {};
+  POS4.forEach(x => { pos[x] = 0; });
+  slots.forEach(s => { if (s.player && pos[s.player.pos] !== undefined) pos[s.player.pos] += healthyPpg(s.player); });
+  const starters = slots.filter(s => s.player).map(s => s.player);
+  const ageOf = (list) => { const a = list.filter(p => p.age).map(p => p.age); return a.length ? mean(a) : null; };
+  // value-weighted age by position, the way the franchise age is measured
+  const posAge = {};
+  POS4.forEach(x => {
+    const ps = T.players.filter(p => p.pos === x && p.age && (p.dv || 0) > 300);
+    posAge[x] = ps.length ? sum(ps.map(p => p.age * p.dv)) / sum(ps.map(p => p.dv)) : null;
+  });
+  return { slots, total: sum(slots.map(s => s.player ? healthyPpg(s.player) : 0)), pos, startAge: ageOf(starters), posAge };
+}
+
+/** Mirrored bars: both teams' bars grow outward from a centre line, so you read each
+ *  team's size and the gap between them at once. The side that is ahead is full colour,
+ *  the other is dimmed. rows: [{ k, a, b, f, invert, tip, node, fd }] */
+function h2hTape(rows, A, B) {
+  return h('div.tape', rows.map(r => {
+    const hi = Math.max(Math.abs(r.a), Math.abs(r.b), 1e-9);
+    const f = r.f || (v => fmt(v, 1));
+    const tied = Math.abs(r.a - r.b) < 1e-9;
+    const aLead = !tied && (r.invert ? r.a < r.b : r.a > r.b);
+    const lead = tied ? null : aLead ? A : B;
+    const gap = Math.abs(r.a - r.b);
+    const row = h('div.tp',
+      h('div.tp-lbl', r.node || h('span.k', r.k),
+        lead ? h('span.d', { style: { color: aLead ? 'var(--s1)' : 'var(--s2)' } }, lead.short + ' +' + (r.fd || f)(gap)) : h('span.d.muted', 'even')),
+      h('span.tp-v.l' + (aLead ? '.lead' : ''), f(r.a)),
+      h('div.tp-track.l', h('i' + (aLead || tied ? '' : '.trail'), { style: { width: Math.max(2, Math.abs(r.a) / hi * 100) + '%' } })),
+      h('div.tp-track.r', h('i' + (!aLead || tied ? '' : '.trail'), { style: { width: Math.max(2, Math.abs(r.b) / hi * 100) + '%' } })),
+      h('span.tp-v.r' + (!aLead && !tied ? '.lead' : ''), f(r.b)));
+    row.tabIndex = 0;
+    bindTT(row, `<div class="k">${r.k}</div>${A.short} ${f(r.a)} · ${B.short} ${f(r.b)}` + (r.tip ? `<div>${r.tip}</div>` : ''));
+    return row;
+  }));
+}
+
+/** Where each team sits among the whole league on a handful of spokes. The outer ring is
+ *  the best team in the league; the shape says what a team is built from. */
+function h2hRadar(axes, A, B) {
+  const n = axes.length, W = 360, HT = 300, cx = W / 2, cy = 150, R = 98;
+  const ang = i => -Math.PI / 2 + i * 2 * Math.PI / n;
+  const pt = (i, f) => [cx + Math.cos(ang(i)) * R * f, cy + Math.sin(ang(i)) * R * f];
+  const poly = (f) => axes.map((_, i) => pt(i, typeof f === 'function' ? f(i) : f).map(v => v.toFixed(1)).join(',')).join(' ');
+  const g = svg('svg', { viewBox: `0 0 ${W} ${HT}`, width: '100%', role: 'img', 'aria-label': 'Shape of each team against the league', style: 'display:block;max-width:500px;margin:0 auto;overflow:visible' });
+  [0.25, 0.5, 0.75, 1].forEach(f => g.appendChild(svg('polygon', { points: poly(f), fill: f === 1 ? 'var(--surface-2)' : 'none', stroke: f === 1 ? 'var(--axis)' : 'var(--grid)', 'stroke-width': 1 })));
+  axes.forEach((_, i) => { const [x, y] = pt(i, 1); g.appendChild(svg('line', { x1: cx, y1: cy, x2: x, y2: y, stroke: 'var(--grid)', 'stroke-width': 1 })); });
+  const shape = (T, key, col) => {
+    const wrap = svg('g', { class: 'rd-shape' });
+    wrap.appendChild(svg('polygon', { points: poly(i => axes[i][key].p), fill: col, 'fill-opacity': 0.16, stroke: col, 'stroke-width': 2.2, 'stroke-linejoin': 'round' }));
+    axes.forEach((ax, i) => {
+      const [x, y] = pt(i, ax[key].p);
+      const dot = svg('circle', { cx: x, cy: y, r: 3.6, fill: col, stroke: 'var(--surface-1)', 'stroke-width': 1.5 });
+      bindTT(dot, `<div class="k">${T.name} · ${ax.k}</div>${ord(ax[key].rank)} of ${S.teams.length} teams · ${ax.f(ax[key].v)}`);
+      wrap.appendChild(dot);
+    });
+    return wrap;
+  };
+  g.appendChild(shape(B, 'b', 'var(--s2)'));
+  g.appendChild(shape(A, 'a', 'var(--s1)'));
+  axes.forEach((ax, i) => {
+    const [x, y] = pt(i, 1.2), c = Math.cos(ang(i));
+    const t = svg('text', { x, y: y + 4, 'text-anchor': Math.abs(c) < 0.25 ? 'middle' : c > 0 ? 'start' : 'end', 'font-size': 11.5, 'font-weight': 640, fill: 'var(--text-secondary)' });
+    t.textContent = ax.k; g.appendChild(t);
+  });
+  return g;
+}
+
+/** A scoreboard side for the two heroes. */
+function h2hSide(T, w, big, sub, fav) {
+  return h('div.h2hside.' + w + (fav ? '.fav' : ''),
+    T.avatar ? h('img.h2hav', { src: T.avatar, alt: '', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.h2hav'),
+    h('div.h2hnm', T.name),
+    h('div.h2hpct.mono', big),
+    h('div.tiny.muted', sub));
+}
+
 function viewH2H() {
   const wrap = h('div.grid');
   const teams = S.teams;
@@ -93,27 +188,184 @@ function viewH2H() {
     H2HUI.res = null;
   }
   const wk = H2HUI.week;
-  const isLive = wk === S.liveWeek;
+  const mode = H2HUI.mode === 'week' ? 'week' : 'overall';
 
   wrap.appendChild(matchupBar({
     key: 'h2h', aId: A.rosterId, bId: B.rosterId,
     onPick: (w, id) => { H2HUI[w] = id; H2HUI.res = null; render(); },
     onSwap: () => { const t = H2HUI.a; H2HUI.a = H2HUI.b; H2HUI.b = t; H2HUI.res = null; render(); }
   }));
+  const modes = [['overall', 'Overall comparison'], ['week', 'Week matchup']];
   wrap.appendChild(h('div.h2hweek',
-    h('label.fld', { style: { minWidth: '210px' } }, meet.length ? (meet.length === 1 ? 'They meet once' : 'They meet ' + meet.length + ' times') : 'Neutral week',
-      h('select', { onchange: e => { H2HUI.week = +e.target.value; H2HUI.res = null; render(); } },
-        weeks.map(w => h('option', { value: w, selected: w === wk },
-          'Week ' + w + (w <= S.lastWeek ? ' (played)' : w === next ? ' (next meeting)' : ''))))),
-    meet.length
-      ? h('span.tiny.muted', { style: { maxWidth: '420px' } },
-        meet.length === 1
-          ? 'Week ' + meet[0] + ' is the only week these two play each other.'
-          : 'Weeks ' + meet.slice(0, -1).join(', ') + ' and ' + meet[meet.length - 1] + ' are the only weeks these two play each other.')
-      : h('span.tiny.muted', { style: { maxWidth: '440px', color: 'var(--text-secondary)' } },
-        A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.')));
+    h('div.h2hmode', h('span.tiny.muted', 'Compare'),
+      h('div.seg', { role: 'tablist' }, modes.map(([k, l]) => h('button' + (mode === k ? '.on' : ''),
+        { role: 'tab', 'aria-selected': mode === k ? 'true' : 'false', onclick: () => { H2HUI.mode = k; render(); } }, l)))),
+    mode === 'week'
+      ? h('label.fld', { style: { minWidth: '210px' } }, meet.length ? (meet.length === 1 ? 'They meet once' : 'They meet ' + meet.length + ' times') : 'Neutral week',
+        h('select', { onchange: e => { H2HUI.week = +e.target.value; H2HUI.res = null; render(); } },
+          weeks.map(w => h('option', { value: w, selected: w === wk },
+            'Week ' + w + (w <= S.lastWeek ? ' (played)' : w === next ? ' (next meeting)' : '')))))
+      : null,
+    mode === 'week'
+      ? (meet.length
+        ? h('span.tiny.muted', { style: { maxWidth: '420px' } },
+          meet.length === 1
+            ? 'Week ' + meet[0] + ' is the only week these two play each other.'
+            : 'Weeks ' + meet.slice(0, -1).join(', ') + ' and ' + meet[meet.length - 1] + ' are the only weeks these two play each other.')
+        : h('span.tiny.muted', { style: { maxWidth: '440px', color: 'var(--text-secondary)' } },
+          A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.'))
+      : h('span.tiny.muted', { style: { maxWidth: '520px' } }, 'Both rosters at full strength — everyone healthy, nobody on bye. Switch to Week matchup for one specific game.')));
   if (A.rosterId === B.rosterId) return wrap.appendChild(card(null, null, h('div.empty', 'Pick two different teams.'))), wrap;
 
+  if (mode === 'week') h2hWeek(wrap, A, B, CA, CB, wk);
+  else h2hOverall(wrap, A, B, CA, CB);
+  return wrap;
+}
+
+/* ================= the overall comparison ================= */
+function h2hOverall(wrap, A, B, CA, CB) {
+  const dyn = isDynasty();
+  const HA = h2hHealthy(A), HB = h2hHealthy(B);
+
+  /* ---- the franchises, category by category ---- */
+  const k1 = (v) => kfmt(Math.round(v));
+  const metrics = [
+    { k: 'Best lineup', a: HA.total, b: HB.total, f: v => fmt(v, 1), tip: 'Points per game from the strongest lineup each roster could field, everyone healthy' },
+    dyn ? { k: 'Future lineup', a: A.future, b: B.future, f: v => fmt(v, 1), tip: 'Age-adjusted projection two to three seasons out' } : null,
+    { k: capitalLabel(), a: A.totalValue, b: B.totalValue, f: k1, tip: dyn ? 'Players plus draft picks at today’s market' : 'Every rostered player at today’s redraft market' },
+    dyn ? { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, f: k1 } : null,
+    dyn ? { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, f: k1 } : null,
+    { k: 'Points for', a: A.fpts, b: B.fpts, f: v => fmt(v, 1) },
+    { k: 'Points against', a: A.fptsAgainst, b: B.fptsAgainst, f: v => fmt(v, 1), invert: true, tip: 'What their opponents have scored on them — lower is a kinder draw' },
+    dyn ? { k: 'Average age', a: A.age || 0, b: B.age || 0, f: v => fmt(v, 1), invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' } : null
+  ].filter(Boolean);
+  const leads = (m) => m.a === m.b ? 0 : (m.invert ? m.a < m.b : m.a > m.b) ? 1 : -1;
+  const aWins = metrics.filter(m => leads(m) > 0).length, bWins = metrics.filter(m => leads(m) < 0).length;
+  const edge = (side) => {
+    const best = metrics.filter(m => leads(m) === side).map(m => ({ m, rel: Math.abs(m.a - m.b) / Math.max(Math.abs(m.a), Math.abs(m.b), 1e-9) })).sort((x, y) => y.rel - x.rel)[0];
+    return best ? best.m.k : null;
+  };
+  H2HUI.sum = { A, B, aWins, bWins, total: metrics.length };
+  const eA = edge(1), eB = edge(-1);
+  wrap.appendChild(h('div.h2hhero',
+    h2hSide(A, 'a', aWins, 'categories led', aWins >= bWins),
+    h('div.h2hmid',
+      h('div.h2hbar', { 'aria-hidden': 'true' }, h('i.a', { style: { flex: String(Math.max(aWins, 0.15)) } }), h('i.b', { style: { flex: String(Math.max(bWins, 0.15)) } })),
+      h('div.h2hmargin', h('span.tiny.muted', 'The tale of the tape'),
+        h('b', aWins === bWins ? 'Dead even' : (aWins > bWins ? A.short : B.short) + ' leads ' + Math.max(aWins, bWins) + ' of ' + metrics.length)),
+      h('div.tiny.muted', { style: { lineHeight: 1.5 } },
+        eA ? [h('span', { style: { color: CA, fontWeight: 650 } }, A.short), ' strongest in ' + eA] : null,
+        eA && eB ? h('br') : null,
+        eB ? [h('span', { style: { color: CB, fontWeight: 650 } }, B.short), ' strongest in ' + eB] : null)),
+    h2hSide(B, 'b', bWins, 'categories led', bWins > aWins)));
+
+  /* ---- shape against the league, and the tape beside it ---- */
+  const all = S.teams.map(T => ({ T, H: T.rosterId === A.rosterId ? HA : T.rosterId === B.rosterId ? HB : h2hHealthy(T) }));
+  const N = S.teams.length;
+  const axisDefs = [
+    { k: 'Lineup', get: x => x.H.total, f: v => fmt(v, 1) + ' pts/g' }
+  ].concat(POS4.map(p => ({ k: p, get: x => x.H.pos[p], f: v => fmt(v, 1) + ' pts/g' })));
+  if (dyn) axisDefs.push(
+    { k: 'Future', get: x => x.T.future, f: v => fmt(v, 1) + ' pts/g' },
+    { k: 'Youth', get: x => x.T.age || 0, f: v => fmt(v, 1) + ' yrs avg', asc: true },
+    { k: 'Picks', get: x => x.T.pickCapital, f: v => k1(v) });
+  const axes = axisDefs.map(d => {
+    const vals = all.map(d.get), ranks = rankOf(vals, !d.asc);
+    const at = (T) => { const i = all.findIndex(x => x.T.rosterId === T.rosterId); return { v: vals[i], rank: ranks[i], p: N > 1 ? (N - ranks[i]) / (N - 1) : 1 }; };
+    return { k: d.k, f: d.f, a: at(A), b: at(B) };
+  });
+  const legend = h('div.rdlegend',
+    h('span', h('i', { style: { background: CA } }), h('b', A.short), h('span.muted', A.name)),
+    h('span', h('i', { style: { background: CB } }), h('b', B.short), h('span.muted', B.name)));
+  wrap.appendChild(h('div.grid.split',
+    card('Shape against the league', 'each spoke is where the team ranks among all ' + N + ' · the outer ring is the best in the league',
+      h('div', h2hRadar(axes, A, B), legend)),
+    card('Category by category', A.short + ' leads ' + aWins + ' · ' + B.short + ' leads ' + bWins + ' · bars show each side’s size, the label shows the gap',
+      h2hTape(metrics, A, B))));
+
+  /* ---- the best lineups, slot by slot ---- */
+  const rows = HA.slots.map((sa, i) => {
+    const sb = HB.slots[i] || {};
+    return { slot: sa.slot, a: sa.player, b: sb.player, va: sa.player ? healthyPpg(sa.player) : 0, vb: sb.player ? healthyPpg(sb.player) : 0 };
+  });
+  const lw = rows.filter(r => r.va > r.vb).length;
+  wrap.appendChild(card('Best lineup — everyone healthy',
+    `${A.short} wins ${lw} of ${rows.length} slots · ${fmt(HA.total, 1)} to ${fmt(HB.total, 1)} points per game · injured players count at full strength, byes are ignored, taxi squads cannot start`,
+    slotLadder(rows, A, B, CA, CB, { head: 'Pts/g' })));
+
+  /* ---- position ratings ---- */
+  const posLbl = (p) => h('span.row', { style: { gap: '6px', justifyContent: 'center' } }, posPill(p));
+  wrap.appendChild(h('div.grid.split',
+    card('Position ratings — output', 'points per game from each position’s starters in the best lineup',
+      h2hTape(POS4.map(p => ({ k: p, node: posLbl(p), a: HA.pos[p], b: HB.pos[p], f: v => fmt(v, 1) })), A, B)),
+    card('Position ratings — ' + valueWord() + ' value', 'market value of everyone rostered at each position',
+      h2hTape(POS4.map(p => ({ k: p, node: posLbl(p), a: A.posValue[p] || 0, b: B.posValue[p] || 0, f: k1 })), A, B))));
+
+  /* ---- age, and the season outlook ---- */
+  const cards = [];
+  if (dyn) {
+    const ageRows = [{ k: 'Starting lineup', a: HA.startAge, b: HB.startAge, tip: 'Average age of the best lineup' }]
+      .concat(POS4.map(p => ({ k: p, node: posLbl(p), a: HA.posAge[p], b: HB.posAge[p], tip: 'Value-weighted age of everyone at the position' })))
+      .filter(r => r.a && r.b).map(r => Object.assign(r, { invert: true, f: v => fmt(v, 1), fd: v => fmt(v, 1) + ' yrs' }));
+    cards.push(card('Age profile', 'younger is ahead — a younger core holds its value for longer', ageRows.length ? h2hTape(ageRows, A, B) : h('div.empty', 'No age data for these rosters.')));
+  }
+  if (S.sim && S.sim.by[A.rosterId] && S.sim.by[B.rosterId]) {
+    const sa = S.sim.by[A.rosterId], sb = S.sim.by[B.rosterId];
+    cards.push(card('Season outlook', 'from the last full-season simulation you ran',
+      h2hTape([
+        { k: 'Projected wins', a: sa.wins, b: sb.wins, f: v => fmt(v, 1) },
+        { k: 'Playoff odds', a: sa.playoff, b: sb.playoff, f: v => pct(v, 0), fd: v => fmt(v * 100, 0) + ' pts' },
+        { k: 'Title odds', a: sa.title, b: sb.title, f: v => pct(v, 1), fd: v => fmt(v * 100, 1) + ' pts' },
+        { k: 'Average seed', a: sa.seed, b: sb.seed, f: v => ord(Math.round(v)), fd: v => fmt(v, 1) + ' spots', invert: true }
+      ], A, B)));
+  } else {
+    cards.push(card('Season outlook', 'needs a full-season simulation to compare playoff and title odds',
+      h('div.row', { style: { gap: '12px' } },
+        h('button.btn.pri', { onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); } }, 'Run 2,000 seasons'),
+        h('span.tiny.muted', 'runs in the background; the Simulator tab keeps the full result'))));
+  }
+  wrap.appendChild(cards.length > 1 ? h('div.grid.split', cards) : cards[0]);
+
+  /* ---- what they have actually done to each other ---- */
+  const hist = h2hHistory(A, B);
+  if (hist.length) {
+    let aw = 0, bw = 0;
+    hist.forEach(g => { if (g.a > g.b) aw++; else if (g.b > g.a) bw++; });
+    wrap.appendChild(card('When they have actually met', `${aw}–${bw} to ${aw >= bw ? A.name : B.name} this season`,
+      table([
+        { k: 'week', h: 'Week', num: true, f: g => h('b.mono', g.week) },
+        { k: 'a', h: A.short, num: true, f: g => h('span.mono', { class: g.a > g.b ? 'up' : '' }, fmt(g.a, 1)) },
+        { k: 'b', h: B.short, num: true, f: g => h('span.mono', { class: g.b > g.a ? 'up' : '' }, fmt(g.b, 1)) },
+        { k: 'd', h: 'Margin', num: true, sort: g => g.a - g.b, f: g => deltaTag(g.a - g.b, 1) }
+      ], hist, { sortKey: 'week', sortDir: 1 })));
+  }
+
+  /* ---- do they match up as trade partners? ---- */
+  const scA = scoutTeam(A), scB = scoutTeam(B);
+  const fits = [];
+  scA.holes.forEach(hA => { const sB = scB.surplus.find(x => x.pos === hA.pos); if (sB) fits.push({ from: B, to: A, pos: hA.pos, z: sB.z - hA.z }); });
+  scB.holes.forEach(hB => { const sA = scA.surplus.find(x => x.pos === hB.pos); if (sA) fits.push({ from: A, to: B, pos: hB.pos, z: sA.z - hB.z }); });
+  wrap.appendChild(card('Do they fit as trade partners?',
+    fits.length ? 'each of these is a position one of them is deep at and the other is thin at' : null,
+    fits.length
+      ? h('div', { style: { display: 'grid', gap: '7px' } }, fits.sort((x, y) => y.z - x.z).map(f =>
+        h('div.row', { style: { gap: '8px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '8px 10px', background: 'var(--surface-2)' } },
+          posPill(f.pos), h('b.tiny', f.from.name), h('span.tiny.muted', '→'), h('b.tiny', f.to.name),
+          h('span', { style: { flex: 1 } }),
+          h('span.tiny.muted', 'gap ' + fmt(f.z, 1) + ' SD'),
+          h('button.btn.sm', {
+            onclick: () => {
+              FinderUI.team = f.to.rosterId; FinderUI.partners = [f.from.rosterId];
+              FinderUI.positions = [f.pos]; FinderUI.shape = 'any'; FinderUI.focus = null; FinderUI.results = null;
+              S.view = 'finder'; render(); window.scrollTo(0, 0);
+            }
+          }, 'Find a deal'))))
+      : h('div.empty', 'Neither team is deep where the other is thin — a trade here would have to be about value, not need.')));
+}
+
+/* ================= one specific week ================= */
+function h2hWeek(wrap, A, B, CA, CB, wk) {
+  const isLive = wk === S.liveWeek;
   /* ---- the headline: this week, straight up ---- */
   if (!H2HUI.res || H2HUI.res.key !== A.rosterId + '|' + B.rosterId + '|' + wk) {
     H2HUI.res = Object.assign(h2hSim(A, B, wk, H2HUI.sims), { key: A.rosterId + '|' + B.rosterId + '|' + wk });
@@ -176,119 +428,27 @@ function viewH2H() {
     + (isLive ? ' · points already scored are shown as scored' : ''),
     slotLadder(slotRows, A, B, CA, CB, { wk, live: isLive })));
 
-  /* ---- the franchises, not just this week ---- */
-  const metrics = [
-    { k: 'Starting lineup now', a: A.now, b: B.now, d: 1, tip: 'Projected points per week from the optimal lineup' },
-    isDynasty() ? { k: 'Future lineup', a: A.future, b: B.future, d: 1, tip: 'Age-adjusted projection two to three seasons out' } : null,
-    { k: capitalLabel(), a: A.totalValue, b: B.totalValue, d: 0, tip: isDynasty() ? 'Players plus draft picks at today’s market' : 'Every rostered player at today’s redraft market' },
-    isDynasty() ? { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, d: 0 } : null,
-    isDynasty() ? { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, d: 0 } : null,
-    { k: 'Points for', a: A.fpts, b: B.fpts, d: 1 },
-    { k: 'Points against', a: A.fptsAgainst, b: B.fptsAgainst, d: 1, invert: true, tip: 'What their opponents have scored on them — lower is a kinder draw' },
-    isDynasty() ? { k: 'Average age', a: A.age || 0, b: B.age || 0, d: 1, invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' } : null
-  ].filter(Boolean);
-  const scaleOf = (m) => { const mx = Math.max(Math.abs(m.a), Math.abs(m.b), 0.0001); return (m.a - m.b) / mx; };
-  const cw = isNarrow() ? '62px 1fr 62px' : '92px 1fr 92px';
-  const aWins = metrics.filter(m => m.invert ? m.a < m.b : m.a > m.b).length;
-  wrap.appendChild(card('The two franchises', `${A.short} leads ${aWins} of these ${metrics.length}`,
-    h('div', { style: { display: 'grid', gap: '7px' } }, [
-      h('div', { style: { display: 'grid', gridTemplateColumns: cw, gap: '10px', alignItems: 'center', paddingBottom: '2px' } },
-        h('b.tiny', { style: { textAlign: 'right', color: CA } }, A.short),
-        h('div'),
-        h('b.tiny', { style: { color: CB } }, B.short))
-    ].concat(metrics.map(m => {
-      const lead = m.invert ? (m.a < m.b) : (m.a > m.b);
-      const row = h('div', { style: { display: 'grid', gridTemplateColumns: cw, gap: '10px', alignItems: 'center' } },
-        h('span.mono.tiny', { style: { textAlign: 'right', fontWeight: lead ? 700 : 500, color: lead ? CA : 'var(--text-muted)' } }, m.d ? fmt(m.a, m.d) : kfmt(Math.round(m.a))),
-        h('div',
-          h('div.tiny.muted', { style: { textAlign: 'center', marginBottom: '2px' } }, m.k),
-          h('div', { style: { position: 'relative', height: '9px', background: 'var(--div-neutral)', borderRadius: '3px' } },
-            h('div', {
-              style: {
-                position: 'absolute', top: 0, bottom: 0, borderRadius: '3px',
-                left: scaleOf(m) >= 0 ? '50%' : (50 + scaleOf(m) * 50) + '%',
-                width: Math.abs(scaleOf(m)) * 50 + '%',
-                background: scaleOf(m) >= 0 ? CA : CB
-              }
-            }),
-            h('div', { style: { position: 'absolute', left: '50%', top: '-2px', bottom: '-2px', width: '1px', background: 'var(--axis)' } }))),
-        h('span.mono.tiny', { style: { fontWeight: !lead ? 700 : 500, color: !lead ? CB : 'var(--text-muted)' } }, m.d ? fmt(m.b, m.d) : kfmt(Math.round(m.b))));
-      if (m.tip) bindTT(row, `<div class="k">${m.k}</div>${m.tip}`);
-      return row;
-    })))));
-
-  /* ---- positional edge ---- */
-  const posRows = POS4.map(p => ({
-    pos: p, aNow: A.posNow[p] || 0, bNow: B.posNow[p] || 0,
-    aVal: A.posValue[p] || 0, bVal: B.posValue[p] || 0
-  }));
-  wrap.appendChild(h('div.grid.split',
-    card('Positional edge — this season', 'starting output per week · right is ' + A.short + ', left is ' + B.short,
-      divBar(posRows.map(x => ({ label: x.pos, v: x.aNow - x.bNow, tip: `<div class="k">${x.pos}</div>${A.short} ${fmt(x.aNow, 1)} · ${B.short} ${fmt(x.bNow, 1)}` })), { labelW: '48px', dec: 1, posColor: CA, negColor: CB })),
-    card('Positional edge — ' + valueWord() + ' value', 'market value at each position',
-      divBar(posRows.map(x => ({ label: x.pos, v: x.aVal - x.bVal, vl: sgn((x.aVal - x.bVal) / 1000, 1) + 'k', tip: `<div class="k">${x.pos}</div>${A.short} ${kfmt(Math.round(x.aVal))} · ${B.short} ${kfmt(Math.round(x.bVal))}` })), { labelW: '48px', dec: 0, posColor: CA, negColor: CB }))));
-
-  /* ---- season outlook, if a sim exists ---- */
-  if (S.sim && S.sim.by[A.rosterId] && S.sim.by[B.rosterId]) {
-    const sa = S.sim.by[A.rosterId], sb = S.sim.by[B.rosterId];
-    const row = (label, va, vb, f) => h('div', { style: { display: 'grid', gridTemplateColumns: isNarrow() ? '58px 1fr 58px' : '74px 1fr 74px', gap: '10px', alignItems: 'center' } },
-      h('span.mono.tiny', { style: { textAlign: 'right', fontWeight: va >= vb ? 700 : 500 } }, f(va)),
-      h('div', h('div.tiny.muted', { style: { textAlign: 'center', marginBottom: '2px' } }, label),
-        oddsBar([{ v: va, color: CA }, { v: Math.max(0.0001, vb), color: CB }], { h: 8 })),
-      h('span.mono.tiny', { style: { fontWeight: vb > va ? 700 : 500 } }, f(vb)));
-    wrap.appendChild(card('Season outlook', 'from the last full-season simulation you ran',
-      h('div', { style: { display: 'grid', gap: '8px' } },
-        row('Projected wins', sa.wins, sb.wins, v => fmt(v, 1)),
-        row('Playoff odds', sa.playoff, sb.playoff, v => pct(v, 0)),
-        row('Title odds', sa.title, sb.title, v => pct(v, 1)),
-        row('Average seed', S.teams.length + 1 - sa.seed, S.teams.length + 1 - sb.seed, v => ord(Math.round(S.teams.length + 1 - v))))));
-  }
-
-  else {
-    wrap.appendChild(card('Season outlook', 'needs a full-season simulation to compare playoff and title odds',
-      h('div.row', { style: { gap: '12px' } },
-        h('button.btn.pri', {
-          onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); }
-        }, 'Run 2,000 seasons'),
-        h('span.tiny.muted', 'the Simulator tab keeps the full result'))));
-  }
-
-  /* ---- what they have actually done to each other ---- */
-  const hist = h2hHistory(A, B);
-  if (hist.length) {
-    let aw = 0, bw = 0;
-    hist.forEach(g => { if (g.a > g.b) aw++; else if (g.b > g.a) bw++; });
-    wrap.appendChild(card('When they have actually met', `${aw}–${bw} to ${aw >= bw ? A.name : B.name} this season`,
-      table([
-        { k: 'week', h: 'Week', num: true, f: g => h('b.mono', g.week) },
-        { k: 'a', h: A.short, num: true, f: g => h('span.mono', { class: g.a > g.b ? 'up' : '' }, fmt(g.a, 1)) },
-        { k: 'b', h: B.short, num: true, f: g => h('span.mono', { class: g.b > g.a ? 'up' : '' }, fmt(g.b, 1)) },
-        { k: 'd', h: 'Margin', num: true, sort: g => g.a - g.b, f: g => deltaTag(g.a - g.b, 1) }
-      ], hist, { sortKey: 'week', sortDir: 1 })));
-  }
-
-  /* ---- do they match up as trade partners? ---- */
-  const scA = scoutTeam(A), scB = scoutTeam(B);
-  const fits = [];
-  scA.holes.forEach(hA => { const sB = scB.surplus.find(x => x.pos === hA.pos); if (sB) fits.push({ from: B, to: A, pos: hA.pos, z: sB.z - hA.z }); });
-  scB.holes.forEach(hB => { const sA = scA.surplus.find(x => x.pos === hB.pos); if (sA) fits.push({ from: A, to: B, pos: hB.pos, z: sA.z - hB.z }); });
-  wrap.appendChild(card('Do they fit as trade partners?',
-    fits.length ? 'each of these is a position one of them is deep at and the other is thin at' : null,
-    fits.length
-      ? h('div', { style: { display: 'grid', gap: '7px' } }, fits.sort((x, y) => y.z - x.z).map(f =>
-        h('div.row', { style: { gap: '8px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '8px 10px', background: 'var(--surface-2)' } },
-          posPill(f.pos), h('b.tiny', f.from.name), h('span.tiny.muted', '→'), h('b.tiny', f.to.name),
-          h('span', { style: { flex: 1 } }),
-          h('span.tiny.muted', 'gap ' + fmt(f.z, 1) + ' SD'),
-          h('button.btn.sm', {
-            onclick: () => {
-              FinderUI.team = f.to.rosterId; FinderUI.partners = [f.from.rosterId];
-              FinderUI.positions = [f.pos]; FinderUI.shape = 'any'; FinderUI.focus = null; FinderUI.results = null;
-              S.view = 'finder'; render(); window.scrollTo(0, 0);
-            }
-          }, 'Find a deal')))) 
-      : h('div.empty', 'Neither team is deep where the other is thin — a trade here would have to be about value, not need.')));
-  return wrap;
+  /* ---- who is sitting this week out ---- */
+  // the same "on bye" the Start / Sit page uses, over the players a team can actually play
+  // (not IR or taxi), best first — so a missing star is easy to see before the slots are read
+  const byesOf = (T) => activePlayers(T).filter(p => p.team && onBye(p, wk)).sort((x, y) => (y.dv || 0) - (x.dv || 0));
+  const byeA = byesOf(A), byeB = byesOf(B);
+  const byeCol = (T, list, col) => h('div', { style: { minWidth: 0 } },
+    h('div.row', { style: { gap: '7px', marginBottom: '6px' } },
+      h('i', { style: { width: '3px', alignSelf: 'stretch', borderRadius: '2px', background: col } }),
+      h('b', T.short), h('span.tiny.muted', list.length ? list.length + ' on bye' : 'none')),
+    list.length
+      ? h('div', { style: { display: 'grid', gap: '2px' } }, list.map(p => h('div.row.lline', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap', borderLeftColor: col } },
+        posPill(p.pos), pname(p), p.team ? h('span.tiny.muted', p.team) : null,
+        h('span', { style: { flex: 1 } }),
+        h('span.tiny.muted.mono', { title: 'typical points per game' }, fmt(p.ppg || 0, 1) + ' ppg'))))
+      : h('div.tiny.muted', 'Nobody on ' + T.short + ' is on a bye.'));
+  wrap.appendChild(card('Players on bye — week ' + wk,
+    byeA.length + byeB.length
+      ? `${A.short} has ${byeA.length}, ${B.short} has ${byeB.length} · active roster only, best player first`
+      : 'neither active roster has anyone on a bye this week',
+    h('div', { style: { display: 'grid', gridTemplateColumns: isNarrow() ? '1fr' : '1fr 1fr', gap: isNarrow() ? '14px' : '24px' } },
+      byeCol(A, byeA, CA), byeCol(B, byeB, CB))));
 }
 
 /* ================= next year's draft order ================= */
