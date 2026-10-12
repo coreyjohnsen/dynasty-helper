@@ -8,9 +8,10 @@
      Last 3    the average of his last three games with a recorded score (injured, bye
                and inactive weeks are skipped)
      Market    the model built from the market price / positional rank
-   A slot's confidence is how often each candidate comes out ahead across those sources:
-   each source casts one vote (a wide gap is a firm vote, a near tie is a coin flip), the
-   projections count 3x each and the derived readings 1x, and the shares always add to 100%. */
+   The sources are blended into one number per player (a weighted average: the two projections
+   count 3x each and the derived readings 1x). A slot's confidence is then simulated, see
+   lineup-sim.js: each candidate's score is drawn around his blend, wider where the sources
+   disagree, and the percentage is how often he scores the most. */
 const PSRC_LIST = [
   { id: 'sleeper', label: 'Sleeper (Rotowire)', short: 'Sleeper', kind: 'ext', w: 3 },
   { id: 'espn', label: 'ESPN', short: 'ESPN', kind: 'ext', w: 3 },
@@ -80,12 +81,13 @@ function psrcPts(id, p, wk) {
   if (v === null) return null;
   return v * (p.inj ? availability(p, wk) : 1);
 }
-/** Every source's number for a player, and their average. */
+/** Every source's number for a player, and their weighted blend. */
 function psrcAll(p, wk) {
   const per = {};
   PSRC_LIST.forEach(x => { per[x.id] = psrcPts(x.id, p, wk); });
-  const vals = Object.values(per).filter(v => v !== null);
-  return { per, cons: vals.length ? mean(vals) : null, n: vals.length };
+  const have = PSRC_LIST.filter(x => per[x.id] !== null);
+  const W = sum(have.map(x => x.w));
+  return { per, cons: have.length ? sum(have.map(x => per[x.id] * x.w)) / W : null, n: have.length };
 }
 /** The consensus the lineup is built from; with no source at all, the app's usual weekly number. */
 function consensusPts(p, wk) {
@@ -231,46 +233,26 @@ function psrcKick(wk, players) {
 }
 
 /* ---- confidence ---- */
-const PSRC_TAU = 0.45;      // how many weekly standard deviations of gap make a source's vote lopsided
 /**
- * For a slot's candidates: each source casts a soft vote — a wide gap is a firm vote, a near tie is a coin
- * flip — and the votes are averaged, so the percentages always add to 100. Only sources that have a number
- * for every candidate vote.
+ * For a slot's candidates: each player's score is simulated around the blend of the sources (see
+ * lineup-sim.js), and his percentage is how often he scores the most of the group. The shares
+ * add to exactly 100. The sources' own picks are kept for display: green marks who each one
+ * clearly puts on top, and a near tie backs nobody.
  */
 function psrcConfidence(cands, wk) {
   const rows = cands.map(p => psrcAll(p, wk));
-  rows.forEach(r => { r.vote = r.per; });
-  // a source with no number for one of the candidates sits the slot out: it cannot compare them
-  const voters = PSRC_LIST.filter(x => rows.every(r => r.vote[x.id] !== null));
-  const wSum = sum(voters.map(x => x.w));
-  let probs;
-  if (voters.length) {
-    probs = cands.map(() => 0);
-    voters.forEach(x => {
-      const vals = rows.map(r => r.vote[x.id]);
-      const sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(vals[i], 1))));
-      const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...vals);
-      const e = vals.map(v => Math.exp((v - top) / tau)), tot = sum(e);
-      e.forEach((v, i) => { probs[i] += v / tot * x.w / wSum; });
-    });
-  } else {
-    // no source covers all of them: fall back to whatever average each has
-    const c = rows.map(r => r.cons === null ? 0 : r.cons), sd = mean(cands.map((p, i) => volFromMean(p.pos, Math.max(c[i], 1))));
-    const tau = Math.max(0.5, PSRC_TAU * sd), top = Math.max(...c), e = c.map(v => Math.exp((v - top) / tau)), tot = sum(e);
-    probs = e.map(v => v / tot);
-  }
-  // round to whole percents that add to exactly 100 (largest remainder)
-  const raw = probs.map(p => p * 100), floor = raw.map(Math.floor);
-  let left = 100 - sum(floor);
-  raw.map((v, i) => [v - Math.floor(v), i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { floor[i]++; left--; } });
-  // who each voting source clearly puts on top; a near tie backs nobody
+  const dists = cands.map((p, i) => ssDist(p, wk, rows[i]));
+  const sim = ssSlotOdds(cands, dists, cands.map(p => p.id).join('+') + '@' + wk);
+  const pct = ssWholePercents(sim.p);
+  // sources that have a number for every candidate can say who they would pick
+  const voters = PSRC_LIST.filter(x => rows.every(r => r.per[x.id] !== null));
   const backers = cands.map(() => []), leader = {};
   voters.forEach(x => {
-    const vals = rows.map(r => r.vote[x.id]), top = Math.max(...vals), i = vals.indexOf(top);
+    const vals = rows.map(r => r.per[x.id]), top = Math.max(...vals), i = vals.indexOf(top);
     const next = Math.max(...vals.filter((_, k) => k !== i));
     if (top - next > 0.05) { backers[i].push(x); leader[x.id] = i; }
   });
-  return { rows, voters, pct: floor, backers, leader, n: voters.length };
+  return { rows, voters, pct, backers, leader, n: voters.length, dists, sim };
 }
 
 /* ---- the slots ---- */
@@ -293,7 +275,7 @@ function startSitPlan(T, wk) {
   const names = slotNames(lineup);
   const chosen = new Set(lineup.filter(s => s.player).map(s => s.player.id));
   const open = p => !live || livePlayerState(p, wk) === 'upcoming';
-  return lineup.map((s, i) => {
+  const plan = lineup.map((s, i) => {
     const rec = s.player;
     const elig = SLOT_ELIG[s.slot] || [s.slot];
     if (live && rec && !open(rec)) return { slot: s.slot, name: names[i], rec, cands: [rec], conf: null, locked: true };
@@ -304,6 +286,11 @@ function startSitPlan(T, wk) {
     if (rec && cands.length && cands[0].id !== rec.id) { cands.splice(cands.indexOf(rec), 1); cands.unshift(rec); }
     return { slot: s.slot, name: names[i], rec, cands, outs, conf: cands.length >= 2 ? psrcConfidence(cands, wk) : null, locked: false };
   });
+  // the same week played out against the real opponent, for the lineup as recommended and for each swap
+  const match = ssWeekOdds(T, wk, plan);
+  plan.forEach((sl, i) => { sl.odds = match && match.bySlot[i] ? match.bySlot[i] : null; sl.winBase = match ? match.pWin : null; });
+  plan.match = match;
+  return plan;
 }
 
 const LineupUI = { drawerY: 0, team: null, week: null, compare: [], openKey: null, browseOpen: undefined, st: { q: '', pos: 'all', limit: 30 } };
@@ -312,7 +299,7 @@ function confChip(conf, i) {
   if (!conf) return h('span.ssc-conf.solo', 'only option');
   const pct = conf.pct[i];
   const cls = pct >= 70 ? '.hi' : pct >= 55 ? '.mid' : '.lo';
-  return h('span.ssc-conf' + cls, { title: backedBy(conf, i, true) }, pct + '%');
+  return h('span.ssc-conf' + cls, { title: pct + '% chance he scores the most of these players. ' + backedBy(conf, i, true) }, pct + '%');
 }
 /** Which sources clearly put him on top, in words. */
 function backedBy(conf, i, long) {
@@ -355,24 +342,25 @@ function slotPanel(sl, wk) {
         playerFace(p, { sm: true }),
         h('div.sspc-id', h('div.row', { style: { gap: '6px', flexWrap: 'wrap' } }, pname(p, { face: false, style: { fontWeight: 650 } }), injuryTag(p.injury, p), i === 0 ? h('span.tag.sspc-rec', 'recommended') : null),
           h('div.tiny.muted', [p.pos + (p.posRank || ''), p.team || 'FA', opp ? (opp === 'BYE' ? 'BYE' : (/^@|vs/.test(opp) ? opp : 'vs ' + opp)) : null].filter(Boolean).join(' · '))),
-        conf && !ruledOut(p, wk) ? h('div.sspc-pct', { class: lead ? 'lead' : '' }, h('b', conf.pct[i] + '%'), h('span', backedBy(conf, i))) : ruledOut(p, wk) ? h('div.sspc-pct', h('b', 'Out'), h('span', 'not expected to play')) : h('div.sspc-pct', h('b', fmt(all.cons || 0, 1)), h('span', 'proj'))),
+        conf && !ruledOut(p, wk) ? h('div.sspc-pct', { class: lead ? 'lead' : '', title: backedBy(conf, i, true) }, h('b', conf.pct[i] + '%'), h('span', sl.cands.length === 2 ? 'to outscore ' + ((sl.cands[1 - i].name.split(' ').slice(-1)[0]) || 'him') : 'to score the most')) : ruledOut(p, wk) ? h('div.sspc-pct', h('b', 'Out'), h('span', 'not expected to play')) : h('div.sspc-pct', h('b', fmt(all.cons || 0, 1)), h('span', 'proj'))),
       outToggle(p, wk),
       conf ? h('div.sspc-bar', { 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(2, conf.pct[i]) + '%' } })) : null,
+      conf && !ruledOut(p, wk) ? ssOddsLine(sl, i) : null,
       h('div.sspc-src', srcs.map(x => {
         const v = all.per[x.id];
         const voting = conf && conf.voters.includes(x);
         const wins = voting && conf.leader[x.id] === i;
         const note = v === null ? (x.id === 'espn' ? (espnWhy(p, wk).startsWith('Sleeper has no') ? 'no ESPN id' : 'no line') : null)
-          : conf && !voting ? 'sits out' : null;
-        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + ' (counts ' + x.w + '×)' + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : conf && !voting ? ' (some other candidate has no number from it, so it does not vote here)' : wins ? ' (its pick)' : '') }, h('span', x.short), h('b', srcValue(v)), note ? h('em.ssrc-why', note) : null);
-      }).concat([h('div.ssrc.avg', { title: 'average of the sources that have a number' }, h('span', 'Avg'), h('b', srcValue(all.cons)))])));
+          : null;
+        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + ' (counts ' + x.w + '×)' + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : wins ? ' (its pick)' : '') }, h('span', x.short), h('b', srcValue(v)), note ? h('em.ssrc-why', note) : null);
+      }).concat([h('div.ssrc.avg', { title: 'weighted blend of the sources that have a number for him (Sleeper and ESPN count 3×, Last 3 and Market 1×)' }, h('span', 'Blend'), h('b', srcValue(all.cons)))])));
   };
   const note = !conf ? h('div.tiny.muted', 'Nobody else on your roster can play this slot, so there is nothing to compare.')
-    : conf.n === 0 ? h('div.tiny.sec', 'No source has a number for every one of these players, so the percentages rest on the average of what is available. Treat them as rough.')
+    : conf.n === 0 ? h('div.tiny.sec', 'No single source has a number for all of these players, so each one\'s blend rests on whichever sources do. Treat the percentages as rough.')
       : conf.n === 1 ? h('div.tiny.sec', 'Only one source covers all of them, so this is one opinion, not a consensus.') : null;
   return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' candidates' },
-    h('div.ssp-hd', h('b', sl.name + ': who to start'), h('span.tiny.muted', conf ? 'each source gets one vote: Sleeper and ESPN count 3×, Last 3 and Market 1×. Green marks the source\'s pick; a near tie picks nobody.' : '')),
-    sl.cands.map(rowFor), (sl.outs || []).length ? h('div.sspc-outs', h('span.tiny.muted', 'Not expected to play:'), sl.outs.map(p => h('span.sspc-o', pname(p, { face: false }), injuryTag(p.injury, p), outToggle(p, wk)))) : null, note);
+    h('div.ssp-hd', h('b', sl.name + ': who to start'), h('span.tiny.muted', conf ? 'simulated 4,000 times: each score is drawn around the blend of the sources, wider where they disagree. Green marks a source\'s own pick.' : '')),
+    sl.cands.map(rowFor), ssInsight(sl), (sl.outs || []).length ? h('div.sspc-outs', h('span.tiny.muted', 'Not expected to play:'), sl.outs.map(p => h('span.sspc-o', pname(p, { face: false }), injuryTag(p.injury, p), outToggle(p, wk)))) : null, note);
 }
 /** The slot's candidates float over the page — a side drawer on a wide screen, a bottom sheet on a phone — so opening one
  *  never pushes the rest of the lineup down. A redraw (marking someone out) keeps its scroll position. */
@@ -418,7 +406,7 @@ function startSitSlots(T, wk, act) {
     fmt(total, 1) + (live ? ' points so far plus what is still projected' : ' projected points')
     + (live ? ' · ' + nLocked + ' of ' + plan.length + ' slots locked' : '') + ' · tap ' + (live ? 'an open' : 'a') + ' slot to see the alternatives and how sure each call is'
     + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
-    h('div', { style: { display: 'grid', gap: '14px' } }, grid, srcStrip(wk), drawer));
+    h('div', { style: { display: 'grid', gap: '14px' } }, ssMatchBar(plan.match, wk), grid, srcStrip(wk), drawer));
 }
 function viewLineup() {
   const wrap = h('div.grid');
