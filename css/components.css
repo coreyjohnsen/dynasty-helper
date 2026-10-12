@@ -42,6 +42,10 @@ input::placeholder{color:var(--text-muted)}
 input:hover,select:hover{border-color:color-mix(in srgb, var(--text-muted) 55%, transparent)}
 input:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
 select{cursor:pointer}
+/* The open list of a native select is drawn by the browser and takes its colours from the
+   option itself, not the select. A select with a transparent background (the team pickers)
+   otherwise gets a white list with the page's light text on it in dark mode. */
+select option,select optgroup{background-color:var(--surface-1);color:var(--text-primary)}
 label.fld{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--text-muted);font-weight:620;letter-spacing:.01em}
 
 /* a position pill is the one place the app uses colour as a label, so it is
