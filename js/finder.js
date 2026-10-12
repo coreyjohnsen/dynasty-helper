@@ -17,7 +17,7 @@ function viewFinder() {
   // In a redraft league every team is contending by definition — there is no
   // future to rebuild toward — so the objective is fixed and the picker goes.
   const mode = !isDynasty() ? 'contend' : (FinderUI.mode === 'auto' ? windowToMode(T.window) : FinderUI.mode);
-  const modeOpts = [{ k: 'auto', label: 'Auto (' + T.window + ')' }, { k: 'contend', label: 'Contend' }, { k: 'rebuild', label: 'Rebuild' }, { k: 'balanced', label: 'Balanced' }];
+  const modeOpts = [{ k: 'auto', label: 'Auto (' + T.window + ')' }, { k: 'contend', label: 'Contend' }, { k: 'rebuild', label: 'Rebuild' }, { k: 'balanced', label: 'Balanced' }, { k: 'any', label: 'Any' }];
   const dirty = () => { FinderUI.results = null; };
 
   const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : arr.concat([v]);
@@ -163,12 +163,18 @@ function modeBlurb(m) {
   return {
     contend: 'Looking for deals that raise your starting lineup now: you give up youth and picks and get proven production.',
     rebuild: 'Looking for deals that raise your future value: you sell aging producers for young players and draft capital.',
-    balanced: 'Looking for deals that add value on both timelines without punting either one.'
+    balanced: 'Looking for deals that add value on both timelines without punting either one.',
+    any: 'Looking for any deal that moves you forward, whether it helps this season, the future, or both.'
   }[m];
 }
 function objectiveFor(mode) {
   // with one timeline, the objective is simply this week's lineup
   if (!isDynasty()) return (b, a) => a.now - b.now;
+  // any strategy: a deal counts if it moves you forward on whichever timeline it helps most
+  if (mode === 'any') {
+    const all = ['contend', 'rebuild', 'balanced'].map(objectiveFor);
+    return (b, a) => Math.max.apply(null, all.map(f => f(b, a)));
+  }
   if (mode === 'contend') return (b, a) => (a.now - b.now) * 1.0 + (a.future - b.future) * 0.18;
   if (mode === 'rebuild') return (b, a) => (a.future - b.future) * 1.0 + (a.now - b.now) * 0.12 + (a.pickCapital - b.pickCapital) / 900;
   return (b, a) => (a.now - b.now) * 0.55 + (a.future - b.future) * 0.55;
@@ -717,11 +723,11 @@ function tradeCardRow(r, T, i) {
           h('span.v', f.gain > 0.05 ? '+' + f.gain.toFixed(1) + ' pts/wk' : kfmt(Math.round(f.p.dv || 0))))))) : null,
     h('div.tc-deltas',
       effectRow('You', r.myAfter, r.myBase),
-      effectRow(r.partner.name, r.theirAfter, r.theirBase)));
+      effectRow(r.partner.name, r.theirAfter, r.theirBase, true)));
 }
 /** What a deal does to one side: lineup points, future outlook and pick capital, before to after. */
-function effectRow(who, after, before) {
-  return h('div.tc-eff',
+function effectRow(who, after, before, right) {
+  return h('div.tc-eff' + (right ? '.r' : ''),
     h('b.tiny.tc-eff-who', who),
     h('span.tiny.sec', 'Lineup ', deltaTag(after.now - before.now, 1, ' pts/wk')),
     dynOnly(h('span.tiny.sec', 'Future ', deltaTag(after.future - before.future, 1))),
