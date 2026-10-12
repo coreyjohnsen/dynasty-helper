@@ -29,7 +29,7 @@ function viewStock() {
       id: 'sbrowse', color: 'a', st: StockUI.pst, step: 24, picks: false, posOpts: ['all', 'QB', 'RB', 'WR', 'TE'],
       title: 'Choose a player', note: 'tap anyone to chart their trade value',
       assets: universe.map(assetOfPlayer), chosen: new Set([StockUI.id]),
-      meta: a => (ownerOfP[a.id] ? ownerOfP[a.id].short : 'FA') + ' · ' + assetMeta(a), placeholder: 'Search players…',
+      meta: a => (ownerOfP[a.id] ? ownerOfP[a.id].short : 'FA') + ' · ' + assetMeta(a), placeholder: 'Search players...',
       onToggle: a => { StockUI.id = a.id; StockUI.pickOpen = false; render(); }, onChange: () => render()
     }) : null)));
 
@@ -64,7 +64,7 @@ function viewStock() {
     { k: 'src', h: 'Source', sortable: false, f: r => r.real ? h('span.tag', 'observed') : h('span.tag', { style: { opacity: .7 } }, 'modelled') }
   ], series.slice().reverse(), {});
   const wt = withTable(chart, tbl);
-  wrap.appendChild(card((isTeam ? 'Franchise' : 'Player') + ' value — ' + subject.name,
+  wrap.appendChild(card((isTeam ? 'Franchise' : 'Player') + ' value: ' + subject.name,
     `${observed} observed snapshot${observed === 1 ? '' : 's'} · the rest is modelled from FantasyCalc's published 30-day trend`,
     wt.body, wt.btn));
 
@@ -88,7 +88,7 @@ function viewStock() {
     card('Falling', 'biggest 30-day value losses', table(moverCols, fallers, { sortKey: 'trend30', sortDir: 1 }))));
 
   const tv = S.teams.slice().sort((a, b) => b.totalValue - a.totalValue);
-  wrap.appendChild(card('Franchise values', 'every team as a ticker — click a row to chart it',
+  wrap.appendChild(card('Franchise values', 'every team as a ticker: click a row to chart it',
     table([
       { k: 'name', h: 'Team', sort: r => r.name, f: r => teamCell(r) },
       { k: 'totalValue', h: 'Value', num: true, f: r => h('b.mono', kfmt(Math.round(r.totalValue))) },

@@ -26,7 +26,7 @@ async function boot(leagueId, onStep) {
       const box = $('.splash .box .bd');
       box.appendChild(h('div', { style: { marginTop: '10px', padding: '9px 11px', border: '1px solid var(--critical)', borderRadius: 'var(--r-sm)', background: 'color-mix(in srgb, var(--critical) 8%, transparent)' } },
         h('b', { style: { color: 'var(--bad-text)' } }, 'Could not load'), h('div.tiny.sec', String(e.message || e)),
-        h('div.tiny.muted', { style: { marginTop: '5px' } }, 'If this says “Failed to fetch”, the API is unreachable from this page — check your connection, or open this file directly in a browser rather than inside another app’s preview pane.')));
+        h('div.tiny.muted', { style: { marginTop: '5px' } }, 'If this says "Failed to fetch", the API is unreachable from this page. Check your connection, or open this file directly in a browser rather than inside another app\'s preview pane.')));
     }
   }
 }

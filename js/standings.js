@@ -6,7 +6,7 @@ function viewStandings() {
   if (!S.gamesPlayed) {
     wrap.appendChild(card('Active rankings', null, h('div.empty',
       h('div', { style: { fontSize: '15px', fontWeight: 600, color: 'var(--text-secondary)' } }, 'No games played yet'),
-      h('div.tiny', { style: { marginTop: '6px' } }, 'This view is pure results — wins, losses and points actually scored. It fills in from week 1 onward. Until then, Power Rankings has the projections.'))));
+      h('div.tiny', { style: { marginTop: '6px' } }, 'This view is pure results: wins, losses and points scored. It fills in from week 1 onward. Until then, Power Rankings has the projections.'))));
     return wrap;
   }
   teams.sort((a, b) => (b.wins - a.wins) || (b.fpts - a.fpts));
@@ -15,7 +15,7 @@ function viewStandings() {
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
     kpi('Best record', teams[0].name, `${teams[0].wins}-${teams[0].losses}${teams[0].ties ? '-' + teams[0].ties : ''}`),
     kpi('Most points', teams.slice().sort((a, b) => b.fpts - a.fpts)[0].name, fmt(Math.max(...teams.map(t => t.fpts)), 1) + ' PF'),
-    kpi('Luckiest', lucky[0].name, sgn(lucky[0].luck, 1) + ' wins vs. expected', '<div class="k">Luck</div>Actual wins minus wins expected from an all-play record — how the schedule treated them.'),
+    kpi('Luckiest', lucky[0].name, sgn(lucky[0].luck, 1) + ' wins vs. expected', '<div class="k">Luck</div>Actual wins minus wins expected from an all-play record: how the schedule treated them.'),
     kpi('Unluckiest', lucky[lucky.length - 1].name, sgn(lucky[lucky.length - 1].luck, 1) + ' wins vs. expected'),
     kpi('Weeks played', String(S.lastWeek), `of ${S.regEnd} regular season`)
   ));
@@ -30,14 +30,14 @@ function viewStandings() {
     { k: 'fptsAgainst', prio: 2, keepSimple: true, h: 'PA', num: true, f: r => fmt(r.fptsAgainst, 1) },
     { k: 'diff', prio: 2, h: 'Diff', num: true, sort: r => r.fpts - r.fptsAgainst, f: r => h('span', { class: r.fpts - r.fptsAgainst >= 0 ? 'up mono' : 'down mono' }, sgn(r.fpts - r.fptsAgainst, 1)) },
     { k: 'avgPts', h: 'PPG', num: true, f: r => fmt(r.avgPts, 1) },
-    { k: 'ptsSd', prio: 2, h: 'Volatility', num: true, tip: 'Standard deviation of weekly scores — high means boom/bust', f: r => fmt(r.ptsSd, 1) },
+    { k: 'ptsSd', prio: 2, h: 'Volatility', num: true, tip: 'Standard deviation of weekly scores: high means boom/bust', f: r => fmt(r.ptsSd, 1) },
     { k: 'allPlay', prio: 2, h: 'All-play', num: true, tip: 'Record if every team played every other team each week', f: r => r.allPlay === null ? '—' : h('span', h('b.mono', pct(r.allPlay, 1)), h('span.tiny.muted', ` ${r.apW}-${r.apL}`)) },
     { k: 'luck', prio: 2, keepSimple: true, h: 'Luck', num: true, tip: 'Wins above or below what the all-play record predicts', f: r => r.luck === null ? '—' : deltaTag(r.luck, 1, ' W') },
     { k: 'maxPts', prio: 2, keepSimple: true, h: 'Efficiency', num: true, tip: 'Points scored as a share of the best possible lineup each week', sort: r => r.maxPts ? r.fpts / r.maxPts : 0, f: r => r.maxPts ? pct(r.fpts / r.maxPts, 1) : '—' },
     { k: 'spark', prio: 2, h: 'Form', sortable: false, f: r => sparkline(r.weekly.filter(v => v !== null && v > 0).map(v => ({ v })), { w: 74, h: 22 }) }
   ];
   wrap.appendChild(card('Active rankings',
-    'pure results — every number here comes from weeks that are over'
+    'pure results: every number here comes from weeks that are over'
     + (S.liveWeek ? '. Week ' + S.liveWeek + ' is still being played and is not in these totals; the live column below tracks it separately.' : ''),
     table(cols, teams, { sortKey: 'wins', sortDir: -1 })));
 
@@ -120,7 +120,7 @@ function hypRosterChanges(t) {
       p ? h('span.mono.tiny', { style: { marginLeft: 'auto' } }, kfmt(Math.round(p.dv || 0))) : h('span', { style: { marginLeft: 'auto' } }),
       undo(x));
   };
-  return card('What-if changes to this roster', into.length + ' in · ' + outOf.length + ' out — the roster below is shown as it would be',
+  return card('What-if changes to this roster', into.length + ' in · ' + outOf.length + ' out. The roster below is shown as it would be',
     h('div', { style: { display: 'grid', gap: '6px' } },
       into.map(x => line(x, 'in')), outOf.map(x => line(x, 'out'))));
 }

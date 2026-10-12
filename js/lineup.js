@@ -116,7 +116,7 @@ async function psrcLoadForm(wk, players) {
     const rows = S.matchups[w] || [];
     if (!WSTATS.state[w] && players.some(p => !rows.some(m => m.players_points && m.players_points[p.id] !== undefined))) need.push(w);
   }
-  if (need.length) { psrcSet('form', 'loading', 'Loading past weeks…'); await Promise.all(need.map(loadWeekStats)); }
+  if (need.length) { psrcSet('form', 'loading', 'Loading past weeks...'); await Promise.all(need.map(loadWeekStats)); }
   const n = players.filter(p => psrcForm(p, wk).games.length).length;
   psrcSet('form', n ? 'ok' : 'off', n ? n + ' of ' + players.length + ' players have a recent scored game' : 'No recent scored games were found.', n);
 }
@@ -191,7 +191,7 @@ function espnWhy(p, wk) {
   return 'ESPN did not return him at all this week (inactive, unprojected, or outside its most-owned list)';
 }
 async function psrcLoadEspn(wk) {
-  psrcSet('espn', 'loading', 'Asking ESPN…', 0, true);
+  psrcSet('espn', 'loading', 'Asking ESPN...', 0, true);
   try {
     const season = S.season, ck = 'psrc:espn2:' + season + ':' + wk;
     let map = null;
@@ -214,10 +214,10 @@ async function psrcLoadEspn(wk) {
     }
     (PSRC.data.espn = PSRC.data.espn || {})[wk] = map;
     const sc = Object.keys(PSRC.espnScale).map(k => k + ' ×' + fmt(1 / PSRC.espnScale[k], 2)).join(', ');
-    psrcSet('espn', 'ok', map.size + ' players' + (PSRC.espnDiag ? ' (of ' + PSRC.espnDiag.returned + ' ESPN returned' + (PSRC.espnDiag.unmatched ? '; ' + PSRC.espnDiag.unmatched + ' could not be matched to a Sleeper player' : '') + ')' : '') + (sc ? ' · scaled to this league’s scoring (' + sc + ')' : ''), map.size);
+    psrcSet('espn', 'ok', map.size + ' players' + (PSRC.espnDiag ? ' (of ' + PSRC.espnDiag.returned + ' ESPN returned' + (PSRC.espnDiag.unmatched ? '; ' + PSRC.espnDiag.unmatched + ' could not be matched to a Sleeper player' : '') + ')' : '') + (sc ? ' · scaled to this league\'s scoring (' + sc + ')' : ''), map.size);
   } catch (e) {
     const blocked = e && /Failed to fetch|NetworkError|Load failed|TypeError/i.test(String(e.message || e) + String(e));
-    psrcSet('espn', 'fail', blocked ? 'ESPN did not answer — the browser blocked the request or ESPN is unreachable.' : 'ESPN: ' + (e && e.message || e));
+    psrcSet('espn', 'fail', blocked ? 'ESPN did not answer. The browser blocked the request or ESPN is unreachable.' : 'ESPN: ' + (e && e.message || e));
   }
 }
 
@@ -227,7 +227,7 @@ function psrcKick(wk, players) {
   once('espn:' + wk, () => psrcLoadEspn(wk));
   once('form:' + wk + ':' + players.length, () => psrcLoadForm(wk, players));
   PSRC.status.sleeper = { state: S.wproj && Object.keys(S.wproj).length ? 'ok' : 'off', msg: S.wproj ? 'Rotowire weekly lines via Sleeper' : 'no weekly lines loaded', n: 0 };
-  PSRC.status.market = { state: 'ok', msg: 'built from each player’s market rank and this league’s scoring', n: 0 };
+  PSRC.status.market = { state: 'ok', msg: 'built from each player\'s market rank and this league\'s scoring', n: 0 };
 }
 
 /* ---- confidence ---- */
@@ -339,11 +339,11 @@ function outToggle(p, wk) {
   const out = ruledOut(p, wk), man = (LS.get('ssout', {}) || {})[wk + ':' + p.id] !== undefined;
   return h('button.btn.sm.sspc-out', { type: 'button', title: out ? 'Count him as playing again' : 'Treat him as not expected to play: every source counts him as 0',
     onclick: e => { e.stopPropagation(); setRuledOut(p, wk, !out); render(); } },
-    out ? (man ? 'Mark as playing' : 'Expected out — mark as playing') : 'Mark as out');
+    out ? (man ? 'Mark as playing' : 'Expected out: mark as playing') : 'Mark as out');
 }
 function slotPanel(sl, wk) {
   if (sl.locked) return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' locked' },
-    h('div.ssp-hd', h('b', sl.name + ' — locked in'), h('span.tiny.muted', sl.rec.name + '’s game has started, so nothing here can change any more.')));
+    h('div.ssp-hd', h('b', sl.name + ' (locked in)'), h('span.tiny.muted', sl.rec.name + '\'s game has started, so nothing here can change any more.')));
   const conf = sl.conf;
   const srcs = PSRC_LIST;
   const rowFor = (p, i) => {
@@ -364,14 +364,14 @@ function slotPanel(sl, wk) {
         const wins = voting && conf.leader[x.id] === i;
         const note = v === null ? (x.id === 'espn' ? (espnWhy(p, wk).startsWith('Sleeper has no') ? 'no ESPN id' : 'no line') : null)
           : conf && !voting ? 'sits out' : null;
-        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + ' (counts ' + x.w + '×)' + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : conf && !voting ? ' — some other candidate has no number from it, so it does not vote here' : wins ? ' — its pick' : '') }, h('span', x.short), h('b', srcValue(v)), note ? h('em.ssrc-why', note) : null);
+        return h('div.ssrc' + (v === null ? '.na' : '') + (wins ? '.win' : ''), { title: x.label + ' (counts ' + x.w + '×)' + (v === null ? ' has no number for him' + (x.id === 'espn' ? ': ' + espnWhy(p, wk) : '') : conf && !voting ? ' (some other candidate has no number from it, so it does not vote here)' : wins ? ' (its pick)' : '') }, h('span', x.short), h('b', srcValue(v)), note ? h('em.ssrc-why', note) : null);
       }).concat([h('div.ssrc.avg', { title: 'average of the sources that have a number' }, h('span', 'Avg'), h('b', srcValue(all.cons)))])));
   };
   const note = !conf ? h('div.tiny.muted', 'Nobody else on your roster can play this slot, so there is nothing to compare.')
-    : conf.n === 0 ? h('div.tiny.sec', 'No source has a number for every one of these players, so the percentages rest on the average of what is available — treat them as rough.')
+    : conf.n === 0 ? h('div.tiny.sec', 'No source has a number for every one of these players, so the percentages rest on the average of what is available. Treat them as rough.')
       : conf.n === 1 ? h('div.tiny.sec', 'Only one source covers all of them, so this is one opinion, not a consensus.') : null;
   return h('div.ssp', { role: 'region', 'aria-label': sl.name + ' candidates' },
-    h('div.ssp-hd', h('b', sl.name + ' — who to start'), h('span.tiny.muted', conf ? 'each source gets one vote — Sleeper and ESPN count 3×, Last 3 and Market 1×. Green marks the source’s pick; a near tie picks nobody.' : '')),
+    h('div.ssp-hd', h('b', sl.name + ': who to start'), h('span.tiny.muted', conf ? 'each source gets one vote: Sleeper and ESPN count 3×, Last 3 and Market 1×. Green marks the source\'s pick; a near tie picks nobody.' : '')),
     sl.cands.map(rowFor), (sl.outs || []).length ? h('div.sspc-outs', h('span.tiny.muted', 'Not expected to play:'), sl.outs.map(p => h('span.sspc-o', pname(p, { face: false }), injuryTag(p.injury, p), outToggle(p, wk)))) : null, note);
 }
 /** The slot's candidates float over the page — a side drawer on a wide screen, a bottom sheet on a phone — so opening one
@@ -392,8 +392,8 @@ if (typeof document !== 'undefined') document.addEventListener('keydown', e => {
 function srcStrip(wk) {
   const chip = x => {
     const st = PSRC.status[x.id] || { state: 'idle', msg: '' };
-    const icon = st.state === 'ok' ? '●' : st.state === 'loading' ? '…' : st.state === 'fail' ? '✕' : '○';
-    return h('span.sstat.' + st.state, { title: x.label + ' — ' + (st.msg || st.state) }, h('i', icon), x.short);
+    const icon = st.state === 'ok' ? '●' : st.state === 'loading' ? '...' : st.state === 'fail' ? '✕' : '○';
+    return h('span.sstat.' + st.state, { title: x.label + ': ' + (st.msg || st.state) }, h('i', icon), x.short);
   };
   const failed = PSRC_LIST.filter(x => PSRC.status[x.id].state === 'fail');
   return h('div.sstrip',
@@ -414,7 +414,7 @@ function startSitSlots(T, wk, act) {
     if (open) drawer = slotDrawer(sl, wk);
   });
   const byes = act.filter(p => onBye(p, wk));
-  return card(live ? 'Your lineup — week ' + wk + ' (live)' : 'Recommended lineup — week ' + wk,
+  return card(live ? 'Your lineup, week ' + wk + ' (live)' : 'Recommended lineup, week ' + wk,
     fmt(total, 1) + (live ? ' points so far plus what is still projected' : ' projected points')
     + (live ? ' · ' + nLocked + ' of ' + plan.length + ' slots locked' : '') + ' · tap ' + (live ? 'an open' : 'a') + ' slot to see the alternatives and how sure each call is'
     + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
@@ -452,8 +452,8 @@ function viewLineup() {
       h('label.fld', { style: { minWidth: '170px' } }, 'Week', h('select', { onchange: e => { LineupUI.week = +e.target.value; LineupUI.compare = []; LineupUI.openKey = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === wk },
           'Week ' + w + (w === S.liveWeek ? ' (live)' : w <= S.lastWeek ? ' (played)' : w === S.lastWeek + 1 ? ' (next)' : ''))))),
-      isLive ? h('span.live', h('i'), 'Live — ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
-        : played ? h('span.tag', 'Already played — real scores, green where they beat the projection') : null)));
+      isLive ? h('span.live', h('i'), 'Live: ' + fmt(lr.banked, 1) + ' scored, ' + (lr.leftN + lr.liveN) + ' of ' + lr.rows.length + ' still to finish')
+        : played ? h('span.tag', 'Already played: real scores, green where they beat the projection') : null)));
 
   // ---- the optimal lineup ----
   const byes = act.filter(p => onBye(p, wk));
@@ -524,9 +524,9 @@ function viewLineup() {
   ];
   if (wk > S.lastWeek) wrap.appendChild(startSitSlots(T, wk, act));
   else {
-  wrap.appendChild(card(isLive ? 'Your lineup — week ' + wk : 'Optimal lineup — week ' + wk,
+  wrap.appendChild(card(isLive ? 'Your lineup, week ' + wk : 'Optimal lineup, week ' + wk,
     (isLive
-      ? fmt(total, 1) + ' live — ' + fmt(lr.banked, 1) + ' banked plus ' + fmt(lr.projected, 1) + ' still projected'
+      ? fmt(total, 1) + ' live, ' + fmt(lr.banked, 1) + ' banked plus ' + fmt(lr.projected, 1) + ' still projected'
       : fmt(total, 1) + ' projected points')
     + (byes.length ? ' · ' + byes.length + ' player' + (byes.length === 1 ? '' : 's') + ' on bye' : ''),
     table(cols.filter(Boolean), rows, {})));
@@ -534,9 +534,9 @@ function viewLineup() {
   // ---- the decisions that actually matter ----
   const closeOnes = rows.filter(r => r.close && r.p);
   wrap.appendChild(card('Calls worth thinking about', closeOnes.length
-    ? 'these slots are within 2.5 projected points of the next option — close enough that the projection is not the whole answer'
+    ? 'these slots are within 2.5 projected points of the next option: close enough that the projection is not the whole answer'
       + (isLive ? '. Only players who have not kicked off are listed: the rest can no longer be changed.' : '')
-    : (isLive ? 'Nothing left to decide — every slot with a game still to come has a clear best option.'
+    : (isLive ? 'Nothing left to decide. Every slot with a game still to come has a clear best option.'
       : 'no slot is within 2.5 points of its alternative this week, so the optimal lineup is comfortable'),
     closeOnes.length
       ? h('div', { style: { display: 'grid', gap: '9px' } }, closeOnes.map(r => {
@@ -578,7 +578,7 @@ function viewLineup() {
         browseOpen ? assetBrowser({
           id: 'lbrowse', color: 'a', st: LineupUI.st, title: T.rosterId === S.myRosterId ? 'Your roster' : T.name, note: 'tap to add or remove · four at most',
           assets: rosterAssets, chosen: new Set(LineupUI.compare), picks: false,
-          val: a => fmt(val(a.ref), 1), meta: outlookLine, placeholder: 'Search ' + T.short + ' players…',
+          val: a => fmt(val(a.ref), 1), meta: outlookLine, placeholder: 'Search ' + T.short + ' players...',
           onToggle: (a) => { toggleCompare(a.id); render(); }, onChange: () => render()
         }) : null))));
 

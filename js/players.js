@@ -133,7 +133,7 @@ function viewPlayers() {
         PlayersUI.market, v => { PlayersUI.market = v; PlayersUI.limit = 50; render(); })),
       isDynasty() ? h('label.fld', 'Timeline', segmented([{ k: 'any', label: 'Any' }, { k: 'now', label: 'Win now' }, { k: 'later', label: 'Rebuild' }],
         PlayersUI.window, v => { PlayersUI.window = v; PlayersUI.limit = 50; render(); })) : null,
-      filtered ? h('span.tiny.muted', 'Picks are hidden while a market filter is on — they have no signal.') : null));
+      filtered ? h('span.tiny.muted', 'Picks are hidden while a market filter is on. They have no signal.') : null));
 
   const more = shownPlayers < total
     ? h('div.row', { style: { justifyContent: 'center', gap: '10px', marginTop: '6px' } },
@@ -142,8 +142,8 @@ function viewPlayers() {
     : null;
 
   wrap.appendChild(card('Player rankings',
-    (isDynasty() ? 'dynasty' : 'redraft') + ' market value for this league’s format'
-    + (showPicks ? ' · this league’s own draft picks sit where their value puts them' : '')
+    (isDynasty() ? 'dynasty' : 'redraft') + ' market value for this league\'s format'
+    + (showPicks ? ' · this league\'s own draft picks sit where their value puts them' : '')
     + ' · showing ' + shownPlayers + ' of ' + total,
     h('div', { style: { display: 'grid', gap: '12px' } },
       controls,
@@ -180,12 +180,12 @@ function timelineCard(ownerOf) {
   return card('Win now vs rebuild', 'players the market prices differently for this season than for the long run',
     h('div', { style: { display: 'grid', gap: '14px' } },
       (now.length || later.length) ? h('div.sigcols',
-        col('Win-now assets', 'worth more in redraft than dynasty — buy if you’re contending, sell if you’re rebuilding', now),
-        col('Rebuild assets', 'worth more in dynasty than redraft — buy if you’re rebuilding, sell if you’re contending', later))
+        col('Win-now assets', 'worth more in redraft than dynasty: buy if you\'re contending, sell if you\'re rebuilding', now),
+        col('Rebuild assets', 'worth more in dynasty than redraft: buy if you\'re rebuilding, sell if you\'re contending', later))
         : h('div.empty', { style: { padding: '18px' } }, S.redraftPricesMissing
           ? 'The value feed carried no redraft prices, so there is nothing to compare dynasty against.'
-          : 'No player’s redraft and dynasty prices disagree enough to call.'),
-      h('div.tiny.muted', 'Compared by rank among the players the market prices, so it works whatever the two values’ scales. A player has to rank at least 40% and six places better in one than the other. Follows the Rostered filter above.')));
+          : 'No player\'s redraft and dynasty prices disagree enough to call.'),
+      h('div.tiny.muted', 'Compared by rank among the players the market prices, so it works whatever the two values\' scales. A player has to rank at least 40% and six places better in one than the other. Follows the Rostered filter above.')));
 }
 /* a strength meter: one to three dots */
 function pipsOf(s) {

@@ -17,7 +17,7 @@ function simReplayView(sim) {
           h('div.hero', { style: { overflowWrap: 'anywhere' } }, ch ? ch.team.name : '—'),
           ch ? h('div.sec', { style: { marginTop: '3px', lineHeight: 1.45 } },
             `${ch.w}-${ch.l}${ch.tie ? '-' + ch.tie : ''} · ${ord(ch.seed)} seed · ${fmt(ch.pf, 1)} points for`
-            + (sim.runnerUp ? ` — beat ${sim.runnerUp.team.name} in the final` : '')) : null)),
+            + (sim.runnerUp ? `, beat ${sim.runnerUp.team.name} in the final` : '')) : null)),
       h('button.btn.pri.champ-again', { onclick: () => { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; render(); window.scrollTo(0, 0); } }, '⟳ Run it again'))));
 
   wrap.appendChild(card('Playoff bracket', `weeks ${S.regEnd + 1}–${S.regEnd + sim.bracket.length} · top ${sim.playoffTeams} teams`, bracketView(sim)));
@@ -26,18 +26,18 @@ function simReplayView(sim) {
   const story = (label, headline, detail) => h('div.kpi', h('div.lbl', label), h('div', { style: { fontWeight: 660, fontSize: '14.5px', marginTop: '1px' } }, headline), h('div.sub', detail));
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(215px,100%),1fr))' } },
     A.highScore ? story('Highest score of the year', nameOf(A.highScore.rid),
-      `${fmt(A.highScore.pts, 1)} in week ${A.highScore.week}` + (A.highScore.top ? ` — ${A.highScore.top.name} put up ${fmt(A.highScore.top.pts, 1)}` : '')) : null,
+      `${fmt(A.highScore.pts, 1)} in week ${A.highScore.week}` + (A.highScore.top ? ` · ${A.highScore.top.name} put up ${fmt(A.highScore.top.pts, 1)}` : '')) : null,
     A.blowout ? story('Biggest beatdown', `${nameOf(A.blowout.win)} over ${nameOf(A.blowout.win === A.blowout.a ? A.blowout.b : A.blowout.a)}`,
       `${fmt(Math.max(A.blowout.aPts, A.blowout.bPts), 1)}–${fmt(Math.min(A.blowout.aPts, A.blowout.bPts), 1)} in week ${A.blowout.week}, a ${fmt(A.blowout.margin, 1)}-point margin`) : null,
     A.nailBiter ? story('Closest game', `${nameOf(A.nailBiter.win)} by ${fmt(A.nailBiter.margin, 2)}`,
-      `week ${A.nailBiter.week} — ${fmt(A.nailBiter.aPts, 1)} to ${fmt(A.nailBiter.bPts, 1)}`) : null,
+      `week ${A.nailBiter.week}, ${fmt(A.nailBiter.aPts, 1)} to ${fmt(A.nailBiter.bPts, 1)}`) : null,
     A.mostPF ? story('Most points scored', A.mostPF.team.name, `${fmt(A.mostPF.pf, 1)} for the season, ${fmt(A.mostPF.pf / S.regEnd, 1)} per week`) : null,
     A.longestStreak && A.longestStreak.streak > 1 ? story('Longest win streak', A.longestStreak.team.name, A.longestStreak.streak + ' straight wins') : null,
     A.unluckiest ? story('Best team to be let down', A.unluckiest.team.name, `${ord(A.unluckiest.pfRank)} in scoring but finished ${ord(A.unluckiest.seed)}`) : null
   ));
 
   // ---- final table ----
-  wrap.appendChild(card('Final standings', 'division winners take the top seeds' + (sim.nDiv > 1 ? '' : ' — this league has no divisions'),
+  wrap.appendChild(card('Final standings', 'division winners take the top seeds' + (sim.nDiv > 1 ? '' : ' (this league has no divisions)'),
     table([
       { k: 'seed', h: 'Seed', num: true, f: r => h('b.mono', r.seed) },
       {
@@ -82,7 +82,7 @@ function simReplayView(sim) {
           (g.bTop ? `<br>${shortOf(g.b)} best: ${g.bTop.name} ${fmt(g.bTop.pts, 1)}` : ''));
         return el;
       }))));
-  wrap.appendChild(card('Week by week', SimUI.openWeek ? 'showing week ' + SimUI.openWeek + ' — click it again for the full season' : 'every matchup; ✓ marks weeks that actually happened',
+  wrap.appendChild(card('Week by week', SimUI.openWeek ? 'showing week ' + SimUI.openWeek + '. Click it again for the full season' : 'every matchup; ✓ marks weeks that happened',
     h('div', weekBtns, h('div', { style: { marginTop: '12px' } }, weekBlocks))));
   return wrap;
 }

@@ -20,7 +20,7 @@ function matchupSide(l, T, colour) {
     T.avatar
       ? h('img.mlogo', { src: T.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' })
       : h('div.mlogo'),
-    h('div.nm', { title: T.name + ' — ' + T.owner }, matchupName(T)),
+    h('div.nm', { title: T.name + ' · ' + T.owner }, matchupName(T)),
     h('div.sc', { style: { color: colour } }, fmt(l.total, 1)),
     h('div.dt', l.banked > 0.05 ? h('span', h('b.sec', fmt(l.banked, 1)), ' scored') : h('span', 'nothing yet'),
       l.projected > 0.05 ? h('div', '+ ' + fmt(l.projected, 1) + ' proj') : null),
@@ -47,7 +47,7 @@ function viewWeek() {
     ensureWeekScores(wk).then(got => { if (got) render(); });
   }
 
-  wrap.appendChild(card('Week ' + wk + (live ? ' — in progress' : done ? ' — final' : ' — not started'),
+  wrap.appendChild(card('Week ' + wk + (live ? ' (in progress)' : done ? ' (final)' : ' (not started)'),
     S.nflSched
       ? 'points from finished games are counted as scored; everyone whose game has not ended is counted at their projection'
       : 'the NFL game schedule could not be loaded, so every played week is treated as final',
@@ -59,7 +59,7 @@ function viewWeek() {
       live ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, '● live') : null,
       h('button.btn.sm', {
         onclick: async (e) => {
-          const b = e.target; b.disabled = true; b.textContent = 'Checking…';
+          const b = e.target; b.disabled = true; b.textContent = 'Checking...';
           await refreshLiveWeek();
           render();
         }
@@ -84,7 +84,7 @@ function viewWeek() {
     const pair = games.find(x => (x.A.rosterId === g.a.team.rosterId && x.B.rosterId === g.b.team.rosterId)
       || (x.A.rosterId === g.b.team.rosterId && x.B.rosterId === g.a.team.rosterId));
     wrap.appendChild(card('The biggest game this week',
-      'measured by how far the season moves depending on who wins — the same yardstick the Simulator uses',
+      'measured by how far the season moves depending on who wins, the same yardstick the Simulator uses',
       h('div', { style: { display: 'grid', gap: '11px' } },
         h('div.row', { style: { gap: '10px' } },
           h('b', { style: { fontSize: '16px' } }, g.a.team.name + '  v  ' + g.b.team.name),
@@ -151,7 +151,7 @@ function viewWeek() {
     return { t, l, opp, p };
   });
   wrap.appendChild(card('Everyone this week',
-    'scored the same way — banked where the games are over, projected where they are not',
+    'scored the same way: banked where the games are over, projected where they are not',
     table([
       { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
       { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.opp ? h('span.tiny', r.opp.short) : h('span.muted.tiny', 'bye') },
@@ -169,7 +169,7 @@ function viewWeek() {
 function levUnmeasured(name, runs, total) {
   return h('div.tiny.muted', { style: { padding: '2px 0 1px' } },
     runs > 0
-      ? `Only ${runs} of ${total.toLocaleString()} simulated seasons went this way — too few to read odds from.`
+      ? `Only ${runs} of ${total.toLocaleString()} simulated seasons went this way, too few to read odds from.`
       : `Not one of the ${total.toLocaleString()} simulated seasons had ${name} winning this.`,
     h('div', { style: { marginTop: '4px' } }, 'Nothing to compare the other side against, so the game carries no measurable swing.'));
 }
@@ -227,7 +227,7 @@ function weekDetail(wrap, g, wk, live) {
   if (chart) wrap.appendChild(chart);
 
   wrap.appendChild(card('Every starter, slot by slot',
-    'each number is what counts toward the total — the real score once a game is over, the projection until then, and both while it is being played',
+    'each number is what counts toward the total: the real score once a game is over, the projection until then, and both while it is being played',
     matchupLadder(g, wk)));
 }
 
@@ -320,8 +320,8 @@ function matchupProbChart(wk, g) {
         'One column per kickoff window' + (slates.length ? ' (' + slates.map(sl => sl.label + ' ×' + Math.round(sl.n)).join(', ') + ')' : '')
         + ', the whole week whether it has been played yet or not. Each point is the week paused at that whistle: everyone whose game had ended '
         + 'counted at what they really scored, everyone still to play counted at their projection'
-        + (weekFinished(wk) ? ' — the whole week is in the books'
-          : windows ? ' — ' + windows + (windows === 1 ? ' window of the week has' : ' windows of the week have') + ' finished so far' : '')
+        + (weekFinished(wk) ? ', the whole week is in the books'
+          : windows ? ', ' + windows + (windows === 1 ? ' window of the week has' : ' windows of the week have') + ' finished so far' : '')
         + '. Nothing upstream keeps a record of what happened inside a game, so the line only moves when games end.')));
 }
 
@@ -350,7 +350,7 @@ function matchupLadder(g, wk) {
             (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1) + ' vs proj')
           : h('span', (lv.quarter ? String(lv.quarter) + ' · ' : '') + 'live');
     const tip = lv.state === 'bye' ? `<div class="k">${esc(p.name)}</div>On bye this week`
-      : lv.state === 'upcoming' ? `<div class="k">${esc(p.name)}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
+      : lv.state === 'upcoming' ? `<div class="k">${esc(p.name)}</div>Has not played yet, counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
         : ps && ps.final ? `<div class="k">${esc(p.name)} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
           : `<div class="k">${esc(p.name)} · playing${lv.quarter ? ', ' + lv.quarter : ''}</div><b>${fmt(lv.banked, 1)}</b> so far, plus <b>${fmt(lv.open, 1)}</b> expected from the rest of the game`;
     return bindTT(h('div.lcell', { tabindex: 0 },

@@ -213,8 +213,8 @@ function viewH2H() {
             ? 'Week ' + meet[0] + ' is the only week these two play each other.'
             : 'Weeks ' + meet.slice(0, -1).join(', ') + ' and ' + meet[meet.length - 1] + ' are the only weeks these two play each other.')
         : h('span.tiny.muted', { style: { maxWidth: '440px', color: 'var(--text-secondary)' } },
-          A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup — pick any week and both lineups are set for it.'))
-      : h('span.tiny.muted', { style: { maxWidth: '520px' } }, 'Both rosters at full strength — everyone healthy, nobody on bye. Switch to Week matchup for one specific game.')));
+          A.short + ' and ' + B.short + ' never meet this season, so this is a neutral matchup. Pick any week and both lineups are set for it.'))
+      : h('span.tiny.muted', { style: { maxWidth: '520px' } }, 'Both rosters at full strength: everyone healthy, nobody on bye. Switch to Week matchup for one specific game.')));
   if (A.rosterId === B.rosterId) return wrap.appendChild(card(null, null, h('div.empty', 'Pick two different teams.'))), wrap;
 
   if (mode === 'week') h2hWeek(wrap, A, B, CA, CB, wk);
@@ -232,12 +232,12 @@ function h2hOverall(wrap, A, B, CA, CB) {
   const metrics = [
     { k: 'Best lineup', a: HA.total, b: HB.total, f: v => fmt(v, 1), tip: 'Points per game from the strongest lineup each roster could field, everyone healthy' },
     dyn ? { k: 'Future lineup', a: A.future, b: B.future, f: v => fmt(v, 1), tip: 'Age-adjusted projection two to three seasons out' } : null,
-    { k: capitalLabel(), a: A.totalValue, b: B.totalValue, f: k1, tip: dyn ? 'Players plus draft picks at today’s market' : 'Every rostered player at today’s redraft market' },
+    { k: capitalLabel(), a: A.totalValue, b: B.totalValue, f: k1, tip: dyn ? 'Players plus draft picks at today\'s market' : 'Every rostered player at today\'s redraft market' },
     dyn ? { k: 'Roster value', a: A.rosterValue, b: B.rosterValue, f: k1 } : null,
     dyn ? { k: 'Pick capital', a: A.pickCapital, b: B.pickCapital, f: k1 } : null,
     { k: 'Points for', a: A.fpts, b: B.fpts, f: v => fmt(v, 1) },
-    { k: 'Points against', a: A.fptsAgainst, b: B.fptsAgainst, f: v => fmt(v, 1), invert: true, tip: 'What their opponents have scored on them — lower is a kinder draw' },
-    dyn ? { k: 'Average age', a: A.age || 0, b: B.age || 0, f: v => fmt(v, 1), invert: true, tip: 'Value-weighted — younger is usually the more valuable asset base' } : null
+    { k: 'Points against', a: A.fptsAgainst, b: B.fptsAgainst, f: v => fmt(v, 1), invert: true, tip: 'What their opponents have scored on them. Lower is a kinder draw' },
+    dyn ? { k: 'Average age', a: A.age || 0, b: B.age || 0, f: v => fmt(v, 1), invert: true, tip: 'Value-weighted. Younger is usually the more valuable asset base' } : null
   ].filter(Boolean);
   const leads = (m) => m.a === m.b ? 0 : (m.invert ? m.a < m.b : m.a > m.b) ? 1 : -1;
   const aWins = metrics.filter(m => leads(m) > 0).length, bWins = metrics.filter(m => leads(m) < 0).length;
@@ -280,7 +280,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
   wrap.appendChild(h('div.grid.split',
     card('Shape against the league', 'each spoke is where the team ranks among all ' + N + ' · the outer ring is the best in the league',
       h('div', h2hRadar(axes, A, B), legend)),
-    card('Category by category', A.short + ' leads ' + aWins + ' · ' + B.short + ' leads ' + bWins + ' · bars show each side’s size, the label shows the gap',
+    card('Category by category', A.short + ' leads ' + aWins + ' · ' + B.short + ' leads ' + bWins + ' · bars show each side\'s size, the label shows the gap',
       h2hTape(metrics, A, B))));
 
   /* ---- the best lineups, slot by slot ---- */
@@ -289,16 +289,16 @@ function h2hOverall(wrap, A, B, CA, CB) {
     return { slot: sa.slot, a: sa.player, b: sb.player, va: sa.player ? healthyPpg(sa.player) : 0, vb: sb.player ? healthyPpg(sb.player) : 0 };
   });
   const lw = rows.filter(r => r.va > r.vb).length;
-  wrap.appendChild(card('Best lineup — everyone healthy',
+  wrap.appendChild(card('Best lineup, everyone healthy',
     `${A.short} wins ${lw} of ${rows.length} slots · ${fmt(HA.total, 1)} to ${fmt(HB.total, 1)} points per game · injured players count at full strength, byes are ignored, taxi squads cannot start`,
     slotLadder(rows, A, B, CA, CB, { head: 'Pts/g' })));
 
   /* ---- position ratings ---- */
   const posLbl = (p) => h('span.row', { style: { gap: '6px', justifyContent: 'center' } }, posPill(p));
   wrap.appendChild(h('div.grid.split',
-    card('Position ratings — output', 'points per game from each position’s starters in the best lineup',
+    card('Position ratings: output', 'points per game from each position\'s starters in the best lineup',
       h2hTape(POS4.map(p => ({ k: p, node: posLbl(p), a: HA.pos[p], b: HB.pos[p], f: v => fmt(v, 1) })), A, B)),
-    card('Position ratings — ' + valueWord() + ' value', 'market value of everyone rostered at each position',
+    card('Position ratings: ' + valueWord() + ' value', 'market value of everyone rostered at each position',
       h2hTape(POS4.map(p => ({ k: p, node: posLbl(p), a: A.posValue[p] || 0, b: B.posValue[p] || 0, f: k1 })), A, B))));
 
   /* ---- age, and the season outlook ---- */
@@ -307,7 +307,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
     const ageRows = [{ k: 'Starting lineup', a: HA.startAge, b: HB.startAge, tip: 'Average age of the best lineup' }]
       .concat(POS4.map(p => ({ k: p, node: posLbl(p), a: HA.posAge[p], b: HB.posAge[p], tip: 'Value-weighted age of everyone at the position' })))
       .filter(r => r.a && r.b).map(r => Object.assign(r, { invert: true, f: v => fmt(v, 1), fd: v => fmt(v, 1) + ' yrs' }));
-    cards.push(card('Age profile', 'younger is ahead — a younger core holds its value for longer', ageRows.length ? h2hTape(ageRows, A, B) : h('div.empty', 'No age data for these rosters.')));
+    cards.push(card('Age profile', 'younger is ahead: a younger core holds its value for longer', ageRows.length ? h2hTape(ageRows, A, B) : h('div.empty', 'No age data for these rosters.')));
   }
   if (S.sim && S.sim.by[A.rosterId] && S.sim.by[B.rosterId]) {
     const sa = S.sim.by[A.rosterId], sb = S.sim.by[B.rosterId];
@@ -331,7 +331,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
   if (hist.length) {
     let aw = 0, bw = 0;
     hist.forEach(g => { if (g.a > g.b) aw++; else if (g.b > g.a) bw++; });
-    wrap.appendChild(card('When they have actually met', `${aw}–${bw} to ${aw >= bw ? A.name : B.name} this season`,
+    wrap.appendChild(card('When they have met', `${aw}–${bw} to ${aw >= bw ? A.name : B.name} this season`,
       table([
         { k: 'week', h: 'Week', num: true, f: g => h('b.mono', g.week) },
         { k: 'a', h: A.short, num: true, f: g => h('span.mono', { class: g.a > g.b ? 'up' : '' }, fmt(g.a, 1)) },
@@ -360,7 +360,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
               S.view = 'finder'; render(); window.scrollTo(0, 0);
             }
           }, 'Find a deal'))))
-      : h('div.empty', 'Neither team is deep where the other is thin — a trade here would have to be about value, not need.')));
+      : h('div.empty', 'Neither team is deep where the other is thin, so a trade here would come down to value.')));
 }
 
 /* ================= one specific week ================= */
@@ -403,7 +403,7 @@ function h2hWeek(wrap, A, B, CA, CB, wk) {
   });
   r.margins.forEach(m => { const i = clamp(Math.floor((m - lo) / bw), 0, NB - 1); bins[i].v++; });
   bins.forEach(b => b.v /= r.n);
-  wrap.appendChild(card('Margin, week ' + wk, A.name + ' to the right, ' + B.name + ' to the left — '
+  wrap.appendChild(card('Margin, week ' + wk, A.name + ' to the right, ' + B.name + ' to the left. '
     + (isLive ? 'points already scored are banked; only the open slots are drawn' : 'both lineups set optimally for this week'),
     h('div', histogram(bins, { h: 190, w: chartW(1040, 360), stretch: true, rule: 0, aria: 'margin distribution' }),
       h('div.tiny.muted', { style: { marginTop: '8px' } },
@@ -423,7 +423,7 @@ function h2hWeek(wrap, A, B, CA, CB, wk) {
     return { slot: sa.slot, a: sa.player, b: sb.player, va, vb, d: va - vb };
   });
   const aWon = slotRows.filter(x => x.d > 0).length;
-  wrap.appendChild(card('Slot by slot — week ' + wk,
+  wrap.appendChild(card('Slot by slot, week ' + wk,
     `${A.short} wins ${aWon} of ${slotRows.length} slots ${isLive ? 'so far' : 'on projection'} · totals ${fmt(sum(slotRows.map(x => x.va)), 1)} to ${fmt(sum(slotRows.map(x => x.vb)), 1)}`
     + (isLive ? ' · points already scored are shown as scored' : ''),
     slotLadder(slotRows, A, B, CA, CB, { wk, live: isLive })));
@@ -443,7 +443,7 @@ function h2hWeek(wrap, A, B, CA, CB, wk) {
         h('span', { style: { flex: 1 } }),
         h('span.tiny.muted.mono', { title: 'typical points per game' }, fmt(p.ppg || 0, 1) + ' ppg'))))
       : h('div.tiny.muted', 'Nobody on ' + T.short + ' is on a bye.'));
-  wrap.appendChild(card('Players on bye — week ' + wk,
+  wrap.appendChild(card('Players on bye, week ' + wk,
     byeA.length + byeB.length
       ? `${A.short} has ${byeA.length}, ${B.short} has ${byeB.length} · active roster only, best player first`
       : 'neither active roster has anyone on a bye this week',
@@ -506,7 +506,7 @@ function simDraftCard(res) {
     return h('div.row', { style: { gap: '4px' } }, away.map(x =>
       bindTT(h('span.tag.traded', (ROUND_WORD[x.rd] || x.rd + 'th') + ' → ' + x.holder.short),
         `<div class="k">${season} ${ROUND_WORD[x.rd] || x.rd + 'th'} round</div>`
-        + `Originally <b>${esc(r.t.name)}</b>’s<br>Now held by <b>${esc(x.holder.name)}</b>`)));
+        + `Originally <b>${esc(r.t.name)}</b>'s<br>Now held by <b>${esc(x.holder.name)}</b>`)));
   };
 
   const anyTraded = isDynasty() && season !== null && S.teams.some(t =>
@@ -535,19 +535,19 @@ function simDraftCard(res) {
     isDynasty() ? { k: 'held', h: season !== null ? season + ' picks' : 'Picks', sortable: false, f: heldCell } : null
   ], rows, { sortKey: 'slot', sortDir: 1 });
 
-  return card('Next year’s draft order' + (season !== null ? ' — ' + season : ''),
+  return card('Next year\'s draft order' + (season !== null ? ', ' + season : ''),
     'from the same ' + kfmt(res.n) + ' seasons: everyone who misses the playoffs picks first, fewest points first, then the playoff teams in the order they went out',
     h('div', { style: { display: 'grid', gap: '11px' } },
       tbl,
       h('div.tiny.muted',
         anyTraded
           ? h('span', h('b', 'Some of these picks have already moved.'), ' A tag like ', h('span.tag.traded', '1st → ABC'),
-            ' means that team’s own first-rounder belongs to somebody else now — the slot on the left is where the pick lands, not who gets to use it.')
+            ' means that team\'s own first-rounder belongs to somebody else now. The slot on the left is where the pick lands, not who gets to use it.')
           : (isDynasty()
             ? 'Every team still holds its own picks in this draft, so the slot and the owner are the same thing.'
             : 'A redraft league does not carry picks between seasons, so this is the order the next draft would run in, not a set of assets anyone holds.')),
       h('div.tiny.muted',
-        'Ties are broken on points, the way the standings break them. Leagues that use a lottery, or order the back half by regular-season finish rather than playoff exit, will differ — this is the common default, not a reading of your league’s bylaws.')));
+        'Ties are broken on points, the way the standings break them. Leagues that use a lottery, or order the back half by regular-season finish rather than playoff exit, will differ. This is the common default, not a reading of your league\'s bylaws.')));
 }
 
 

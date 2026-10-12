@@ -307,11 +307,12 @@ const WSTATS = { pts: {}, state: {}, inflight: {}, err: {} };           // week 
 async function loadWeekStats(week) {
   if (WSTATS.state[week]) return WSTATS.state[week] === 'ok';
   if (WSTATS.inflight[week]) return WSTATS.inflight[week];
-  const season = S.season, key = 'wstats2:' + S.leagueId + ':' + season + ':' + week;
+  const season = S.season, key = 'wstats2:' + S.leagueId + ':' + season + ':' + week, lid = S.leagueId;
   WSTATS.inflight[week] = (async () => {
     try {
       // a finished week's stats do not change, so a saved copy is good for days
       const rec = await idbGet(key);
+      if (S.leagueId !== lid) return false;
       if (rec && rec.d && Date.now() - rec.t < 3 * 86400 * 1000) { WSTATS.pts[week] = rec.d; WSTATS.state[week] = 'ok'; return true; }
       // Sleeper has served these under more than one address and in more than one shape, so try each in turn
       // and say which one answered (or why none did) rather than reporting a bare failure.
@@ -343,6 +344,7 @@ async function loadWeekStats(week) {
         out[id] = scoreLine(st);
       }
       if (!Object.keys(out).length) throw new Error('stats came back with no scored lines');
+      if (S.leagueId !== lid) return false;
       WSTATS.pts[week] = out; WSTATS.state[week] = 'ok';
       idbSet(key, { t: Date.now(), d: out });
       return true;
@@ -514,9 +516,9 @@ function injuryProfile(p, espn) {
   const body = (m.ib || (espn && espn.body) || '') || null;
   const note = [m.in, espn && espn.long, espn && espn.short].filter(Boolean).join(' ');
   const base = { tag, body, note: m.in || (espn && (espn.short || espn.long)) || null, cw };
-  if (tag === 'Questionable') return Object.assign(base, { kind: 'day', pNow: 0.85, pNext: 1, src: 'tag', label: null, text: 'Questionable — listed week to week' });
-  if (tag === 'Doubtful') return Object.assign(base, { kind: 'day', pNow: 0.2, pNext: 0.85, src: 'tag', label: null, text: 'Doubtful — unlikely to play this week' });
-  if (tag === 'COV') return Object.assign(base, { kind: 'long', R: cw + 1, s: 0.7, src: 'model', text: 'Health and safety protocols — typically a week' });
+  if (tag === 'Questionable') return Object.assign(base, { kind: 'day', pNow: 0.85, pNext: 1, src: 'tag', label: null, text: 'Questionable: listed week to week' });
+  if (tag === 'Doubtful') return Object.assign(base, { kind: 'day', pNow: 0.2, pNext: 0.85, src: 'tag', label: null, text: 'Doubtful: unlikely to play this week' });
+  if (tag === 'COV') return Object.assign(base, { kind: 'long', R: cw + 1, s: 0.7, src: 'model', text: 'Health and safety protocols: typically a week' });
 
   const startMs = m.is ? Date.parse(m.is + 'T12:00:00') : (espn && espn.date ? Date.parse(espn.date) : NaN);
   const elapsedWk = isFinite(startMs) ? Math.max(0, (Date.now() - startMs) / WEEK_MS) : null;
@@ -528,7 +530,7 @@ function injuryProfile(p, espn) {
     if (w !== null) {
       retDate = String(espn.ret).slice(0, 10);
       R = w; s = 0.8; src = 'espn';
-      if (R <= cw) { R = cw + 1; s = 1.3; why = 'ESPN’s return date has already passed'; }
+      if (R <= cw) { R = cw + 1; s = 1.3; why = 'ESPN\'s return date has already passed'; }
     }
   }
   // 2. the wording of the notes
@@ -566,7 +568,7 @@ function injuryProfile(p, espn) {
   if (!season && R > 40) { season = true; }
   const seasonEnd = season || R > S.regEnd + 4;
   const wkLabel = seasonEnd ? 'Season' : 'Wk ' + R;
-  const srcText = src === 'espn' ? 'ESPN’s estimated return' : src === 'note' ? 'From the injury report wording' : 'Typical for ' + (body ? 'a ' + String(body).toLowerCase() + ' injury' : 'this designation');
+  const srcText = src === 'espn' ? 'ESPN\'s estimated return' : src === 'note' ? 'From the injury report wording' : 'Typical for ' + (body ? 'a ' + String(body).toLowerCase() + ' injury' : 'this designation');
   return Object.assign(base, {
     kind: 'long', R: seasonEnd ? 99 : R, s, src, season: seasonEnd, retDate, label: wkLabel,
     short: seasonEnd ? 'S' : String(R), text: srcText + (why ? ' (' + why + ')' : '')

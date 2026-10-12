@@ -75,7 +75,7 @@ const SHARE = {
         const wk = WeekUI.week; if (!wk) return null;
         const g = liveMatchups(wk).filter(m => !WeekUI.open || m.A.rosterId === WeekUI.open || m.B.rosterId === WeekUI.open);
         if (!g.length) return null;
-        return [(S.league ? S.league.name + ' — ' : '') + 'Week ' + wk + ' matchups'].concat(g.map(m =>
+        return [(S.league ? S.league.name + ': ' : '') + 'Week ' + wk + ' matchups'].concat(g.map(m =>
           `${m.A.name} ${fmt(m.a.banked + m.a.open.reduce((s, r) => s + r.used, 0), 1)} (${pct(m.pA, 0)}) vs ${m.B.name} ${fmt(m.b.banked + m.b.open.reduce((s, r) => s + r.used, 0), 1)} (${pct(m.pB, 0)})`)).join('\n');
       }
     },
@@ -92,7 +92,7 @@ const SHARE = {
       text: () => {
         const r = SimUI.res; if (!r || SimUI.mode !== 'season') return null;
         const rows = S.teams.map(t => ({ t, x: r.by[t.rosterId] })).filter(o => o.x).sort((a, b) => b.x.title - a.x.title || b.x.playoff - a.x.playoff);
-        return [(S.league ? S.league.name + ' — ' : '') + 'Season simulation (' + kfmt(r.n) + ' runs)', 'Team · playoffs · title']
+        return [(S.league ? S.league.name + ': ' : '') + 'Season simulation (' + kfmt(r.n) + ' runs)', 'Team · playoffs · title']
           .concat(rows.map(o => `${o.t.name} · ${pct(o.x.playoff, 0)} · ${pct(o.x.title, 0)}`)).join('\n');
       }
     }
@@ -142,7 +142,7 @@ async function shareCopy(text, what) {
     const ta = h('textarea', { style: { position: 'fixed', opacity: 0 } }); ta.value = text;
     document.body.appendChild(ta); ta.select();
     let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { }
-    ta.remove(); if (!ok) { shareToast('Copy failed — select the link and copy it by hand'); return; }
+    ta.remove(); if (!ok) { shareToast('Copy failed. Select the link and copy it by hand'); return; }
   }
   track('share-' + String(what).toLowerCase() + '-copied', what + ' copied', true);
   shareToast(what + ' copied');
@@ -160,7 +160,7 @@ function shareMenu() {
   const label = spec ? spec.label : (VIEWS.find(v => v.k === S.view) || { label: 'page' }).label.toLowerCase();
   const url = shareUrl();
   let summary = null; try { summary = spec && spec.text ? spec.text() : null; } catch (e) { }
-  const note = HYP.on ? 'Hypothetical roster moves are not included — the link opens the real league.'
+  const note = HYP.on ? 'Hypothetical roster moves are not included. The link opens the real league.'
     : S.view === 'trade' && !(TradeUI.aOut.length || TradeUI.bOut.length) ? 'Add players or picks to a side first and the link will carry the trade.'
     : S.view === 'sim' && !SimUI.res ? 'Run the simulation first and the link will open with it already run.'
     : 'Opens this ' + label + ' on live data, so numbers may shift slightly.';
@@ -171,7 +171,7 @@ function shareMenu() {
     h('button.btn.pri', { onclick: () => shareCopy(url, 'Link') }, ico('check'), 'Copy link'),
     navigator.share ? h('button.btn', {
       onclick: () => { navigator.share({ title: document.title, text: summary || undefined, url }).catch(() => { }); }
-    }, ico('swap'), 'Share…') : null,
+    }, ico('swap'), 'Share...') : null,
     summary ? h('button.btn', { onclick: () => shareCopy(summary + '\n' + url, 'Summary') }, ico('plus'), 'Copy summary as text') : null);
   return h('div.menuwrap.sharewrap',
     h('button.btn' + (shareOpen ? '.pri' : ''), {

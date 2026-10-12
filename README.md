@@ -1,14 +1,14 @@
-# Dynasty Labs
+# Fantasy Lab
 
 Live analysis for Sleeper dynasty leagues, served as a static site at
-**[fantasy.johnsencorey.com](https://fantasy.johnsencorey.com)**.
+**[fantasylab.tools](https://fantasylab.tools)**.
 
 Rosters and values, a trade calculator, power rankings, active standings, a trade
 finder, a season simulator with a playable single-season replay, the draft board,
 stock-mode value charts, per-player pages, and a hypothetical roster sandbox that
 recomputes every page as if your moves had happened.
 
-It works for **any** Sleeper league — enter a username or a league ID on the first
+It works for **any** Sleeper league. Enter a username or a league ID on the first
 screen.
 
 ---
@@ -21,8 +21,8 @@ scripts from `js/` (see **Files**); the other files are icons and site metadata.
 
 | Source | What it provides |
 |---|---|
-| `api.sleeper.app/v1/…` | league settings, managers, rosters, weekly matchups, drafts, traded picks, transactions |
-| `api.sleeper.app/projections/…` | Rotowire weekly projections, with opponent, byes omitted |
+| `api.sleeper.app/v1/...` | league settings, managers, rosters, weekly matchups, drafts, traded picks, transactions |
+| `api.sleeper.app/projections/...` | Rotowire weekly projections, with opponent, byes omitted |
 | `api.fantasycalc.com/values/current` | dynasty and redraft trade values, 30-day trends, draft-pick values |
 
 All three send permissive CORS headers, which is why a plain static host works.
@@ -30,7 +30,7 @@ League format (superflex vs 1QB, team count, PPR) is detected from the league
 itself, and weekly projections are re-scored through that league's own
 `scoring_settings` rather than Sleeper's generic presets.
 
-Responses are cached in the visitor's own browser — the player database for 12
+Responses are cached in the visitor's own browser: the player database for 12
 hours (IndexedDB), weekly projections for 6 hours (IndexedDB), trade values for 4
 hours (localStorage). Stock mode also records one value snapshot per visit, so the
 value charts accumulate real observed history over time.
@@ -39,7 +39,7 @@ value charts accumulate real observed history over time.
 API is public and read-only; the app only ever reads. The one thing that leaves the page is an
 anonymous visit count to [GoatCounter](https://www.goatcounter.com) (no cookies, no personal
 data): `track()` in `js/core.js` sends the name of the page being viewed and a few events (league
-loaded, trade evaluated, simulation run, hypothetical change, share link copied or opened) —
+loaded, trade evaluated, simulation run, hypothetical change, share link copied or opened),
 never a league ID, a team, a player, or the URL hash. To turn it off, delete the `<script>` tag
 with `data-goatcounter` in `index.html`; `track()` then does nothing.
 
@@ -56,26 +56,35 @@ the request.
 
 ## Deploying
 
-Already configured for GitHub Pages on a custom subdomain. From scratch:
+Already configured for GitHub Pages on a custom domain. From scratch:
 
-1. Push this repo to GitHub (public — Pages on a private repo needs a paid plan).
+1. Push this repo to GitHub (public, since Pages on a private repo needs a paid plan).
 2. **Settings → Pages → Source:** *Deploy from a branch*, `main`, `/ (root)`.
-3. **Settings → Pages → Custom domain:** `fantasy.johnsencorey.com`
-   (the `CNAME` file in this repo already declares it).
-4. Add one DNS record where `johnsencorey.com` is managed:
+3. **Settings → Pages → Custom domain:** `fantasylab.tools`
+   (GitHub writes it to the `CNAME` file in this repo, which must hold exactly that, one line).
+4. Add these records where `fantasylab.tools` is managed:
 
-   | Type | Name | Value | TTL |
-   |---|---|---|---|
-   | CNAME | `fantasy` | `coreyjohnsen.github.io.` | 300 |
+   | Type | Name | Value |
+   |---|---|---|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `coreyjohnsen.github.io` |
 
-5. Once the certificate provisions — usually minutes — tick **Enforce HTTPS**.
+5. When GitHub's DNS check passes and the certificate provisions (minutes, sometimes hours),
+   tick **Enforce HTTPS**.
 
-Two things that catch people out:
+Things that catch people out:
 
-- The DNS target is **`coreyjohnsen.github.io`**, the *user* Pages host, not the
-  repo name. GitHub routes to the right repo by matching the `CNAME` file.
-- A repo can only carry **one** custom domain, which is why this lives in its own
-  repo rather than a folder inside the personal site.
+- The `www` target is **`coreyjohnsen.github.io`**, the *user* Pages host, not the repo name.
+  GitHub routes to the right repo by matching the `CNAME` file.
+- A repo can only carry **one** custom domain (the bare domain and its `www` count as one).
+  To make other domains reach the site, forward them at the registrar.
+- If the registrar adds default records pointing at its own servers (Squarespace does, and offers to
+  "update" them), leave them out: they would replace the GitHub records above.
+- If the social-preview image or install icon ever changes, the cached copies on other sites can take
+  a while to refresh.
 
 ### Updating
 
@@ -92,7 +101,7 @@ so allow a few minutes before a hard refresh shows the change.
 | `css/` | `tokens` (colours, themes) → `layout` (shell, cards) → `components` (page-specific parts) → `simple` (Default view, menus, share) → `responsive` (narrow screens). |
 | `js/` | Classic scripts sharing one global scope, loaded in the order `index.html` lists them: `core` (dom helpers, storage, state) → `values`/`league`/`simulation` (data and models) → `ui`/`shell` (shared widgets, app frame) → one file per page → `share` → `boot`. No build step; order matters because later files use earlier ones. `sim-kernel.js` loads first: it is the random-number generator and the season loop, with no page state or DOM, so the same file also runs inside `sim-worker.js`, which plays simulations off the page's thread (opened from disk, where workers are blocked, the same kernel runs in short slices on the page instead). |
 | `CNAME` | Tells GitHub Pages which custom domain serves this repo. |
-| `.nojekyll` | Skips Jekyll processing — nothing here needs it, and it makes deploys quicker. |
+| `.nojekyll` | Skips Jekyll processing. Nothing here needs it, and it makes deploys quicker. |
 | `favicon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Tab icon and home-screen icons. |
 | `site.webmanifest` | Lets the site install to a phone home screen as a standalone app. |
 | `og-image.png` | Link preview when the URL is shared. |
@@ -123,7 +132,7 @@ then visit `http://localhost:8000`.
 
 One stylesheet at the top of `index.html`, built on tokens (`:root`): a cool neutral
 surface scale, an indigo→violet brand used only for chrome (navigation, primary
-actions, focus), and the `--s1…--s8` / `--seq-*` data palette that charts and position
+actions, focus), and the `--s1...--s8` / `--seq-*` data palette that charts and position
 pills read from, so a chart never changes meaning with the theme. Light, dark and
 *Auto* all resolve through the same tokens.
 
@@ -132,7 +141,7 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
 - Under 900px the sidebar becomes a bottom tab bar (Home · Week · Rosters · Players ·
   More), with every page one tap behind **More**.
 - **Accent colour** is one hue (`--hue`, set by `data-accent` on the root) from which every
-  brand token — buttons, links, focus, sidebar tint, home banner, landing page — is derived
+  brand token (buttons, links, focus, sidebar tint, home banner, landing page) is derived
   with `oklch()`. Seven themes ship (Indigo, Ocean, Lagoon, Emerald, Sunset, Rose,
   Graphite); the choice is stored in the visitor's browser. Adding one is a single CSS line
   plus an entry in `ACCENTS`.
@@ -160,13 +169,13 @@ and an assembly step that starts from each side's actual needs (the holes and
 surpluses from GM Scout) and builds 2-for-2 / 3-for-2 packages around them. Each
 candidate must clear four checks, then is ranked:
 
-- **Value balance** — within the chosen tolerance after a stud premium: a package's
+- **Value balance**: within the chosen tolerance after a stud premium: a package's
   best player counts in full, each further player for less (picks count in full).
-- **Roster fit** — a side that lands more players than it sends must cut down to its
+- **Roster fit**: a side that lands more players than it sends must cut down to its
   active limit. The cheapest bench players are cut, the cost is priced in, and the
   card says who goes. A trade with nobody left to cut is dropped.
 - **Both sides gain** on their own objective (contend / rebuild / balanced).
-- **Market angle** — trades that sell a flagged player or buy one rank higher.
+- **Market angle**: trades that sell a flagged player or buy one rank higher.
 
 **Buy low / sell high.** A player is flagged when his scoring and his price disagree
 by more than week-to-week noise allows (variance for his position, shrinking with
@@ -178,8 +187,8 @@ explained by the injury, and they cannot help this season. Each suggestion also 
 **On the Players page** the same flags appear as tags beside each name, with Market
 (Buy low / Sell high) and Timeline (Win now / Rebuild) filters, two sortable columns,
 and a *Win now vs rebuild* section. A player is **win now** when his redraft rank is
-at least 40% and six places better than his dynasty rank — worth more this season than
-over the long run — and **rebuild** when it is the other way round. Compared by rank so
+at least 40% and six places better than his dynasty rank (worth more this season than
+over the long run) and **rebuild** when it is the other way round. Compared by rank so
 the two prices' scales don't matter. Dynasty leagues only; a redraft league has no long
 run to compare against. The player page explains any flag in words.
 
@@ -228,11 +237,11 @@ are untouched. **Settings → Injury return dates** switches all of it off and s
 ## Sharing
 
 The **Share** button in the top bar copies a link to the page you are on. The
-link carries its own recipe in the URL hash — `#/trade?l=<leagueId>&a=…&ao=…` —
+link carries its own recipe in the URL hash (`#/trade?l=<leagueId>&a=...&ao=...`),
 so there is still no server: whoever opens it loads the league live and lands on
 the same page. Pages that carry state: trade calculator (both teams and every
 asset), head to head (teams, overall or week view, and the week), this week (week and open matchup),
-simulator (mode, week, run size, and whether it had been run — it re-runs on
+simulator (mode, week, run size, and whether it had been run, which re-runs on
 open), roster and player pages. The address bar is kept in sync, so copying it
 works too. Trade, matchup, week and simulator pages also offer **Copy summary**,
 a plain-text snapshot of the numbers on screen. Hypothetical sandbox moves are
@@ -255,6 +264,6 @@ the same players. Nothing is sent to Sleeper, and *Reset everything* restores th
 While any change is in effect a slim banner at the top of the other pages lists what it is, with
 *Manage* and *Reset*; pages that are pure results (This Week, Active Rankings, Draft Board, Trade
 History) say so instead. At the top of the Hypothetical page the headline numbers for any affected
-team — playoff and title odds, projected wins, lineup points, power rank, capital — show before and
+team (playoff and title odds, projected wins, lineup points, power rank, capital) show before and
 after, from the same simulated seasons run on the same random draws, plus who else in the league
 moved the most. The simulations run in the background, so the page never waits on them.

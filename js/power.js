@@ -12,8 +12,8 @@ function viewPower() {
       : [{ k: 'now', label: 'This season' }, { k: 'pos', label: 'By position' }],
       PowerUI.mode, m => { PowerUI.mode = m; render(); }),
     h('span.tiny.muted', S.gamesPlayed
-      ? `Week ${S.lastWeek} complete — rating is ${pct(S.blendW, 0)} results, ${pct(1 - S.blendW, 0)} projection`
-      : 'Preseason — rating is 100% projection')));
+      ? `Week ${S.lastWeek} complete: rating is ${pct(S.blendW, 0)} results, ${pct(1 - S.blendW, 0)} projection`
+      : 'Preseason: rating is 100% projection')));
 
   if (PowerUI.mode === 'pos') return wrap.appendChild(powerByPosition()), wrap;
   // The first look runs a few thousand simulated seasons. Show the page at once with a note, and run the
@@ -21,7 +21,7 @@ function viewPower() {
   if (!S.sim) {
     setTimeout(() => { if (!S.sim && !S._simRun) runSeasonSim(S.simN); }, 40);
     wrap.appendChild(card('Power rankings', 'blended rating, then simulated playoff and championship odds',
-      h('div.empty', { style: { padding: '34px 18px' } }, h('span.spin'), h('div', { style: { marginTop: '10px' } }, 'Simulating ' + kfmt(S.simN) + ' seasons…'))));
+      h('div.empty', { style: { padding: '34px 18px' } }, h('span.spin'), h('div', { style: { marginTop: '10px' } }, 'Simulating ' + kfmt(S.simN) + ' seasons...'))));
     return wrap;
   }
   const sim = S.sim;
@@ -43,7 +43,7 @@ function viewPower() {
     const top = rows.slice().sort((a, b) => b.s.title - a.s.title)[0];
     wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
       kpi('Title favorite', top.t.name, pct(top.s.title, 1) + ' championship odds',
-        '<div class="k">Highest championship odds</div>Not always the top power rating — power weights results already banked, while title odds come from simulating the games left.'),
+        '<div class="k">Highest championship odds</div>Not always the top power rating. Power weights results already banked, while title odds come from simulating the games left.'),
       kpi('Playoff spots', String(sim.playoffTeams), `of ${teams.length} teams`),
       kpi('Simulations', kfmt(sim.n), `weeks ${Math.min(S.lastWeek + 1, S.regEnd)}–${S.regEnd} + bracket`),
       kpi('Locks', String(rows.filter(r => r.s.playoff >= 0.9).length), 'teams above 90% playoff odds'),
@@ -107,7 +107,7 @@ function viewPower() {
         bindTT(h('div', h('b.mono', kfmt(Math.round(t.totalValue))), h('div.tiny.muted', isDynasty() ? 'capital' : 'value')),
           `<div class="k">${capitalLabel()}</div>` + (isDynasty()
             ? `Players <b>${kfmt(Math.round(t.rosterValue))}</b> plus picks <b>${kfmt(Math.round(t.pickCapital))}</b>`
-            : 'Every rostered player at today’s redraft market.'))),
+            : 'Every rostered player at today\'s redraft market.'))),
       h('div', { style: { textAlign: 'right' } },
         h('b.mono', { style: { fontSize: '16px' } }, r.s ? pct(r.s.playoff, 0) : fmt(r.rating, 1)),
         h('div.tiny.muted', r.s ? 'playoffs · ' + pct(r.s.title, 1) + ' title' : 'rating')));
@@ -138,11 +138,11 @@ function viewPower() {
     if (S.lastWeek >= 2) wrap.appendChild(weeklyTrajectory());
   } else {
     wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(320px,100%),1fr))' } },
-      proOnly(dynOnly(card('Contend vs. build', 'each team’s two-axis position', contendMatrix()))),
+      proOnly(dynOnly(card('Contend vs. build', 'each team\'s two-axis position', contendMatrix()))),
       card('Draft capital', 'total value of picks held', barList(
         S.teams.slice().sort((a, b) => b.pickCapital - a.pickCapital).map(t => ({
           label: t.name, v: t.pickCapital, vl: kfmt(Math.round(t.pickCapital)),
-          tip: `<div class="k">${esc(t.name)}</div>` + (t.pickAssets.length ? t.pickAssets.slice(0, 12).map(p => `${p.label} — <b>${kfmt(Math.round(p.value))}</b>`).join('<br>') : 'No future picks')
+          tip: `<div class="k">${esc(t.name)}</div>` + (t.pickAssets.length ? t.pickAssets.slice(0, 12).map(p => `${p.label}: <b>${kfmt(Math.round(p.value))}</b>`).join('<br>') : 'No future picks')
         })), { labelW: '150px', dec: 0 })))
     );
   }
@@ -164,7 +164,7 @@ function weeklyTrajectory() {
   ], rows, { sortKey: 'avg', sortDir: -1 });
   const wt = withTable(h('div', lineChart(series, { h: 240, yFmt: v => fmt(v, 0), xFmt: v => 'Wk ' + fmt(v, 0), xTicks: Math.min(S.lastWeek - 1, 8), aria: 'weekly scores' }),
     h('div.legend', { style: { marginTop: '8px' } }, shown.map((t, i) => h('span', h('i', { style: { background: colors[i] } }), t.name)))), tbl);
-  return card('Weekly scoring', 'top three and the cellar — every team is in the table view', wt.body, wt.btn);
+  return card('Weekly scoring', '(every team is in the table view)', wt.body, wt.btn);
 }
 function contendMatrix() {
   const teams = S.teams;
@@ -197,15 +197,15 @@ function contendMatrix() {
 function powerByPosition() {
   const teams = S.teams.slice().sort((a, b) => a.powerRank - b.powerRank);
   const wrap = h('div.grid');
-  wrap.appendChild(card('Positional strength — current starters', 'projected points per week from each position group',
+  wrap.appendChild(card('Positional strength: current starters', 'projected points per week from each position group',
     h('div', heat(teams, POS4, (t, p) => t.posNow[p], {
       rowLabel: t => t.name, fmt: v => fmt(v, 1),
-      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Starters produce <b>${fmt(v, 1)}</b> pts/wk — ${ord(t.posNow[p + 'Rank'])} of ${teams.length}`
+      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Starters produce <b>${fmt(v, 1)}</b> pts/wk, ${ord(t.posNow[p + 'Rank'])} of ${teams.length}`
     }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', 'Points per week')))));
   wrap.appendChild(card('Positional ' + valueWord() + ' value', 'total trade value at each position, all rostered players',
     h('div', heat(teams, POS4, (t, p) => t.posValue[p], {
       rowLabel: t => t.name, fmt: v => kfmt(Math.round(v)),
-      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Value <b>${kfmt(Math.round(v))}</b> — ${ord(t.posValue[p + 'Rank'])} of ${teams.length}`
+      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Value <b>${kfmt(Math.round(v))}</b>, ${ord(t.posValue[p + 'Rank'])} of ${teams.length}`
     }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', isDynasty() ? 'Dynasty value' : 'Redraft value')))));
   const cols = [{ k: 'name', h: 'Team', sort: r => r.name, f: r => teamCell(r, { sub: false }) }];
   POS4.forEach(p => {

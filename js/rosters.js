@@ -8,7 +8,7 @@ function rosterDeck(t) {
   const all = t.players.filter(p => p && p.pos && p.pos !== 'PICK').sort((a, b) => (b.dv || 0) - (a.dv || 0));
   if (!all.length) return null;
   const CARD = 168, MIN = 10;
-  const deck = h('div.pcxdeck', { 'aria-label': t.name + ' — best players first' });
+  const deck = h('div.pcxdeck', { 'aria-label': t.name + ', best players first' });
   let shown = -1;
   const draw = n => {
     n = Math.min(n, all.length);
@@ -37,7 +37,7 @@ function viewRoster() {
   const wrap = h('div.grid');
 
   const picker = h('select', { onchange: e => { RosterUI.team = +e.target.value; render(); } },
-    teams.slice().sort((a, b) => a.powerRank - b.powerRank).map(x => h('option', { value: x.rosterId, selected: x.rosterId === t.rosterId }, `${x.name} — ${x.owner}`)));
+    teams.slice().sort((a, b) => a.powerRank - b.powerRank).map(x => h('option', { value: x.rosterId, selected: x.rosterId === t.rosterId }, `${x.name} · ${x.owner}`)));
 
   const leagueAvgValue = mean(teams.map(x => x.totalValue));
   wrap.appendChild(h('div.row', { style: { justifyContent: 'space-between' } },
@@ -57,7 +57,7 @@ function viewRoster() {
     kpi(capitalLabel(), kfmt(Math.round(t.totalValue)), `${ord(t.valueRank)} of ${teams.length} · ${sgn(Math.round((t.totalValue / leagueAvgValue - 1) * 100), 0)}% vs avg`,
       `<div class="k">Total ${valueWord()} trade value</div>` + (isDynasty()
         ? `Players <b>${kfmt(Math.round(t.rosterValue))}</b><br>Draft picks <b>${kfmt(Math.round(t.pickCapital))}</b>`
-        : 'Every rostered player at this season’s market price. A redraft league holds no picks, so this is the whole roster.')),
+        : 'Every rostered player at this season\'s market price. A redraft league holds no picks, so this is the whole roster.')),
     kpi('Power rank', '#' + t.powerRank, `${fmt(t.power, 1)} rating`,
       `<div class="k">Blend of results so far and projection</div>Projection weight <b>${pct(1 - S.blendW, 0)}</b><br>Results weight <b>${pct(S.blendW, 0)}</b>`),
     dynOnly(kpi('Future rank', '#' + t.futureRank, `${fmt(t.futurePower, 1)} rating`, `<div class="k">2–3 years out</div>Age-adjusted lineup plus pick capital.`)),
@@ -73,7 +73,7 @@ function viewRoster() {
       label: r.pos + '  ·  ' + ord(r.rank),
       v: r.val, vl: kfmt(Math.round(r.val)),
       color: r.rank <= 3 ? 'var(--s1)' : r.rank >= teams.length - 2 ? 'var(--s8)' : 'var(--seq-300)',
-      tip: `<div class="k">${r.pos}</div>${isDynasty() ? 'Dynasty' : 'Redraft'} value <b>${kfmt(Math.round(r.val))}</b> — ${ord(r.rank)} of ${teams.length}<br>Starting output <b>${fmt(r.now, 1)}</b> pts/wk — ${ord(r.nowRank)}`
+      tip: `<div class="k">${r.pos}</div>${isDynasty() ? 'Dynasty' : 'Redraft'} value <b>${kfmt(Math.round(r.val))}</b>, ${ord(r.rank)} of ${teams.length}<br>Starting output <b>${fmt(r.now, 1)}</b> pts/wk, ${ord(r.nowRank)}`
     })), { labelW: '86px', max: Math.max(...posRows.map(r => r.val)) })),
     card('Projected starting lineup', fmt(t.now, 1) + ' pts/week', lineupTable(t))
   ));
@@ -159,8 +159,8 @@ function rosterTable(t) {
     { k: 'age', prio: 2, h: 'Age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
     { k: 'dv', h: 'Value', num: true, tip: 'FantasyCalc ' + valueWord() + ' trade value for this league format', f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
     { k: 'posRank', prio: 2, h: 'Pos rk', num: true, f: r => r.posRank ? r.pos + fmt(r.posRank, 0) : '—' },
-    { k: 'ppg', h: 'Proj', num: true, tip: 'Projected points per week in this league’s scoring', f: r => r.ppg === null || r.ppg === undefined ? '—' : fmt(r.ppg, 1) },
-    isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, tip: 'Age-adjusted projection 2–3 seasons out', f: r => r.fppg ? fmt(r.fppg, 1) : '—' } : null,
+    { k: 'ppg', h: 'Proj', num: true, tip: 'Projected points per week in this league\'s scoring', f: r => r.ppg === null || r.ppg === undefined ? '—' : fmt(r.ppg, 1) },
+    isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj \'28', num: true, tip: 'Age-adjusted projection 2–3 seasons out', f: r => r.fppg ? fmt(r.fppg, 1) : '—' } : null,
     { k: 'trend30', prio: 2, h: '30d', num: true, tip: 'Value change over the last 30 days', f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') },
     { k: 'share', prio: 2, h: '% of team', num: true, sort: r => (r.dv || 0) / (t.totalValue || 1), f: r => h('div.meter', { style: { justifyContent: 'flex-end' } }, h('div.bar-track', { style: { width: '44px', height: '7px' } }, h('div.bar-fill', { style: { width: clamp((r.dv || 0) / (t.totalValue || 1) * 100 * 3.2, 0, 100) + '%' } })), h('span.tiny.mono.muted', pct((r.dv || 0) / (t.totalValue || 1), 1))) }
   ];

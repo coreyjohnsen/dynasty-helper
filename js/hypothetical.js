@@ -144,9 +144,9 @@ function hypExit() {
 
 const HYP_UNAFFECTED = {
   week: 'This Week is scored from games that are already happening. A hypothetical roster does not change points that have been banked, so the live totals and matchups here stay real.',
-  standings: 'Active Rankings is pure results — wins, losses and points actually scored. A hypothetical roster cannot change games that have already been played.',
-  draft: 'The draft board is a historical record of picks that were actually made, so a hypothetical roster does not change it.',
-  trades: 'Trade History is a record of deals that actually happened, so a hypothetical roster does not change it. The grades already use live market values.'
+  standings: 'Active Rankings is pure results: wins, losses and points scored. A hypothetical roster cannot change games that have already been played.',
+  draft: 'The draft board is a historical record of picks that were made, so a hypothetical roster does not change it.',
+  trades: 'Trade History is a record of deals that happened, so a hypothetical roster does not change it. The grades already use live market values.'
 };
 
 /* ================= the banner on every other page ================= */
@@ -156,7 +156,7 @@ function hypBanner(view) {
   return h('div.hypbar.slim' + (quiet ? '.quiet' : ''),
     h('span.hyp-badge', 'HYPOTHETICAL'),
     quiet
-      ? h('span.tiny.sec', { title: HYP_UNAFFECTED[view] }, 'Real results — hypothetical changes do not affect this page')
+      ? h('span.tiny.sec', { title: HYP_UNAFFECTED[view] }, 'This page shows real results. Hypothetical changes do not affect it')
       : [h('span.tiny.muted.hypn', n + (n === 1 ? ' change' : ' changes') + ' in effect'),
         h('span.hypchips', HYP.log.slice(0, 3).map(e => h('span.hypchip', { title: e.label }, e.short)),
           n > 3 ? h('span.tiny.muted', '+' + (n - 3) + ' more') : null)],
@@ -180,7 +180,7 @@ function viewHypo() {
   else wrap.appendChild(h('div.hypintro',
     h('div.pic', ico('flask')),
     h('div', h('b', 'Try a move before you make it'),
-      h('div.tiny.sec', 'Process a trade, a pickup or any roster move below and every page recomputes as if it had happened — lineups, power rankings, odds, the simulator. Nothing is sent to Sleeper, and one button puts everything back.'))));
+      h('div.tiny.sec', 'Process a trade, a pickup or any roster move below and every page recomputes as if it had happened: lineups, power rankings, odds, the simulator. Nothing is sent to Sleeper, and one button puts everything back.'))));
 
   wrap.appendChild(h('div.smodes', { role: 'tablist' }, HYP_MODES.map(m =>
     h('button.smode' + (HYP.mode === m.k ? '.on' : ''), { role: 'tab', 'aria-selected': HYP.mode === m.k ? 'true' : 'false', title: m.d, onclick: () => { HYP.mode = m.k; render(); } },
@@ -208,7 +208,7 @@ function hypKpi(label, before, after, o) {
   const dec = o.dec === undefined ? 1 : o.dec, f = o.f || (v => fmt(v, dec));
   const pending = after === null || before === null;
   let delta;
-  if (pending) delta = h('span.tiny.muted', h('span.spin'), ' simulating…');
+  if (pending) delta = h('span.tiny.muted', h('span.spin'), ' simulating...');
   else if (o.rank) delta = before === after ? h('span.tiny.flat', 'no change')
     : h('span', { class: after < before ? 'up' : 'down', style: { fontSize: '11.5px', fontWeight: 650 } }, (after < before ? '▲ up ' : '▼ down ') + Math.abs(after - before));
   else {
@@ -338,7 +338,7 @@ function hypTradePanel() {
   if (canRun && spots) {
     const warn = [[A, R.aOut, R.bOut], [B, R.bOut, R.aOut]].map(([T, o, i]) => ({ T, n: hypActiveCount(T, i, o) })).filter(x => x.n > spots);
     if (warn.length) out.appendChild(h('div.tiny', { style: { color: 'var(--bad-text)', fontWeight: 560 } },
-      warn.map(x => `${x.T.name} would carry ${x.n} active players for ${spots} spots — they would need to cut ${x.n - spots}. `).join('')));
+      warn.map(x => `${x.T.name} would carry ${x.n} active players for ${spots} spots. They would need to cut ${x.n - spots}. `).join('')));
   }
   const bw = R.tab === 'b' ? 'b' : 'a', BT = T_OF[bw];
   out.appendChild(assetBrowser({
@@ -348,7 +348,7 @@ function hypTradePanel() {
     tabs: ['a', 'b'].map(w => ({ k: w, color: w, label: nameOf(T_OF[w]) === 'You' ? 'Your roster' : T_OF[w].name, n: outOf(w).length })), tab: bw,
     onTab: k => { R.tab = k; R.st.pos = 'all'; R.st.limit = 12; render(); },
     assets: assetsOf(BT).sort((x, y) => y.dv - x.dv), chosen: new Set(outOf(bw).map(a => a.id)),
-    placeholder: 'Search ' + BT.short + ' assets…',
+    placeholder: 'Search ' + BT.short + ' assets...',
     onToggle: (a, inDeal) => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a])),
     onChange: () => render()
   }));
@@ -399,7 +399,7 @@ function hypFaPanel() {
   const summary = card(null, null, h('div.hypsum',
     side('Sign', addA, 'a', 'Pick a free agent below'),
     h('span.hypsum-x', '⇄'),
-    side('Drop', dropA, 'b', full ? 'Your roster is full — pick someone to drop' : 'Optional — you have an open spot'),
+    side('Drop', dropA, 'b', full ? 'Your roster is full. Pick someone to drop' : 'Optional: you have an open spot'),
     h('div.hypsum-go',
       lineupDelta !== null ? h('div.tiny', { style: { textAlign: 'right' } }, 'Lineup ', deltaTag(lineupDelta, 1, ' pts/wk')) : null,
       h('button.btn.pri', { disabled: !addA || needDrop, onclick: process }, 'Process move'))));
@@ -409,7 +409,7 @@ function hypFaPanel() {
     h('div.row', { style: { gap: '14px', flexWrap: 'wrap' } },
       h('label.fld', { style: { minWidth: '240px' } }, 'Roster making the move',
         h('select', { onchange: e => { F.team = +e.target.value; F.drop = null; F.dst.q = ''; render(); } },
-          S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, (t.rosterId === S.myRosterId ? 'You — ' : '') + t.name)))),
+          S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, (t.rosterId === S.myRosterId ? 'You: ' : '') + t.name)))),
       spotsNote ? h('span.tiny.muted', { style: { alignSelf: 'flex-end', paddingBottom: '9px' } }, spotsNote) : null),
     summary,
     h('div.grid.hypgrid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(420px,100%),1fr))' } },
@@ -419,7 +419,7 @@ function hypFaPanel() {
         assets: pool, chosen: new Set(F.add ? [F.add] : []),
         meta: a => [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + 'y' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' ppg' : null].filter(Boolean).join(' · '),
         val: a => a.dv > 0 ? kfmt(Math.round(a.dv)) : fmt(a.ref.ppg || 0, 1),
-        placeholder: 'Search free agents…',
+        placeholder: 'Search free agents...',
         onToggle: (a, on) => { F.add = on ? null : a.id; render(); }, onChange: () => render()
       }),
       assetBrowser({
@@ -427,7 +427,7 @@ function hypFaPanel() {
         title: 'Drop from ' + T.short, note: 'lowest value first',
         assets: mine, chosen: new Set(F.drop ? [F.drop] : []),
         meta: a => [a.ref.team || 'FA', a.ref.age ? fmt(a.ref.age, 0) + 'y' : null, a.ref.ppg ? fmt(a.ref.ppg, 1) + ' ppg' : null].filter(Boolean).join(' · '),
-        placeholder: 'Search ' + T.short + ' players…',
+        placeholder: 'Search ' + T.short + ' players...',
         onToggle: (a, on) => { F.drop = on ? null : a.id; render(); }, onChange: () => render()
       })));
 }
@@ -441,7 +441,7 @@ function hypSandboxPanel() {
   const stepOf = (a, from, to) => ({ id: a.kind === 'pick' ? pickKeyOf(a) : a.id, isPick: a.kind === 'pick', name: a.name, pos: a.pos, from, to });
   const act = (a, from, to) => {
     const verb = to === null ? 'released by ' + teamShortOf(from) : from === null ? 'signed by ' + teamShortOf(to) : teamShortOf(from) + ' → ' + teamShortOf(to);
-    hypCommit('move', a.name + ': ' + verb, a.name + ' — ' + verb, [stepOf(a, from, to)]);
+    hypCommit('move', a.name + ': ' + verb, a.name + ': ' + verb, [stepOf(a, from, to)]);
     render();
   };
   const mine = assetsOf(T).sort((x, y) => y.dv - x.dv);
@@ -467,16 +467,16 @@ function hypSandboxPanel() {
     h('div.row', { style: { gap: '14px', flexWrap: 'wrap' } },
       h('label.fld', { style: { minWidth: '240px' } }, 'Roster to edit',
         h('select', { onchange: e => { SB.team = +e.target.value; SB.st.q = ''; render(); } },
-          S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, (t.rosterId === S.myRosterId ? 'You — ' : '') + t.name)))),
+          S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === T.rosterId }, (t.rosterId === S.myRosterId ? 'You: ' : '') + t.name)))),
       spots && size > spots ? h('span.tiny', { style: { alignSelf: 'flex-end', paddingBottom: '9px', color: 'var(--bad-text)', fontWeight: 560 } },
-        `${T.name} carries ${size} active players for ${spots} spots — release ${size - spots} more to be legal`)
+        `${T.name} carries ${size} active players for ${spots} spots. Release ${size - spots} more to be legal`)
         : h('span.tiny.muted', { style: { alignSelf: 'flex-end', paddingBottom: '9px' } }, 'Every move is applied the moment you make it. Nothing has to balance.')),
     h('div.grid.hypgrid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(320px,100%),1fr))' } },
-      card(T.name + ' — ' + mine.length + ' assets', 'send anywhere, or release', h('div.picker.hypmine', rows)),
+      card(T.name + ': ' + mine.length + ' assets', 'send anywhere, or release', h('div.picker.hypmine', rows)),
       assetBrowser({
         id: 'hsb', color: 'b', st: SB.st, step: 12, title: 'Acquire', note: 'other rosters and free agents · tap to add to ' + T.short,
         assets: pool, chosen: new Set(),
-        meta: a => (fromOf[a.id] ? fromOf[a.id].short : 'FA') + ' · ' + assetMeta(a), placeholder: 'Search anyone…',
+        meta: a => (fromOf[a.id] ? fromOf[a.id].short : 'FA') + ' · ' + assetMeta(a), placeholder: 'Search anyone...',
         onToggle: (a) => act(a, fromOf[a.id] ? fromOf[a.id].rosterId : null, T.rosterId),
         onChange: () => render()
       })));

@@ -652,3 +652,10 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .hypkpi.big{padding:12px 12px}
   .hypkpi.big .val{font-size:26px}
 }
+
+/* ---- trade finder: what each side gains or loses ---- */
+.tc-deltas{display:flex;justify-content:space-between;align-items:baseline;gap:6px 24px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.tc-eff{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;min-width:0}
+.tc-eff.r{justify-content:flex-end;text-align:right;margin-left:auto}
+.tc-eff-who{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:760px){ .tc-deltas{display:grid} .tc-eff.r{justify-content:flex-start;text-align:left;margin-left:0} .tc-eff-who{flex-basis:100%;max-width:none} }
