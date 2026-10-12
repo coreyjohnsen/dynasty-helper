@@ -7,7 +7,7 @@ function viewTrades() {
     wrap.appendChild(card('Trade history', null, h('div.empty',
       h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'No completed trades yet'),
       h('div.tiny', { style: { marginTop: '6px', maxWidth: '520px', margin: '6px auto 0' } },
-        'Sleeper reports no completed trades in this league\'s current season. If the league has run before, earlier trades live under the previous season\'s league and are not loaded here.'))));
+        'If the league has run before, earlier trades live under the previous season\'s league and are not loaded here.'))));
     return wrap;
   }
   const graded = list.filter(x => x.n > 0);

@@ -278,9 +278,9 @@ function h2hOverall(wrap, A, B, CA, CB) {
     h('span', h('i', { style: { background: CA } }), h('b', A.short), h('span.muted', A.name)),
     h('span', h('i', { style: { background: CB } }), h('b', B.short), h('span.muted', B.name)));
   wrap.appendChild(h('div.grid.split',
-    card('Shape against the league', 'each spoke is where the team ranks among all ' + N + ' · the outer ring is the best in the league',
+    card('Shape against the league', 'rank among all ' + N + ' teams, the outer ring is best',
       h('div', h2hRadar(axes, A, B), legend)),
-    card('Category by category', A.short + ' leads ' + aWins + ' · ' + B.short + ' leads ' + bWins + ' · bars show each side\'s size, the label shows the gap',
+    card('Category by category', A.short + ' leads ' + aWins + ' · ' + B.short + ' leads ' + bWins + '',
       h2hTape(metrics, A, B))));
 
   /* ---- the best lineups, slot by slot ---- */
@@ -290,7 +290,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
   });
   const lw = rows.filter(r => r.va > r.vb).length;
   wrap.appendChild(card('Best lineup, everyone healthy',
-    `${A.short} wins ${lw} of ${rows.length} slots · ${fmt(HA.total, 1)} to ${fmt(HB.total, 1)} points per game · injured players count at full strength, byes are ignored, taxi squads cannot start`,
+    `${A.short} wins ${lw} of ${rows.length} slots · ${fmt(HA.total, 1)} to ${fmt(HB.total, 1)} points per game`,
     slotLadder(rows, A, B, CA, CB, { head: 'Pts/g' })));
 
   /* ---- position ratings ---- */
@@ -307,7 +307,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
     const ageRows = [{ k: 'Starting lineup', a: HA.startAge, b: HB.startAge, tip: 'Average age of the best lineup' }]
       .concat(POS4.map(p => ({ k: p, node: posLbl(p), a: HA.posAge[p], b: HB.posAge[p], tip: 'Value-weighted age of everyone at the position' })))
       .filter(r => r.a && r.b).map(r => Object.assign(r, { invert: true, f: v => fmt(v, 1), fd: v => fmt(v, 1) + ' yrs' }));
-    cards.push(card('Age profile', 'younger is ahead: a younger core holds its value for longer', ageRows.length ? h2hTape(ageRows, A, B) : h('div.empty', 'No age data for these rosters.')));
+    cards.push(card('Age profile', 'younger is ahead', ageRows.length ? h2hTape(ageRows, A, B) : h('div.empty', 'No age data for these rosters.')));
   }
   if (S.sim && S.sim.by[A.rosterId] && S.sim.by[B.rosterId]) {
     const sa = S.sim.by[A.rosterId], sb = S.sim.by[B.rosterId];
@@ -322,7 +322,7 @@ function h2hOverall(wrap, A, B, CA, CB) {
     cards.push(card('Season outlook', 'needs a full-season simulation to compare playoff and title odds',
       h('div.row', { style: { gap: '12px' } },
         h('button.btn.pri', { onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); } }, 'Run 2,000 seasons'),
-        h('span.tiny.muted', 'runs in the background; the Simulator tab keeps the full result'))));
+        )));
   }
   wrap.appendChild(cards.length > 1 ? h('div.grid.split', cards) : cards[0]);
 
@@ -539,15 +539,10 @@ function simDraftCard(res) {
     'from the same ' + kfmt(res.n) + ' seasons: everyone who misses the playoffs picks first, fewest points first, then the playoff teams in the order they went out',
     h('div', { style: { display: 'grid', gap: '11px' } },
       tbl,
-      h('div.tiny.muted',
-        anyTraded
-          ? h('span', h('b', 'Some of these picks have already moved.'), ' A tag like ', h('span.tag.traded', '1st → ABC'),
-            ' means that team\'s own first-rounder belongs to somebody else now. The slot on the left is where the pick lands, not who gets to use it.')
-          : (isDynasty()
-            ? 'Every team still holds its own picks in this draft, so the slot and the owner are the same thing.'
-            : 'A redraft league does not carry picks between seasons, so this is the order the next draft would run in, not a set of assets anyone holds.')),
-      h('div.tiny.muted',
-        'Ties are broken on points, the way the standings break them. Leagues that use a lottery, or order the back half by regular-season finish rather than playoff exit, will differ. This is the common default, not a reading of your league\'s bylaws.')));
+      anyTraded ? h('div.tiny.muted',
+        h('span', h('b', 'Some of these picks have already moved.'), ' A tag like ', h('span.tag.traded', '1st → ABC'),
+          ' means that team\'s own first-rounder belongs to somebody else now. The slot on the left is where the pick lands, not who gets to use it.')) : null,
+      h('div.tiny.muted', 'Leagues with a lottery, or a different back-half order, will differ.')));
 }
 
 

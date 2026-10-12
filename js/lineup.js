@@ -557,7 +557,7 @@ function viewLineup() {
       chosen.length
         ? compareGrid(chosen, wk)
         : h('button.tray-empty.a', { style: { margin: 0 }, onclick: () => { LineupUI.browseOpen = true; render(); } },
-          h('span.tray-plus', ico('plus')), h('b', 'Who are you deciding between?'), h('span.tiny.muted', 'Pick two or more of your players below to see them side by side')),
+          h('span.tray-plus', ico('plus')), h('b', 'Who are you deciding between?')),
       chosen.length ? h('div.row', h('button.btn.sm', { onclick: () => { LineupUI.compare = []; render(); } }, 'Clear comparison')) : null,
       h('div.card.collapsible' + (browseOpen ? '.open' : ''), { style: { boxShadow: 'none', background: 'var(--surface-2)' } },
         h('button.chd', { 'aria-expanded': browseOpen ? 'true' : 'false', onclick: () => { LineupUI.browseOpen = !browseOpen; render(); } },

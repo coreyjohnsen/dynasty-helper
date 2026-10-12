@@ -215,5 +215,5 @@ function ssMatchBar(m, wk) {
   return h('div.ssmatch',
     h('div.ssm-top', h('span.tiny.muted', (m.live ? 'Win chance right now vs ' : 'Win chance vs ') + m.opp.name), h('b.mono', pct(m.pWin, 1))),
     h('div.sspc-bar', { 'aria-hidden': 'true' }, h('i', { style: { width: Math.max(2, m.pWin * 100) + '%' } })),
-    h('div.tiny.muted', 'This week played ' + kfmt(m.runs) + ' times with the lineup below against theirs. Tap a slot to see what each alternative does to this number.'));
+    h('div.tiny.muted', 'This week played ' + kfmt(m.runs) + ' times with the lineup below against theirs.'));
 }

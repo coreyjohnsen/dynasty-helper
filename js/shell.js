@@ -251,7 +251,7 @@ function render() {
     const pv = VIEWS.find(v => v.k === S.view);
     if (pv && S.view !== 'home') {
       content.appendChild(h('div.pagehead', h('div.pic', ico(pv.ic)),
-        h('div', h('h2', pv.label), h('p', blurbFor(pv.k)))));
+        h('div', h('h2', pv.label))));
     }
     const hbar = hypBanner(S.view);
     if (hbar) content.appendChild(hbar);
@@ -312,7 +312,7 @@ function splash() {
   const box = h('div.box');
   const status = h('div.tiny.muted.sp-status', { style: { minHeight: '18px' } });
   const bar = h('div.loadbar', h('i'));
-  const inp = h('input', { placeholder: 'Sleeper username or 18-digit league ID', style: { width: '100%' }, value: LS.get('last', '') });
+  const inp = h('input', { style: { width: '100%' }, value: LS.get('last', '') });
   const seasonSel = h('select', [String(new Date().getFullYear()), String(new Date().getFullYear() - 1)].map(y => h('option', { value: y }, y)));
   const list = h('div', { style: { display: 'grid', gap: '6px', marginTop: '10px' } });
   const go = h('button.btn.pri', { style: { width: '100%', minHeight: '42px', fontSize: '14px' } }, 'Load league');
@@ -355,7 +355,7 @@ function splash() {
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
-      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser. Your league data is never uploaded. The site only counts anonymous page visits.')
+      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Your league data stays in this browser. The site only counts anonymous page visits.')
   )));
   const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };

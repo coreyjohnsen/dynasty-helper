@@ -125,7 +125,7 @@ function viewHome() {
   if (weekCard) wrap.appendChild(weekCard);
 
   /* ---- everywhere else ---- */
-  wrap.appendChild(card('Everything else', 'fourteen pages, all reading the same league',
+  wrap.appendChild(card('Everything else', null,
     h('div.tilegrid', HOME_TILES.map(k => {
       const v = VIEWS.find(x => x.k === k); if (!v) return null;
       return h('button.tile', { onclick: () => goView(k) },
@@ -142,9 +142,7 @@ function viewHome() {
       '; weekly projections are Sleeper\'s own lines re-scored through this league\'s settings; ',
       isDynasty() ? 'player and pick values are ' : 'player values are ',
       h('b', 'FantasyCalc'), ' ', valueWord(), ' prices for a ', cfg.superflex ? 'superflex' : '1QB', ' ', String(cfg.numTeams),
-      '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league.',
-      isDynasty() ? null : h('span', ' Because this is a redraft league, nothing carries to next season: no long-range projections, no ageing curve, and next year\'s draft is a fresh start rather than an asset to hold.'),
-      ' Everything is computed in this browser. Nothing is stored anywhere else.')));
+      '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league.')));
   return wrap;
 }
 
@@ -383,8 +381,8 @@ function leagueStrip() {
   const podium = leaguePodium(rows, live);
   if (!podium) return null;
   return card('The league',
-    (live ? 'the table as it stands: wins, then points' : 'nothing played yet, so this is the projection')
-    + (sim ? ' · and what the simulator makes of it' : ''),
+    (live ? '' : 'nothing played yet, so this is the projection')
+    + (sim ? (live ? 'and what the simulator makes of it' : ' · and what the simulator makes of it') : ''),
     podium,
     sim ? null : h('button.btn.sm', {
       onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(S.simN); }
@@ -439,7 +437,7 @@ function myHeadliners(me) {
             : l ? h('span', h('b.sec', fmt(l.used, 1)), ' pts')
               : h('span', h('b.sec', fmt(p.ppg || 0, 1)), ' proj')));
     };
-    return card('The headliners', me.name + '\'s most valuable ' + best.length + ' (click any card for the full page)',
+    return card('The headliners', me.name + '\'s most valuable ' + best.length + '',
       h('div.pcxhand', best.map(hand)));
   }
   return card('The headliners', me.name + '\'s most valuable ' + best.length + ' (click any face for the full page)',

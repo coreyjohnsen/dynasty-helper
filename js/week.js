@@ -150,8 +150,7 @@ function viewWeek() {
     const p = !g ? null : (g.A.rosterId === t.rosterId ? g.pA : g.pB);
     return { t, l, opp, p };
   });
-  wrap.appendChild(card('Everyone this week',
-    'scored the same way: banked where the games are over, projected where they are not',
+  wrap.appendChild(card('Everyone this week', null,
     table([
       { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
       { k: 'opp', prio: 2, h: 'Opponent', sortable: false, f: r => r.opp ? h('span.tiny', r.opp.short) : h('span.muted.tiny', 'bye') },

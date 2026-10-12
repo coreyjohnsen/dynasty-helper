@@ -70,7 +70,7 @@ function viewStandings() {
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(330px,100%),1fr))' } },
     card('Schedule luck', 'actual wins minus all-play expected wins',
       divBar(lucky.map(t => ({ label: t.name, v: t.luck, vl: sgn(t.luck, 1) + ' W', tip: `<div class="k">${esc(t.name)}</div>Actual <b>${t.wins + 0.5 * t.ties}</b> wins<br>Expected <b>${fmt(t.expWins, 1)}</b> from all-play<br>All-play record <b>${t.apW}-${t.apL}</b>` })), { dec: 1 })),
-    card('Points for', 'total scored this season',
+    card('Points for', null,
       barList(teams.slice().sort((a, b) => b.fpts - a.fpts).map(t => ({
         label: t.name, v: t.fpts, vl: fmt(t.fpts, 0),
         tip: `<div class="k">${esc(t.name)}</div>PF <b>${fmt(t.fpts, 1)}</b> · PA <b>${fmt(t.fptsAgainst, 1)}</b><br>PPG <b>${fmt(t.avgPts, 1)}</b> ± ${fmt(t.ptsSd, 1)}`
