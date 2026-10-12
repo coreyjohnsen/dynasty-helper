@@ -69,7 +69,9 @@ function simDesk(weeks, isReplay) {
     h('div.smodes', { role: 'tablist' }, SIM_MODES.map(m =>
       h('button.smode' + (m.k === SimUI.mode ? '.on' : ''), { role: 'tab', 'aria-selected': m.k === SimUI.mode ? 'true' : 'false', onclick: () => { SimUI.mode = m.k; SimUI.res = null; render(); } },
         h('span.smode-ic', ico(m.ic)), h('span.smode-t', m.t)))),
-    h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random: the same settings will not give you the same season twice.'),
+    h('div.simnote',
+      h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random: the same settings will not give you the same season twice.'),
+      h('button.btn.sm.siminfo', { type: 'button', onclick: openSimInfo, 'aria-haspopup': 'dialog' }, ico('info'), 'How it works')),
     h('div.simctl',
       SimUI.mode === 'week' ? h('label.fld', 'Week', h('select', { onchange: e => { SimUI.week = +e.target.value; SimUI.res = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,

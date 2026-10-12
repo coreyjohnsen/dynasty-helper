@@ -29,6 +29,7 @@ const ICON = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/>',
   share: '<path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M5 12v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V12"/>'
 };
 function ico(name) {
