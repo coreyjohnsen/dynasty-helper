@@ -184,7 +184,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .sp-art h1{font-size:30px}
   .sp-art p{font-size:14px}
   .sp-feats{display:none}
-  .sp-form{padding:18px 14px 30px;margin-top:-22px;position:relative}
+  .sp-form{padding:22px 14px 30px}
 }
 
 .tradebox{border:1.5px dashed var(--border-strong);border-radius:var(--r);min-height:84px;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
