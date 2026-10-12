@@ -43,6 +43,15 @@ loaded, trade evaluated, simulation run, hypothetical change, share link copied 
 never a league ID, a team, a player, or the URL hash. To turn it off, delete the `<script>` tag
 with `data-goatcounter` in `index.html`; `track()` then does nothing.
 
+**Security.** Team, user and league names are typed by the people in a league, so they are treated as
+untrusted. Anything built as an HTML string (tooltips) goes through `esc()` (`js/core.js`) at the
+point a name is interpolated, and `ttShow()` runs the result through `safeHtml()` (`js/ui.js`), which
+keeps only formatting tags and drops everything else. Elsewhere names are set as text. Underneath
+both, `index.html` carries a Content Security Policy (a meta tag, since Pages cannot send headers):
+scripts only from this site and GoatCounter, data only from Sleeper, FantasyCalc, ESPN and the
+counter. If the app ever needs another host, add it to `connect-src` there or the browser will refuse
+the request.
+
 ---
 
 ## Deploying

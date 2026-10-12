@@ -515,7 +515,7 @@ function tradeResult(R) {
     wrap.appendChild(card('League-wide contender shake-up', 'how everyone’s championship odds move — third parties shift too',
       divBar(rows.map(r => ({
         label: r.t.name, v: (r.a.title - r.b.title) * 100, vl: sgn((r.a.title - r.b.title) * 100, 1) + 'pp',
-        tip: `<div class="k">${r.t.name}</div>Title odds <b>${pct(r.b.title, 1)}</b> → <b>${pct(r.a.title, 1)}</b><br>Playoffs <b>${pct(r.b.playoff, 0)}</b> → <b>${pct(r.a.playoff, 0)}</b>`
+        tip: `<div class="k">${esc(r.t.name)}</div>Title odds <b>${pct(r.b.title, 1)}</b> → <b>${pct(r.a.title, 1)}</b><br>Playoffs <b>${pct(r.b.playoff, 0)}</b> → <b>${pct(r.a.playoff, 0)}</b>`
       })), { dec: 1, labelW: '170px' })));
   }
   return wrap;

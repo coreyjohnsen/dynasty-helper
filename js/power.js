@@ -121,11 +121,11 @@ function viewPower() {
     const oddsRows = rows.map(r => h('div', { style: { display: 'grid', gridTemplateColumns: 'minmax(0,150px) minmax(0,1fr) auto', gap: '9px', alignItems: 'center', padding: '2px 0' } },
       h('div.tiny', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, r.t.name),
       oddsBar([
-        { v: r.s.title, color: 'var(--seq-650)', tip: `<div class="k">${r.t.name}</div>Wins it all: <b>${pct(r.s.title, 1)}</b>` },
-        { v: Math.max(0, r.s.final - r.s.title), color: 'var(--seq-450)', tip: `<div class="k">${r.t.name}</div>Loses the final: <b>${pct(r.s.final - r.s.title, 1)}</b>` },
-        { v: Math.max(0, r.s.semi - r.s.final), color: 'var(--seq-300)', tip: `<div class="k">${r.t.name}</div>Out in the semis: <b>${pct(r.s.semi - r.s.final, 1)}</b>` },
-        { v: Math.max(0, r.s.playoff - r.s.semi), color: 'var(--seq-150)', tip: `<div class="k">${r.t.name}</div>Out in round 1: <b>${pct(r.s.playoff - r.s.semi, 1)}</b>` },
-        { v: Math.max(0, 1 - r.s.playoff), color: 'var(--div-neutral)', tip: `<div class="k">${r.t.name}</div>Misses the playoffs: <b>${pct(1 - r.s.playoff, 1)}</b>` }
+        { v: r.s.title, color: 'var(--seq-650)', tip: `<div class="k">${esc(r.t.name)}</div>Wins it all: <b>${pct(r.s.title, 1)}</b>` },
+        { v: Math.max(0, r.s.final - r.s.title), color: 'var(--seq-450)', tip: `<div class="k">${esc(r.t.name)}</div>Loses the final: <b>${pct(r.s.final - r.s.title, 1)}</b>` },
+        { v: Math.max(0, r.s.semi - r.s.final), color: 'var(--seq-300)', tip: `<div class="k">${esc(r.t.name)}</div>Out in the semis: <b>${pct(r.s.semi - r.s.final, 1)}</b>` },
+        { v: Math.max(0, r.s.playoff - r.s.semi), color: 'var(--seq-150)', tip: `<div class="k">${esc(r.t.name)}</div>Out in round 1: <b>${pct(r.s.playoff - r.s.semi, 1)}</b>` },
+        { v: Math.max(0, 1 - r.s.playoff), color: 'var(--div-neutral)', tip: `<div class="k">${esc(r.t.name)}</div>Misses the playoffs: <b>${pct(1 - r.s.playoff, 1)}</b>` }
       ], { h: 11 }),
       h('span.tiny.mono.sec', { style: { textAlign: 'right' } }, pct(r.s.playoff, 0) + ' / ' + pct(r.s.title, 1))));
     wrap.appendChild(card('How each season ends', sim.n.toLocaleString() + ' simulations',
@@ -142,7 +142,7 @@ function viewPower() {
       card('Draft capital', 'total value of picks held', barList(
         S.teams.slice().sort((a, b) => b.pickCapital - a.pickCapital).map(t => ({
           label: t.name, v: t.pickCapital, vl: kfmt(Math.round(t.pickCapital)),
-          tip: `<div class="k">${t.name}</div>` + (t.pickAssets.length ? t.pickAssets.slice(0, 12).map(p => `${p.label} — <b>${kfmt(Math.round(p.value))}</b>`).join('<br>') : 'No future picks')
+          tip: `<div class="k">${esc(t.name)}</div>` + (t.pickAssets.length ? t.pickAssets.slice(0, 12).map(p => `${p.label} — <b>${kfmt(Math.round(p.value))}</b>`).join('<br>') : 'No future picks')
         })), { labelW: '150px', dec: 0 })))
     );
   }
@@ -183,7 +183,7 @@ function contendMatrix() {
   teams.forEach(t => {
     const c = svg('circle', { cx: X(t.powerZ), cy: Y(t.futureZ), r: 6.5, fill: 'var(--s1)', stroke: 'var(--surface-1)', 'stroke-width': 2 });
     const hit = svg('circle', { cx: X(t.powerZ), cy: Y(t.futureZ), r: 14, fill: 'transparent' });
-    hit.addEventListener('mousemove', e => ttShow(e, `<div class="k">${t.name}</div>Now <b>${fmt(t.power, 1)}</b> (#${t.powerRank})<br>Future <b>${fmt(t.futurePower, 1)}</b> (#${t.futureRank})<br>Window <b>${t.window}</b>`));
+    hit.addEventListener('mousemove', e => ttShow(e, `<div class="k">${esc(t.name)}</div>Now <b>${fmt(t.power, 1)}</b> (#${t.powerRank})<br>Future <b>${fmt(t.futurePower, 1)}</b> (#${t.futureRank})<br>Window <b>${t.window}</b>`));
     hit.addEventListener('mouseleave', ttHide);
     const lb = svg('text', { class: 'ax', x: X(t.powerZ), y: Y(t.futureZ) - 10, 'text-anchor': 'middle', fill: 'var(--text-secondary)', 'font-weight': 600 });
     lb.textContent = t.short;
@@ -200,12 +200,12 @@ function powerByPosition() {
   wrap.appendChild(card('Positional strength — current starters', 'projected points per week from each position group',
     h('div', heat(teams, POS4, (t, p) => t.posNow[p], {
       rowLabel: t => t.name, fmt: v => fmt(v, 1),
-      tip: (t, p, v) => `<div class="k">${t.name} · ${p}</div>Starters produce <b>${fmt(v, 1)}</b> pts/wk — ${ord(t.posNow[p + 'Rank'])} of ${teams.length}`
+      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Starters produce <b>${fmt(v, 1)}</b> pts/wk — ${ord(t.posNow[p + 'Rank'])} of ${teams.length}`
     }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', 'Points per week')))));
   wrap.appendChild(card('Positional ' + valueWord() + ' value', 'total trade value at each position, all rostered players',
     h('div', heat(teams, POS4, (t, p) => t.posValue[p], {
       rowLabel: t => t.name, fmt: v => kfmt(Math.round(v)),
-      tip: (t, p, v) => `<div class="k">${t.name} · ${p}</div>Value <b>${kfmt(Math.round(v))}</b> — ${ord(t.posValue[p + 'Rank'])} of ${teams.length}`
+      tip: (t, p, v) => `<div class="k">${esc(t.name)} · ${p}</div>Value <b>${kfmt(Math.round(v))}</b> — ${ord(t.posValue[p + 'Rank'])} of ${teams.length}`
     }), h('div', { style: { marginTop: '10px' } }, seqLegend('weakest', 'strongest', isDynasty() ? 'Dynasty value' : 'Redraft value')))));
   const cols = [{ k: 'name', h: 'Team', sort: r => r.name, f: r => teamCell(r, { sub: false }) }];
   POS4.forEach(p => {

@@ -351,7 +351,7 @@ function valueQuadrants() {
   });
   pts.forEach(p => {
     const el = svg('circle', { cx: X(p.dyn), cy: Y(p.red), r: rOf(p) + 4, fill: 'transparent', tabindex: 0, role: 'img', 'aria-label': p.t.name + ', ' + VALUE_QUADS[p.q].name, style: 'cursor:default;outline:none' });
-    bindTT(el, () => `<div class="k">${p.t.name}${p.me ? ' (you)' : ''}</div><b>${VALUE_QUADS[p.q].name}</b><br>Dynasty <b>${kfmt(Math.round(p.dyn))}</b> (#${p.dynRk})<br>Redraft <b>${kfmt(Math.round(p.red))}</b> (#${p.redRk})`);
+    bindTT(el, () => `<div class="k">${esc(p.t.name)}${p.me ? ' (you)' : ''}</div><b>${VALUE_QUADS[p.q].name}</b><br>Dynasty <b>${kfmt(Math.round(p.dyn))}</b> (#${p.dynRk})<br>Redraft <b>${kfmt(Math.round(p.red))}</b> (#${p.redRk})`);
     g.appendChild(el);
   });
   const xl = svg('text', { class: 'ax', x: m.l + iw / 2, y: H - 7, 'text-anchor': 'middle' }); xl.textContent = 'Dynasty value  →';

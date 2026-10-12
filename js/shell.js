@@ -324,7 +324,7 @@ function splash() {
       go.disabled = false;
     } catch (e) {
       go.disabled = false;
-      status.innerHTML = '<span style="color:var(--bad-text);font-weight:600">' + String(e.message || e) + '</span>';
+      clear(status).appendChild(h('span', { style: { color: 'var(--bad-text)', fontWeight: '600' } }, String(e.message || e)));
       $('i', bar).style.width = '0';
     }
   }

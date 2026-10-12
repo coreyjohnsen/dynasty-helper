@@ -163,7 +163,7 @@ function simSeedCard(res) {
   const grid = heat(teams, cols, (t, c) => res.by[t.rosterId].seedDist[+c] * 100, {
     rowLabel: t => t.name,
     fmt: v => v < 0.5 ? '·' : Math.round(v) + '',
-    tip: (t, c, v) => `<div class="k">${t.name} · ${ord(+c)} seed</div><b>${fmt(v, 1)}%</b> of simulated seasons`
+    tip: (t, c, v) => `<div class="k">${esc(t.name)} · ${ord(+c)} seed</div><b>${fmt(v, 1)}%</b> of simulated seasons`
       + (+c <= res.playoffTeams ? '<br>inside the playoff cut' : '<br>missed the playoffs')
   });
   return card('Where everyone finishes', 'percentage of simulated seasons ending at each seed — ' + res.playoffTeams + ' make the bracket',
@@ -179,7 +179,7 @@ function simLuckCard(res) {
   const sosMean = sos.length ? mean(sos) : 0;
   const bars = rows.slice().sort((a, b) => b.s.luck - a.s.luck).map(r => ({
     label: r.t.name, v: r.s.luck,
-    tip: `<div class="k">${r.t.name}</div>Projected to win <b>${fmt(r.s.simWins, 1)}</b> of the remaining ${res.simWeeks}<br>`
+    tip: `<div class="k">${esc(r.t.name)}</div>Projected to win <b>${fmt(r.s.simWins, 1)}</b> of the remaining ${res.simWeeks}<br>`
       + `Beats <b>${pct(r.s.allPlayPct, 0)}</b> of the league in a typical week, which is worth ${fmt(r.s.allPlayPct * res.simWeeks, 1)} wins<br>`
       + `Schedule is worth <b>${sgn(r.s.luck, 2)}</b> wins`
   }));

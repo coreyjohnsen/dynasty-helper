@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- Content Security Policy. GitHub Pages cannot send headers, so it rides in a meta tag (which must come first).
+     Scripts: only this site and GoatCounter's counter, so injected markup cannot run inline code. Data: only the
+     hosts the app reads (Sleeper, FantasyCalc, ESPN) and the counter. Images may come from anywhere, because a team's
+     avatar is a URL its owner chose. Inline styles are allowed because the app sets them on elements. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://gc.zgo.at; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.sleeper.app https://api.sleeper.com https://api.fantasycalc.com https://site.api.espn.com https://lm-api-reads.fantasy.espn.com https://fantasy.espn.com https://coreyjohnsen.goatcounter.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dynasty Command Center</title>
 <meta name="description" content="Live Sleeper dynasty league analysis — rosters, trade calculator, power rankings, season simulation, draft-pick pricing and a hypothetical roster sandbox.">

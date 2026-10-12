@@ -35,6 +35,10 @@ function h(tag, props, ...kids) {
   kids.forEach(add);
   return e;
 }
+/** Make text safe to drop into an HTML string. Names in a league (team, user, league) are typed by its members, so
+ *  anything built with `innerHTML` has to pass them through this; h() children are already text and need nothing. */
+const esc = (s) => String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 /* ---------- viewport ----------
    Charts are drawn into a fixed viewBox and stretched to fit their container.
    On a phone that means a 760-wide drawing squeezed into ~380 CSS pixels, which
