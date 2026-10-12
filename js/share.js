@@ -50,12 +50,18 @@ const SHARE = {
     },
     h2h: {
       label: 'matchup',
-      encode: () => ({ a: H2HUI.a, b: H2HUI.b, w: H2HUI.week }),
+      encode: () => ({ a: H2HUI.a, b: H2HUI.b, w: H2HUI.week, m: H2HUI.mode }),
       apply: p => {
         if (!S.teamById[+p.a] || !S.teamById[+p.b] || +p.a === +p.b) return;
         H2HUI.a = +p.a; H2HUI.b = +p.b; if (+p.w) H2HUI.week = +p.w; H2HUI.res = null;
+        // links made before the overall view existed carried a week and meant that week's game
+        H2HUI.mode = p.m === 'overall' ? 'overall' : p.m === 'week' || +p.w ? 'week' : 'overall';
       },
       text: () => {
+        if (H2HUI.mode !== 'week') {
+          const u = H2HUI.sum; if (!u) return null;
+          return `${u.A.name} vs ${u.B.name}\n${u.A.short} leads ${u.aWins} of ${u.total} categories · ${u.B.short} leads ${u.bWins}`;
+        }
         const r = H2HUI.res; if (!r) return null;
         const A = S.teamById[H2HUI.a], B = S.teamById[H2HUI.b];
         return `Week ${H2HUI.week}: ${A.name} vs ${B.name}\n${A.name} ${pct(r.pA, 0)} · ${B.name} ${pct(r.pB, 0)}\nProjected ${fmt(r.meanA, 1)} – ${fmt(r.meanB, 1)}`;

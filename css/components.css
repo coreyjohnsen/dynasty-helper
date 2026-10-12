@@ -583,3 +583,31 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
   .levgrid{grid-template-columns:48px minmax(0,1fr) minmax(0,1fr);gap:6px}
   .champ-again{justify-self:stretch;justify-content:center}
 }
+
+/* ---- head to head: overall comparison ---- */
+.h2hmode{display:grid;gap:5px}
+.tape{display:grid;gap:16px}
+.tp{display:grid;grid-template-columns:58px minmax(0,1fr) minmax(0,1fr) 58px;column-gap:7px;row-gap:6px;align-items:center;border-radius:8px;outline:none}
+.tp:focus-visible{box-shadow:var(--ring)}
+.tp-lbl{grid-column:1/-1;display:flex;justify-content:center;align-items:baseline;gap:8px;font-size:12px;color:var(--text-secondary);font-weight:600}
+.tp-lbl .d{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.tp-v.l,.tp-track.l{--c:var(--s1)}
+.tp-v.r,.tp-track.r{--c:var(--s2)}
+.tp-v{font-size:13px;font-variant-numeric:tabular-nums;color:var(--text-muted);font-weight:540;min-width:0}
+.tp-v.l{text-align:right}
+.tp-v.lead{color:var(--c);font-weight:740;font-size:14px}
+.tp-track{height:11px;background:var(--div-neutral);position:relative;overflow:hidden}
+.tp-track.l{border-radius:99px 3px 3px 99px}
+.tp-track.r{border-radius:3px 99px 99px 3px}
+.tp-track i{position:absolute;top:0;bottom:0;background:var(--c);animation:tp-grow .7s var(--ease) both}
+.tp-track.l i{right:0;border-radius:99px 3px 3px 99px;transform-origin:100% 50%}
+.tp-track.r i{left:0;border-radius:3px 99px 99px 3px;transform-origin:0 50%}
+.tp-track i.trail{opacity:.4}
+@keyframes tp-grow{from{transform:scaleX(0)}}
+.rdlegend{display:flex;gap:6px 18px;justify-content:center;flex-wrap:wrap;margin-top:10px;font-size:12.5px}
+.rdlegend>span{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.rdlegend i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.rd-shape{animation:rd-in .6s var(--ease) both;transform-origin:180px 150px}
+@keyframes rd-in{from{opacity:0;transform:scale(.6)}}
+@media (max-width:760px){ .tp{grid-template-columns:46px minmax(0,1fr) minmax(0,1fr) 46px;column-gap:5px} .tp-v{font-size:12px} .tp-v.lead{font-size:13px} }
+@media (prefers-reduced-motion:reduce){ .tp-track i,.rd-shape{animation:none} }

@@ -216,7 +216,7 @@ The **Share** button in the top bar copies a link to the page you are on. The
 link carries its own recipe in the URL hash — `#/trade?l=<leagueId>&a=…&ao=…` —
 so there is still no server: whoever opens it loads the league live and lands on
 the same page. Pages that carry state: trade calculator (both teams and every
-asset), head to head (teams and week), this week (week and open matchup),
+asset), head to head (teams, overall or week view, and the week), this week (week and open matchup),
 simulator (mode, week, run size, and whether it had been run — it re-runs on
 open), roster and player pages. The address bar is kept in sync, so copying it
 works too. Trade, matchup, week and simulator pages also offer **Copy summary**,

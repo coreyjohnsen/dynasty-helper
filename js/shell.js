@@ -54,10 +54,6 @@ const VIEWS = [
   { k: 'draft', ic: 'draft', label: 'Draft Board', grp: 'Tools' },
   { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' }
 ];
-/* The tabs simple mode leads with. The rest are still there, one tap behind
-   "More" — hiding them outright would be a different app, not a calmer one. */
-const CORE_VIEWS = ['home', 'week', 'roster', 'players', 'lineup', 'trade', 'finder', 'power', 'sim'];
-let navExpanded = false;
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.setAttribute('data-theme', t);
@@ -132,7 +128,7 @@ function settingsMenu() {
   const panel = h('div.menupanel',
     group('View',
       segmented([{ k: 'simple', label: 'Default' }, { k: 'full', label: 'Minimal' }], S.ui,
-        m => { setUiMode(m); navExpanded = false; render(); }),
+        m => { setUiMode(m); render(); }),
       S.ui === 'simple'
         ? 'Cards, photos and the numbers that matter.'
         : 'Stripped back and dense — every table, column and chart, no imagery.'),
@@ -201,22 +197,15 @@ function render() {
   const app = $('#app');
   clear(app);
   if (!S.league) return app.appendChild(splash());
-  const simple = isSimple();
-  const shown = !simple || navExpanded ? VIEWS : VIEWS.filter(v => CORE_VIEWS.includes(v.k) || v.k === S.view);
-  const hiddenCount = VIEWS.length - shown.length;
   let lastGrp = null;
   const navItems = [];
-  shown.forEach(v => {
+  VIEWS.forEach(v => {
     if (v.grp !== lastGrp) { lastGrp = v.grp; navItems.push(h('div.navgroup', v.grp)); }
     navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label));
   });
   const side = h('div.side',
     h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
     navItems,
-    simple && (hiddenCount > 0 || navExpanded)
-      ? h('button.navbtn', { style: { marginTop: '6px' }, onclick: () => { navExpanded = !navExpanded; render(); } },
-        ico(navExpanded ? 'chevup' : 'chev'), navExpanded ? 'Show fewer' : 'More pages (' + hiddenCount + ')')
-      : null,
     h('div.spacer'),
     h('div.foot',
       h('div', 'Values: FantasyCalc'), h('div', 'League: Sleeper'),
