@@ -3,6 +3,7 @@
 async function boot(leagueId, onStep) {
   try {
     S.busy = true;
+    hypClear();
     await loadLeague(leagueId, onStep);
     const me = LS.get('me', null);
     if (me) { const t = S.teams.find(t => t.ownerId === me); if (t) S.myRosterId = t.rosterId; }

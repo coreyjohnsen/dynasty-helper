@@ -30,10 +30,11 @@ const VIEW_BLURB = {
   scout: 'Who needs what — every roster’s holes and surpluses',
   sim: 'Playoff odds, seeds, and the games with most riding on them',
   draft: 'The draft board, shaded by value against slot par',
-  stock: 'Value over time, for a player or a whole franchise'
+  stock: 'Value over time, for a player or a whole franchise',
+  hypo: 'Try a trade, a pickup or any roster move and watch every page change'
 };
 /* The tiles, in the order someone would actually want them. */
-const HOME_TILES = ['week', 'lineup', 'roster', 'players', 'trade', 'finder', 'h2h', 'power', 'standings', 'sim', 'scout', 'trades', 'draft', 'stock'];
+const HOME_TILES = ['week', 'lineup', 'roster', 'players', 'trade', 'finder', 'h2h', 'power', 'standings', 'sim', 'scout', 'trades', 'draft', 'stock', 'hypo'];
 
 function goView(k) { S.view = k; render(); window.scrollTo(0, 0); }
 

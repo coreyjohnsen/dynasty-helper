@@ -52,7 +52,8 @@ const VIEWS = [
   { k: 'scout', ic: 'scout', label: 'GM Scout', grp: 'League' },
   { k: 'sim', ic: 'sim', label: 'Simulator', grp: 'Tools' },
   { k: 'draft', ic: 'draft', label: 'Draft Board', grp: 'Tools' },
-  { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' }
+  { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' },
+  { k: 'hypo', ic: 'flask', label: 'Hypothetical', grp: 'Tools' }
 ];
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
@@ -201,7 +202,8 @@ function render() {
   const navItems = [];
   VIEWS.forEach(v => {
     if (v.grp !== lastGrp) { lastGrp = v.grp; navItems.push(h('div.navgroup', v.grp)); }
-    navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label));
+    navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label,
+      v.k === 'hypo' && HYP.on ? h('span.navdot', { title: hypCount() + ' hypothetical change' + (hypCount() === 1 ? '' : 's') + ' in effect' }, hypCount()) : null));
   });
   const side = h('div.side',
     h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
@@ -219,10 +221,6 @@ function render() {
     h('div.grow'),
     S.liveWeek ? h('span.live', h('i'), 'Week ' + S.liveWeek)
       : h('span.live.idle', h('i'), S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
-    h('button.btn' + (HYP.on ? '.hypon' : ''), {
-      title: 'Try roster changes and see every page recompute', 'aria-label': 'Hypothetical roster sandbox',
-      onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
-    }, ico('flask'), h('span.bl', HYP.on ? 'Hypothetical · ' + hypCount() : 'Hypothetical')),
     shareMenu(),
     settingsMenu()
   );
@@ -231,7 +229,7 @@ function render() {
   const V = {
     home: viewHome, week: viewWeek, players: viewPlayers, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
     h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
-    draft: viewDraft, stock: viewStock, player: viewPlayer
+    draft: viewDraft, stock: viewStock, hypo: viewHypo, player: viewPlayer
   }[S.view];
   try {
     const pv = VIEWS.find(v => v.k === S.view);
@@ -239,10 +237,8 @@ function render() {
       content.appendChild(h('div.pagehead', h('div.pic', ico(pv.ic)),
         h('div', h('h2', pv.label), h('p', blurbFor(pv.k)))));
     }
-    if (HYP.on) {
-      const bar = HYP_UNAFFECTED[S.view] ? hypNote(S.view) : hypBar();
-      if (bar) content.appendChild(bar);
-    }
+    const hbar = hypBanner(S.view);
+    if (hbar) content.appendChild(hbar);
     content.appendChild(V());
   }
   catch (e) { console.error(e); content.appendChild(card('Something broke in this view', null, h('div', h('p.sec', String(e && e.message || e)), h('pre.tiny.muted', { style: { whiteSpace: 'pre-wrap' } }, String(e && e.stack || ''))))); }

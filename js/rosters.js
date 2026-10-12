@@ -36,7 +36,7 @@ function viewRoster() {
   const t = S.teamById[RosterUI.team];
   const wrap = h('div.grid');
 
-  const picker = h('select', { onchange: e => { RosterUI.team = +e.target.value; if (HYP.on) { HYP.team = RosterUI.team; HYP.after = null; } render(); } },
+  const picker = h('select', { onchange: e => { RosterUI.team = +e.target.value; render(); } },
     teams.slice().sort((a, b) => a.powerRank - b.powerRank).map(x => h('option', { value: x.rosterId, selected: x.rosterId === t.rosterId }, `${x.name} — ${x.owner}`)));
 
   const leagueAvgValue = mean(teams.map(x => x.totalValue));

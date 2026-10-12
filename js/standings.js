@@ -85,11 +85,6 @@ function viewStandings() {
  *  left and where they went, each with an undo. */
 function hypRosterChanges(t) {
   if (!HYP.on || !S.base) return null;
-  // the sandbox bar at the top of the page already lists your own moves, with
-  // undo, whether or not the editor is open — repeating them underneath adds
-  // nothing. Where this earns its place is on the OTHER side of a deal: open
-  // their roster and it says what they gave up and what they got.
-  if (t.rosterId === hypTeamId()) return null;
   const into = [], outOf = [];
   Object.keys(HYP.moves).forEach(id => {
     const from = S.base.own[id], to = HYP.moves[id];
@@ -112,8 +107,7 @@ function hypRosterChanges(t) {
   const undo = (x) => h('button.btn.sm', {
     title: 'Put it back where it was',
     onclick: () => {
-      if (x.kind === 'pick') delete HYP.picks[x.id]; else delete HYP.moves[x.id];
-      HYP.after = null; hypSync(); render();
+      hypUndoAsset(x.id); render();
     }
   }, 'Undo');
   const line = (x, dir) => {

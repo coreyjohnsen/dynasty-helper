@@ -222,10 +222,11 @@ const SimPool = {
     return w;
   }
 };
-/** Same as simulate(), but the page stays live while it runs. Resolves to null if the league changed meanwhile. */
+/** Same as simulate(), but the page stays live while it runs. Resolves to null if the league changed meanwhile,
+ *  unless `opts.keepStale` says the result is wanted regardless (the job itself was read when this was called). */
 function simulateAsync(nSims, opts, onProgress) {
   const prep = prepareSim(nSims, opts), teams = S.teams;
-  return SimPool.run(prep.job, onProgress).then(acc => S.teams !== teams ? null : finishSim(prep, acc));
+  return SimPool.run(prep.job, onProgress).then(acc => S.teams !== teams && !(opts && opts.keepStale) ? null : finishSim(prep, acc));
 }
 /** Run the league-wide season simulation in the background and keep it as the season's odds.
  *  Redraws only if you are still on the page that asked, so it never pulls a typing cursor away. */

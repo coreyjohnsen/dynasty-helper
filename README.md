@@ -130,8 +130,9 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
   `deskTray`, `assetBrowser`, `dealBar`) and the same look runs through **Head to Head** (matchup
   bar and headline hero), **Start / Sit** (compare tray plus a collapsible browser),
   **Trade Finder** (team card, player picker, two-tray result cards with a balance chip),
-  **Trade History** (a tray per side), the **Hypothetical** editor (roster as cards, acquire pool
-  as the browser) and **Stock Mode** (searchable player picker instead of a long dropdown).
+  **Trade History** (a tray per side), the **Hypothetical** page (its trade mode is the same desk;
+  the waiver and sandbox modes use the same browser) and **Stock Mode** (searchable player picker
+  instead of a long dropdown).
 - Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
   fonts or other dependencies.
 
@@ -222,3 +223,24 @@ open), roster and player pages. The address bar is kept in sync, so copying it
 works too. Trade, matchup, week and simulator pages also offer **Copy summary**,
 a plain-text snapshot of the numbers on screen. Hypothetical sandbox moves are
 never included. Codecs live in `js/share.js` (`SHARE.pages`).
+
+---
+
+## Hypothetical
+
+The **Hypothetical** tab (Tools) is where you try changes before making them. Three ways in:
+a **hypothetical trade** between any two teams (set it up exactly like the calculator, then
+*Process trade*), a **waiver / free-agent** move (pick someone to sign and, if the roster is full,
+who to drop), and a **sandbox** that makes any single move on any roster.
+
+Each trade, pickup or move is one entry in a log (`HYP.log` in `js/hypothetical.js`). Ownership
+for the rest of the app (`HYP.moves` / `HYP.picks`) is replayed from that log over the real league,
+so a whole trade is undone in one click, and undoing a change also removes later ones that moved
+the same players. Nothing is sent to Sleeper, and *Reset everything* restores the league exactly.
+
+While any change is in effect a slim banner at the top of the other pages lists what it is, with
+*Manage* and *Reset*; pages that are pure results (This Week, Active Rankings, Draft Board, Trade
+History) say so instead. At the top of the Hypothetical page the headline numbers for any affected
+team — playoff and title odds, projected wins, lineup points, power rank, capital — show before and
+after, from the same simulated seasons run on the same random draws, plus who else in the league
+moved the most. The simulations run in the background, so the page never waits on them.
