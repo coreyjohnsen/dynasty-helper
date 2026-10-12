@@ -214,7 +214,7 @@ function render() {
       v.k === 'hypo' && HYP.on ? h('span.navdot', { title: hypCount() + ' hypothetical change' + (hypCount() === 1 ? '' : 's') + ' in effect' }, hypCount()) : null));
   });
   const side = h('div.side',
-    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Labs'))),
+    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', 'Fantasy Lab'), h('small', isDynasty() ? 'Dynasty' : 'Redraft'))),
     navItems,
     h('div.spacer'),
     h('div.foot',
@@ -292,6 +292,13 @@ async function hardRefresh() {
 }
 
 /* ================= splash / league picker ================= */
+/** Sleeper's league statuses are API tags (`in_season`); this is how they read to a person. */
+const LEAGUE_STATUS = { pre_draft: 'Pre-Draft', drafting: 'Drafting', in_season: 'In Season', complete: 'Complete' };
+function leagueStatusWord(s) {
+  if (!s) return '';
+  return LEAGUE_STATUS[s] || String(s).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+function leagueTypeWord(l) { const t = l && l.settings ? l.settings.type : undefined; return t === 2 ? 'Dynasty' : t === 1 ? 'Keeper' : 'Redraft'; }
 function splash() {
   const box = h('div.box');
   const status = h('div.tiny.muted.sp-status', { style: { minHeight: '18px' } });
@@ -320,7 +327,7 @@ function splash() {
         onclick: async () => { LS.set('last', l.league_id); go.disabled = true; clear(list); await boot(l.league_id, setStatus); }
       },
         h('div', { style: { fontWeight: '620' } }, l.name),
-        h('div.tiny.muted', `${l.total_rosters} teams · ${(l.settings && l.settings.type === 2) ? 'dynasty' : (l.settings && l.settings.type === 1) ? 'keeper' : 'redraft'} · ${l.status}`))));
+        h('div.tiny.muted', `${l.total_rosters} teams · ${leagueTypeWord(l)} · ${leagueStatusWord(l.status)}`))));
       go.disabled = false;
     } catch (e) {
       go.disabled = false;
@@ -345,8 +352,8 @@ function splash() {
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
   return h('div.splash',
     h('div.sp-art',
-      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Labs')),
-      h('h1', 'Every dynasty decision, ', h('span', 'tested in the lab.')),
+      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Fantasy Lab')),
+      h('h1', 'Every fantasy decision, ', h('span', 'tested in the lab.')),
       h('p', 'Live analysis for any Sleeper league: who’s really winning, what a trade is worth, and what the season looks like when you play it a thousand times.'),
       h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
     h('div.sp-form', box));

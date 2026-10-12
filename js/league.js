@@ -11,8 +11,31 @@ const SLOT_LABEL = { SUPER_FLEX: 'SFLX', WRRB_FLEX: 'W/R', REC_FLEX: 'W/T', WRRB
 
 function teamShort(rid) { const t = S.teams.find(t => t.rosterId === rid); return t ? t.short : null; }
 
+/** Everything derived from one league's data, dropped as the next league starts loading so nothing of the last one
+ *  can show up in it (trade history, free agents, depth, live scores, the "you" roster, selected teams and trays).
+ *  The caches are cleared on every load, a refresh included; the on-screen selections only when the league is a
+ *  different one, so a refresh keeps you where you were. */
+function resetLeagueState(leagueId) {
+  const other = S.leagueId !== leagueId;
+  S._fa = null; S._slotDemand = null; S._depth = null; S._live = null; S._wpPath = null; S._sched = null; S._trades = null;
+  S._sig = null; S._tl = null; S._short = {}; S._wsAsked = {}; S.sim = null; S.weekScores = {};
+  WSTATS.pts = {}; WSTATS.state = {}; WSTATS.inflight = {}; WSTATS.err = {};
+  PSRC.data = {}; PSRC.status = {}; PSRC.pending = {}; PSRC.espnMap = null; PSRC.espnScale = {};
+  if (!other) return;
+  S.myRosterId = null;
+  if (S.view === 'player') S.view = 'home';
+  RosterUI.team = null; ScoutUI.team = null; LineupUI.team = null; LineupUI.week = null; LineupUI.compare = []; LineupUI.openKey = null;
+  TradeUI.a = null; TradeUI.b = null; TradeUI.aOut = []; TradeUI.bOut = []; TradeUI.result = null; TradeUI.sig = null; TradeUI.tab = 'a'; TradeUI.st.q = '';
+  FinderUI.team = null; FinderUI.results = null; FinderUI.partners = []; FinderUI.positions = []; FinderUI.focus = null;
+  H2HUI.a = null; H2HUI.b = null; H2HUI.res = null; H2HUI.sum = null; H2HUI.week = null;
+  SimUI.res = null; SimUI.replay = null; SimUI.team = null; SimUI.week = null; SimUI.openWeek = null;
+  WeekUI.week = null; WeekUI.open = null; WeekUI.prob = null; LevUI.open = null; LevUI.week = 'all';
+  PlayerUI.id = null; StockUI.id = null; DraftUI.id = null;
+}
+
 async function loadLeague(leagueId, onStep) {
   const step = onStep || (() => { });
+  resetLeagueState(leagueId);
   step('Reading league settings…', 0.05);
   // the league and the NFL state do not depend on each other
   const [league, state] = await Promise.all([sl('/league/' + leagueId), sl('/state/nfl')]);

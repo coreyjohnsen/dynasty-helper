@@ -307,11 +307,12 @@ const WSTATS = { pts: {}, state: {}, inflight: {}, err: {} };           // week 
 async function loadWeekStats(week) {
   if (WSTATS.state[week]) return WSTATS.state[week] === 'ok';
   if (WSTATS.inflight[week]) return WSTATS.inflight[week];
-  const season = S.season, key = 'wstats2:' + S.leagueId + ':' + season + ':' + week;
+  const season = S.season, key = 'wstats2:' + S.leagueId + ':' + season + ':' + week, lid = S.leagueId;
   WSTATS.inflight[week] = (async () => {
     try {
       // a finished week's stats do not change, so a saved copy is good for days
       const rec = await idbGet(key);
+      if (S.leagueId !== lid) return false;
       if (rec && rec.d && Date.now() - rec.t < 3 * 86400 * 1000) { WSTATS.pts[week] = rec.d; WSTATS.state[week] = 'ok'; return true; }
       // Sleeper has served these under more than one address and in more than one shape, so try each in turn
       // and say which one answered (or why none did) rather than reporting a bare failure.
@@ -343,6 +344,7 @@ async function loadWeekStats(week) {
         out[id] = scoreLine(st);
       }
       if (!Object.keys(out).length) throw new Error('stats came back with no scored lines');
+      if (S.leagueId !== lid) return false;
       WSTATS.pts[week] = out; WSTATS.state[week] = 'ok';
       idbSet(key, { t: Date.now(), d: out });
       return true;

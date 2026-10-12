@@ -1,6 +1,6 @@
 "use strict";
 /* ==================================================================
-   Dynasty Labs — core
+   Fantasy Lab — core
    Live data: Sleeper API (league/rosters/matchups/drafts/players)
               FantasyCalc API (dynasty + redraft trade values, picks)
    ================================================================== */

@@ -1,7 +1,7 @@
-# Dynasty Labs
+# Fantasy Lab
 
 Live analysis for Sleeper dynasty leagues, served as a static site at
-**[fantasy.johnsencorey.com](https://fantasy.johnsencorey.com)**.
+**[fantasylab.tools](https://fantasylab.tools)**.
 
 Rosters and values, a trade calculator, power rankings, active standings, a trade
 finder, a season simulator with a playable single-season replay, the draft board,
@@ -56,26 +56,35 @@ the request.
 
 ## Deploying
 
-Already configured for GitHub Pages on a custom subdomain. From scratch:
+Already configured for GitHub Pages on a custom domain. From scratch:
 
 1. Push this repo to GitHub (public — Pages on a private repo needs a paid plan).
 2. **Settings → Pages → Source:** *Deploy from a branch*, `main`, `/ (root)`.
-3. **Settings → Pages → Custom domain:** `fantasy.johnsencorey.com`
-   (the `CNAME` file in this repo already declares it).
-4. Add one DNS record where `johnsencorey.com` is managed:
+3. **Settings → Pages → Custom domain:** `fantasylab.tools`
+   (GitHub writes it to the `CNAME` file in this repo, which must hold exactly that, one line).
+4. Add these records where `fantasylab.tools` is managed:
 
-   | Type | Name | Value | TTL |
-   |---|---|---|---|
-   | CNAME | `fantasy` | `coreyjohnsen.github.io.` | 300 |
+   | Type | Name | Value |
+   |---|---|---|
+   | A | `@` | `185.199.108.153` |
+   | A | `@` | `185.199.109.153` |
+   | A | `@` | `185.199.110.153` |
+   | A | `@` | `185.199.111.153` |
+   | CNAME | `www` | `coreyjohnsen.github.io` |
 
-5. Once the certificate provisions — usually minutes — tick **Enforce HTTPS**.
+5. When GitHub's DNS check passes and the certificate provisions — minutes, sometimes hours —
+   tick **Enforce HTTPS**.
 
-Two things that catch people out:
+Things that catch people out:
 
-- The DNS target is **`coreyjohnsen.github.io`**, the *user* Pages host, not the
-  repo name. GitHub routes to the right repo by matching the `CNAME` file.
-- A repo can only carry **one** custom domain, which is why this lives in its own
-  repo rather than a folder inside the personal site.
+- The `www` target is **`coreyjohnsen.github.io`**, the *user* Pages host, not the repo name.
+  GitHub routes to the right repo by matching the `CNAME` file.
+- A repo can only carry **one** custom domain (the bare domain and its `www` count as one).
+  To make other domains reach the site, forward them at the registrar.
+- If the registrar adds default records pointing at its own servers (Squarespace does, and offers to
+  "update" them), leave them out: they would replace the GitHub records above.
+- If the social-preview image or install icon ever changes, the cached copies on other sites can take
+  a while to refresh.
 
 ### Updating
 
