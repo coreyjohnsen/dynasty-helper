@@ -176,6 +176,28 @@ function viewH2H() {
     + (isLive ? ' · points already scored are shown as scored' : ''),
     slotLadder(slotRows, A, B, CA, CB, { wk, live: isLive })));
 
+  /* ---- who is sitting this week out ---- */
+  // the same "on bye" the Start / Sit page uses, over the players a team can actually play
+  // (not IR or taxi), best first — so a missing star is easy to see before the slots are read
+  const byesOf = (T) => activePlayers(T).filter(p => p.team && onBye(p, wk)).sort((x, y) => (y.dv || 0) - (x.dv || 0));
+  const byeA = byesOf(A), byeB = byesOf(B);
+  const byeCol = (T, list, col) => h('div', { style: { minWidth: 0 } },
+    h('div.row', { style: { gap: '7px', marginBottom: '6px' } },
+      h('i', { style: { width: '3px', alignSelf: 'stretch', borderRadius: '2px', background: col } }),
+      h('b', T.short), h('span.tiny.muted', list.length ? list.length + ' on bye' : 'none')),
+    list.length
+      ? h('div', { style: { display: 'grid', gap: '2px' } }, list.map(p => h('div.row.lline', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap', borderLeftColor: col } },
+        posPill(p.pos), pname(p), p.team ? h('span.tiny.muted', p.team) : null,
+        h('span', { style: { flex: 1 } }),
+        h('span.tiny.muted.mono', { title: 'typical points per game' }, fmt(p.ppg || 0, 1) + ' ppg'))))
+      : h('div.tiny.muted', 'Nobody on ' + T.short + ' is on a bye.'));
+  wrap.appendChild(card('Players on bye — week ' + wk,
+    byeA.length + byeB.length
+      ? `${A.short} has ${byeA.length}, ${B.short} has ${byeB.length} · active roster only, best player first`
+      : 'neither active roster has anyone on a bye this week',
+    h('div', { style: { display: 'grid', gridTemplateColumns: isNarrow() ? '1fr' : '1fr 1fr', gap: isNarrow() ? '14px' : '24px' } },
+      byeCol(A, byeA, CA), byeCol(B, byeB, CB))));
+
   /* ---- the franchises, not just this week ---- */
   const metrics = [
     { k: 'Starting lineup now', a: A.now, b: B.now, d: 1, tip: 'Projected points per week from the optimal lineup' },
