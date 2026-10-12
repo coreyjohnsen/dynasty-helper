@@ -349,10 +349,10 @@ function matchupLadder(g, wk) {
           ? h('span', { class: ps.actual >= ps.proj ? 'up' : 'down' },
             (ps.actual >= ps.proj ? '▲ ' : '▼ ') + fmt(Math.abs(ps.actual - ps.proj), 1) + ' vs proj')
           : h('span', (lv.quarter ? String(lv.quarter) + ' · ' : '') + 'live');
-    const tip = lv.state === 'bye' ? `<div class="k">${p.name}</div>On bye this week`
-      : lv.state === 'upcoming' ? `<div class="k">${p.name}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
-        : ps && ps.final ? `<div class="k">${p.name} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
-          : `<div class="k">${p.name} · playing${lv.quarter ? ', ' + lv.quarter : ''}</div><b>${fmt(lv.banked, 1)}</b> so far, plus <b>${fmt(lv.open, 1)}</b> expected from the rest of the game`;
+    const tip = lv.state === 'bye' ? `<div class="k">${esc(p.name)}</div>On bye this week`
+      : lv.state === 'upcoming' ? `<div class="k">${esc(p.name)}</div>Has not played yet — counted at his projection, <b>${fmt(lv.proj, 1)}</b>`
+        : ps && ps.final ? `<div class="k">${esc(p.name)} · final</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected`
+          : `<div class="k">${esc(p.name)} · playing${lv.quarter ? ', ' + lv.quarter : ''}</div><b>${fmt(lv.banked, 1)}</b> so far, plus <b>${fmt(lv.open, 1)}</b> expected from the rest of the game`;
     return bindTT(h('div.lcell', { tabindex: 0 },
       h('b.mono', { style: { color: won ? col : 'var(--text-primary)', fontWeight: won ? 720 : 560 } }, fmt(v, 1)),
       h('div.lstat', status)), tip);

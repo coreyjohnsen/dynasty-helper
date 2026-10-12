@@ -57,8 +57,8 @@ function viewDraft() {
           : h('div.pn', e.pl.name),
         h('div.mt', h('span', { style: { fontWeight: 700 } }, e.pl.pos || '—'),
           h('span', e.pl.team || ''), h('span', { style: { marginLeft: 'auto', opacity: .8 } }, r + '.' + String(s).padStart(2, '0'))));
-      bindTT(cell, `<div class="k">Pick ${e.p.pick_no} (${r}.${String(s).padStart(2, '0')}) — ${e.team ? e.team.name : '?'}</div>` +
-        `<b>${e.pl.name}</b> ${e.pl.pos || ''} ${e.pl.team || ''}<br>` +
+      bindTT(cell, `<div class="k">Pick ${e.p.pick_no} (${r}.${String(s).padStart(2, '0')}) — ${esc(e.team ? e.team.name : '?')}</div>` +
+        `<b>${esc(e.pl.name)}</b> ${esc(e.pl.pos || '')} ${esc(e.pl.team || '')}<br>` +
         `Value today <b>${kfmt(Math.round(e.pl.dv || 0))}</b><br>Par for this slot <b>${kfmt(Math.round(e.expected))}</b><br>` +
         `<span style="color:${e.surplus >= 0 ? 'var(--good-text)' : 'var(--bad-text)'};font-weight:640">${sgn(Math.round(e.surplus), 0)} surplus</span>`);
       board.appendChild(cell);
@@ -93,7 +93,7 @@ function viewDraft() {
       const list = byTeam[k], t = S.teamById[k];
       return {
         label: t.name, v: sum(list.map(e => e.pl.dv || 0)), vl: kfmt(Math.round(sum(list.map(e => e.pl.dv || 0)))),
-        tip: `<div class="k">${t.name} — ${list.length} picks</div>` + list.slice(0, 10).map(e => `${e.p.round}.${String(e.p.draft_slot).padStart(2, '0')} ${e.pl.name} — <b>${kfmt(Math.round(e.pl.dv || 0))}</b>`).join('<br>')
+        tip: `<div class="k">${esc(t.name)} — ${list.length} picks</div>` + list.slice(0, 10).map(e => `${e.p.round}.${String(e.p.draft_slot).padStart(2, '0')} ${esc(e.pl.name)} — <b>${kfmt(Math.round(e.pl.dv || 0))}</b>`).join('<br>')
       };
     }).sort((a, b) => b.v - a.v), { labelW: '160px', dec: 0 })));
   return wrap;

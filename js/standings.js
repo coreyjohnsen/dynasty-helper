@@ -69,11 +69,11 @@ function viewStandings() {
 
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(330px,100%),1fr))' } },
     card('Schedule luck', 'actual wins minus all-play expected wins',
-      divBar(lucky.map(t => ({ label: t.name, v: t.luck, vl: sgn(t.luck, 1) + ' W', tip: `<div class="k">${t.name}</div>Actual <b>${t.wins + 0.5 * t.ties}</b> wins<br>Expected <b>${fmt(t.expWins, 1)}</b> from all-play<br>All-play record <b>${t.apW}-${t.apL}</b>` })), { dec: 1 })),
+      divBar(lucky.map(t => ({ label: t.name, v: t.luck, vl: sgn(t.luck, 1) + ' W', tip: `<div class="k">${esc(t.name)}</div>Actual <b>${t.wins + 0.5 * t.ties}</b> wins<br>Expected <b>${fmt(t.expWins, 1)}</b> from all-play<br>All-play record <b>${t.apW}-${t.apL}</b>` })), { dec: 1 })),
     card('Points for', 'total scored this season',
       barList(teams.slice().sort((a, b) => b.fpts - a.fpts).map(t => ({
         label: t.name, v: t.fpts, vl: fmt(t.fpts, 0),
-        tip: `<div class="k">${t.name}</div>PF <b>${fmt(t.fpts, 1)}</b> · PA <b>${fmt(t.fptsAgainst, 1)}</b><br>PPG <b>${fmt(t.avgPts, 1)}</b> ± ${fmt(t.ptsSd, 1)}`
+        tip: `<div class="k">${esc(t.name)}</div>PF <b>${fmt(t.fpts, 1)}</b> · PA <b>${fmt(t.fptsAgainst, 1)}</b><br>PPG <b>${fmt(t.avgPts, 1)}</b> ± ${fmt(t.ptsSd, 1)}`
       })), { labelW: '150px', dec: 0 }))
   ));
   return wrap;
@@ -85,11 +85,6 @@ function viewStandings() {
  *  left and where they went, each with an undo. */
 function hypRosterChanges(t) {
   if (!HYP.on || !S.base) return null;
-  // the sandbox bar at the top of the page already lists your own moves, with
-  // undo, whether or not the editor is open — repeating them underneath adds
-  // nothing. Where this earns its place is on the OTHER side of a deal: open
-  // their roster and it says what they gave up and what they got.
-  if (t.rosterId === hypTeamId()) return null;
   const into = [], outOf = [];
   Object.keys(HYP.moves).forEach(id => {
     const from = S.base.own[id], to = HYP.moves[id];
@@ -112,8 +107,7 @@ function hypRosterChanges(t) {
   const undo = (x) => h('button.btn.sm', {
     title: 'Put it back where it was',
     onclick: () => {
-      if (x.kind === 'pick') delete HYP.picks[x.id]; else delete HYP.moves[x.id];
-      HYP.after = null; hypSync(); render();
+      hypUndoAsset(x.id); render();
     }
   }, 'Undo');
   const line = (x, dir) => {

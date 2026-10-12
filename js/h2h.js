@@ -122,7 +122,7 @@ function h2hTape(rows, A, B) {
       h('div.tp-track.r', h('i' + (!aLead || tied ? '' : '.trail'), { style: { width: Math.max(2, Math.abs(r.b) / hi * 100) + '%' } })),
       h('span.tp-v.r' + (!aLead && !tied ? '.lead' : ''), f(r.b)));
     row.tabIndex = 0;
-    bindTT(row, `<div class="k">${r.k}</div>${A.short} ${f(r.a)} · ${B.short} ${f(r.b)}` + (r.tip ? `<div>${r.tip}</div>` : ''));
+    bindTT(row, `<div class="k">${r.k}</div>${esc(A.short)} ${f(r.a)} · ${esc(B.short)} ${f(r.b)}` + (r.tip ? `<div>${r.tip}</div>` : ''));
     return row;
   }));
 }
@@ -143,7 +143,7 @@ function h2hRadar(axes, A, B) {
     axes.forEach((ax, i) => {
       const [x, y] = pt(i, ax[key].p);
       const dot = svg('circle', { cx: x, cy: y, r: 3.6, fill: col, stroke: 'var(--surface-1)', 'stroke-width': 1.5 });
-      bindTT(dot, `<div class="k">${T.name} · ${ax.k}</div>${ord(ax[key].rank)} of ${S.teams.length} teams · ${ax.f(ax[key].v)}`);
+      bindTT(dot, `<div class="k">${esc(T.name)} · ${ax.k}</div>${ord(ax[key].rank)} of ${S.teams.length} teams · ${ax.f(ax[key].v)}`);
       wrap.appendChild(dot);
     });
     return wrap;
@@ -506,7 +506,7 @@ function simDraftCard(res) {
     return h('div.row', { style: { gap: '4px' } }, away.map(x =>
       bindTT(h('span.tag.traded', (ROUND_WORD[x.rd] || x.rd + 'th') + ' → ' + x.holder.short),
         `<div class="k">${season} ${ROUND_WORD[x.rd] || x.rd + 'th'} round</div>`
-        + `Originally <b>${r.t.name}</b>’s<br>Now held by <b>${x.holder.name}</b>`)));
+        + `Originally <b>${esc(r.t.name)}</b>’s<br>Now held by <b>${esc(x.holder.name)}</b>`)));
   };
 
   const anyTraded = isDynasty() && season !== null && S.teams.some(t =>

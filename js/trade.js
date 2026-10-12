@@ -166,7 +166,7 @@ async function tradeRunAsync() {
     const pa = simulateAsync(TRADE_SIMS, { overrides: plan.overrides, seed: plan.seed });
     const [sb, sa] = await Promise.all([pb, pa]);
     // dropped if the league moved on, or the proposal was edited, while it ran
-    if (sb && sa && tradeSig() === sig) { r.simBefore = sb; r.simAfter = sa; TradeUI.result = r; TradeUI.sig = sig; }
+    if (sb && sa && tradeSig() === sig) { r.simBefore = sb; r.simAfter = sa; TradeUI.result = r; TradeUI.sig = sig; track('trade-evaluated', 'Trade evaluated', true); }
   } catch (e) { console.error(e); }
   TradeUI.running = false; redraw();
   setTimeout(() => { const el = $('#tresult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
@@ -515,7 +515,7 @@ function tradeResult(R) {
     wrap.appendChild(card('League-wide contender shake-up', 'how everyone’s championship odds move — third parties shift too',
       divBar(rows.map(r => ({
         label: r.t.name, v: (r.a.title - r.b.title) * 100, vl: sgn((r.a.title - r.b.title) * 100, 1) + 'pp',
-        tip: `<div class="k">${r.t.name}</div>Title odds <b>${pct(r.b.title, 1)}</b> → <b>${pct(r.a.title, 1)}</b><br>Playoffs <b>${pct(r.b.playoff, 0)}</b> → <b>${pct(r.a.playoff, 0)}</b>`
+        tip: `<div class="k">${esc(r.t.name)}</div>Title odds <b>${pct(r.b.title, 1)}</b> → <b>${pct(r.a.title, 1)}</b><br>Playoffs <b>${pct(r.b.playoff, 0)}</b> → <b>${pct(r.a.playoff, 0)}</b>`
       })), { dec: 1, labelW: '170px' })));
   }
   return wrap;

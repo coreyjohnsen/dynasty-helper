@@ -1,8 +1,31 @@
 "use strict";
 /* ================= tooltip ================= */
 const TT = () => $('#tt');
+/* Tooltips are written as small HTML strings. Whatever is interpolated into them should already be escaped (see
+   esc() in core.js); this is the net underneath that: the string is parsed inertly, and anything outside a short
+   list of formatting tags is dropped (its text kept), every attribute but class and a plain style is removed,
+   and a style that could fetch something is refused. A tooltip can bold and break lines; it cannot run anything. */
+const TT_TAGS = new Set(['DIV', 'SPAN', 'B', 'STRONG', 'I', 'EM', 'U', 'SMALL', 'SUB', 'SUP', 'BR', 'CODE']);
+function safeHtml(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = String(html);                 // a template's content is inert: nothing in it loads or runs
+  const clean = (parent) => {
+    Array.from(parent.childNodes).forEach(n => {
+      if (n.nodeType === 3) return;
+      if (n.nodeType !== 1) { n.remove(); return; }
+      if (!TT_TAGS.has(n.tagName)) { n.replaceWith(document.createTextNode(/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|TEMPLATE)$/.test(n.tagName) ? '' : n.textContent)); return; }
+      Array.from(n.attributes).forEach(a => {
+        const ok = a.name === 'class' || (a.name === 'style' && !/url\(|expression|@import|javascript:|<|\\/i.test(a.value));
+        if (!ok) n.removeAttribute(a.name);
+      });
+      clean(n);
+    });
+  };
+  clean(tpl.content);
+  return tpl.innerHTML;
+}
 function ttShow(evt, html) {
-  const t = TT(); t.innerHTML = html; t.classList.add('on');
+  const t = TT(); t.innerHTML = safeHtml(html); t.classList.add('on');
   const r = t.getBoundingClientRect();
   let x = evt.clientX + 14, y = evt.clientY + 14;
   if (x + r.width > innerWidth - 8) x = evt.clientX - r.width - 12;
@@ -62,8 +85,9 @@ function playerFace(p, opts) {
     onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
   }));
 }
-/** Show that a button's work has started; the page redraws when the result arrives. */
-function busyBtn(b) { if (b) { b.disabled = true; b.textContent = 'Simulating…'; } }
+/** Show that a button's work has started; the page redraws when the result arrives. Only buttons call this, so
+ *  it is also where a person asking for a simulation is counted (the Power page starts its own, uncounted). */
+function busyBtn(b) { track('simulation-run', 'Simulation run', true); if (b) { b.disabled = true; b.textContent = 'Simulating…'; } }
 function medalTitle(p) {
   const m = MEDALS.find(x => x.k === p.medal);
   return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
@@ -418,7 +442,7 @@ function lineChart(series, opts) {
     const rows = hits.slice(0, cap).map(({ s, p }) =>
       `<div><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${s.color};margin-right:6px"></i>${s.name}: <b>${opts.yFmt ? opts.yFmt(p.y) : fmt(p.y, 1)}</b></div>`
     ).join('') + (hits.length > cap ? `<div class="k">+${hits.length - cap} more</div>` : '');
-    ttShow(e, `<div class="k">${near.label || (opts.xFmt ? opts.xFmt(near.x) : near.x)}</div>${rows}`);
+    ttShow(e, `<div class="k">${esc(near.label || (opts.xFmt ? opts.xFmt(near.x) : near.x))}</div>${rows}`);
   };
   hit.addEventListener('mousemove', e => probe(e.clientX, e));
   hit.addEventListener('mouseleave', () => { cross.setAttribute('opacity', 0); ttHide(); });
@@ -464,7 +488,7 @@ function histogram(bins, opts) {
     const r = svg('rect', { x: x + 1, y, width: Math.max(1, bw - 2), height: Math.max(0, hgt), rx: Math.min(4, bw / 2 - 1), fill: b.color || 'var(--s1)' });
     r.style.cursor = 'default';
     const rr = svg('rect', { x, y: m.t, width: bw, height: ih, fill: 'transparent' });
-    rr.addEventListener('mousemove', e => ttShow(e, `<div class="k">${b.label}</div><b>${pct(b.v, 1)}</b>`));
+    rr.addEventListener('mousemove', e => ttShow(e, `<div class="k">${esc(b.label)}</div><b>${pct(b.v, 1)}</b>`));
     rr.addEventListener('mouseleave', ttHide);
     g.appendChild(r); g.appendChild(rr);
     if (bins.length <= 30 && (i % Math.ceil(bins.length / 9) === 0 || bins.length <= 12)) {
@@ -497,7 +521,7 @@ function heat(rows, cols, get, opts) {
           padding: '7px 4px', borderRadius: '5px', fontSize: '11.5px', fontWeight: '600', cursor: 'default'
         }, tabindex: 0
       }, opts.fmt ? opts.fmt(v, r, c) : fmt(v, 0));
-      bindTT(cell, () => opts.tip ? opts.tip(r, c, v) : `<div class="k">${opts.rowLabel(r)} · ${c}</div><b>${fmt(v, 1)}</b>`);
+      bindTT(cell, () => opts.tip ? opts.tip(r, c, v) : `<div class="k">${esc(opts.rowLabel(r))} · ${esc(c)}</div><b>${fmt(v, 1)}</b>`);
       grid.appendChild(cell);
     });
   });
@@ -639,10 +663,10 @@ function bracketView(sim) {
       },
         side(g.a, g.aPts, g.aTop, g.win === g.a),
         side(g.b, g.bPts, g.bTop, g.win === g.b));
-      bindTT(cardEl, `<div class="k">${round.name} · week ${round.week}</div>` +
-        `<b>${g.win.team.name}</b> by ${fmt(g.margin, 1)}<br>` +
-        (g.aTop ? `${g.a.team.short} best: ${g.aTop.name} ${fmt(g.aTop.pts, 1)}<br>` : '') +
-        (g.bTop ? `${g.b.team.short} best: ${g.bTop.name} ${fmt(g.bTop.pts, 1)}` : ''));
+      bindTT(cardEl, `<div class="k">${esc(round.name)} · week ${round.week}</div>` +
+        `<b>${esc(g.win.team.name)}</b> by ${fmt(g.margin, 1)}<br>` +
+        (g.aTop ? `${esc(g.a.team.short)} best: ${esc(g.aTop.name)} ${fmt(g.aTop.pts, 1)}<br>` : '') +
+        (g.bTop ? `${esc(g.b.team.short)} best: ${esc(g.bTop.name)} ${fmt(g.bTop.pts, 1)}` : ''));
       cards.push(cardEl);
     });
     return h('div', { style: { display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: '10px', minWidth: '188px' } },
@@ -702,7 +726,7 @@ function depthBars(e, opts) {
     g.appendChild(lb);
     const hit = svg('rect', { x: x, y: m.t, width: bw, height: ih, fill: 'transparent' });
     bindTT(hit, p
-      ? `<div class="k">${starter ? 'Starter' : 'Bench'} ${i + 1}</div><b>${p.name}</b><br>${fmt(v, 1)} pts/wk`
+      ? `<div class="k">${starter ? 'Starter' : 'Bench'} ${i + 1}</div><b>${esc(p.name)}</b><br>${fmt(v, 1)} pts/wk`
       : `<div class="k">Slot ${i + 1}</div>Nobody — the wire is worth ${fmt(e.base, 1)}`);
     g.appendChild(hit);
   }

@@ -426,7 +426,7 @@ function rosterAt(t, wk, T) {
  *  common to all of them and a move in the line is a move in the week. */
 function probPath(A, B, wk) {
   S._wpPath = S._wpPath || {};
-  const key = A.rosterId + '|' + B.rosterId + '|' + wk + (typeof HYP !== 'undefined' && HYP.on ? '|h' : '');
+  const key = A.rosterId + '|' + B.rosterId + '|' + wk + (typeof HYP !== 'undefined' && HYP.on ? '|h' + HYP.ver : '');
   if (S._wpPath[key]) return S._wpPath[key];
   const cuts = weekCuts(wk);
   if (!cuts.length) return null;

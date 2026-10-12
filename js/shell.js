@@ -52,7 +52,8 @@ const VIEWS = [
   { k: 'scout', ic: 'scout', label: 'GM Scout', grp: 'League' },
   { k: 'sim', ic: 'sim', label: 'Simulator', grp: 'Tools' },
   { k: 'draft', ic: 'draft', label: 'Draft Board', grp: 'Tools' },
-  { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' }
+  { k: 'stock', ic: 'stock', label: 'Stock Mode', grp: 'Tools' },
+  { k: 'hypo', ic: 'flask', label: 'Hypothetical', grp: 'Tools' }
 ];
 function setTheme(t) {
   if (t === 'system') document.documentElement.removeAttribute('data-theme');
@@ -183,6 +184,7 @@ function settingsMenu() {
 
 let moreOpen = false;
 let _lastView = null;
+let _lastTracked = null;
 const NAV_ORDER = ['Overview', 'Teams', 'Trading', 'League', 'Tools'];
 /* the four places most visits start from, plus "More" — what the phone tab bar shows */
 const TAB_VIEWS = ['home', 'week', 'roster', 'players'];
@@ -196,15 +198,23 @@ function render() {
   const keepY = _lastView === S.view ? (window.scrollY || 0) : 0;
   const app = $('#app');
   clear(app);
+  // one count per page visited (the start screen counts too, so visits that never load a league show up)
+  const seen = S.league ? S.view : 'start';
+  if (seen !== _lastTracked) {
+    _lastTracked = seen;
+    const pv = VIEWS.find(v => v.k === seen);
+    track('/' + seen, pv ? pv.label : seen === 'player' ? 'Player' : 'Start');
+  }
   if (!S.league) return app.appendChild(splash());
   let lastGrp = null;
   const navItems = [];
   VIEWS.forEach(v => {
     if (v.grp !== lastGrp) { lastGrp = v.grp; navItems.push(h('div.navgroup', v.grp)); }
-    navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label));
+    navItems.push(h('button.navbtn' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label,
+      v.k === 'hypo' && HYP.on ? h('span.navdot', { title: hypCount() + ' hypothetical change' + (hypCount() === 1 ? '' : 's') + ' in effect' }, hypCount()) : null));
   });
   const side = h('div.side',
-    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Command Center'))),
+    h('div.brand', h('div.mark', { html: MARK_SVG }), h('div', h('b', S.league && !isDynasty() ? 'Redraft' : 'Dynasty'), h('small', 'Labs'))),
     navItems,
     h('div.spacer'),
     h('div.foot',
@@ -219,10 +229,6 @@ function render() {
     h('div.grow'),
     S.liveWeek ? h('span.live', h('i'), 'Week ' + S.liveWeek)
       : h('span.live.idle', h('i'), S.lastWeek >= S.regEnd ? 'Playoffs' : 'Week ' + Math.min(S.week, S.regEnd)),
-    h('button.btn' + (HYP.on ? '.hypon' : ''), {
-      title: 'Try roster changes and see every page recompute', 'aria-label': 'Hypothetical roster sandbox',
-      onclick: () => { HYP.on ? hypExit() : hypEnter(); render(); }
-    }, ico('flask'), h('span.bl', HYP.on ? 'Hypothetical · ' + hypCount() : 'Hypothetical')),
     shareMenu(),
     settingsMenu()
   );
@@ -231,7 +237,7 @@ function render() {
   const V = {
     home: viewHome, week: viewWeek, players: viewPlayers, roster: viewRoster, lineup: viewLineup, trade: viewTrade, finder: viewFinder, trades: viewTrades,
     h2h: viewH2H, power: viewPower, standings: viewStandings, scout: viewScout, sim: viewSim,
-    draft: viewDraft, stock: viewStock, player: viewPlayer
+    draft: viewDraft, stock: viewStock, hypo: viewHypo, player: viewPlayer
   }[S.view];
   try {
     const pv = VIEWS.find(v => v.k === S.view);
@@ -239,10 +245,8 @@ function render() {
       content.appendChild(h('div.pagehead', h('div.pic', ico(pv.ic)),
         h('div', h('h2', pv.label), h('p', blurbFor(pv.k)))));
     }
-    if (HYP.on) {
-      const bar = HYP_UNAFFECTED[S.view] ? hypNote(S.view) : hypBar();
-      if (bar) content.appendChild(bar);
-    }
+    const hbar = hypBanner(S.view);
+    if (hbar) content.appendChild(hbar);
     content.appendChild(V());
   }
   catch (e) { console.error(e); content.appendChild(card('Something broke in this view', null, h('div', h('p.sec', String(e && e.message || e)), h('pre.tiny.muted', { style: { whiteSpace: 'pre-wrap' } }, String(e && e.stack || ''))))); }
@@ -320,7 +324,7 @@ function splash() {
       go.disabled = false;
     } catch (e) {
       go.disabled = false;
-      status.innerHTML = '<span style="color:var(--bad-text);font-weight:600">' + String(e.message || e) + '</span>';
+      clear(status).appendChild(h('span', { style: { color: 'var(--bad-text)', fontWeight: '600' } }, String(e.message || e)));
       $('i', bar).style.width = '0';
     }
   }
@@ -335,14 +339,14 @@ function splash() {
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
-      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — nothing is uploaded anywhere.')
+      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — your league data is never uploaded. The site only counts anonymous page visits.')
   )));
   const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
   return h('div.splash',
     h('div.sp-art',
-      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Command Center')),
-      h('h1', 'Every dynasty decision, ', h('span', 'one command center.')),
+      h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Dynasty Labs')),
+      h('h1', 'Every dynasty decision, ', h('span', 'tested in the lab.')),
       h('p', 'Live analysis for any Sleeper league: who’s really winning, what a trade is worth, and what the season looks like when you play it a thousand times.'),
       h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
     h('div.sp-form', box));

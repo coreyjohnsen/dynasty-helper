@@ -144,6 +144,7 @@ async function shareCopy(text, what) {
     let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { }
     ta.remove(); if (!ok) { shareToast('Copy failed — select the link and copy it by hand'); return; }
   }
+  track('share-' + String(what).toLowerCase() + '-copied', what + ' copied', true);
   shareToast(what + ' copied');
 }
 function shareMenu() {

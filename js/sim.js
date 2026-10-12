@@ -6,6 +6,7 @@ function simRunAsync() {
   if (SimUI.running || SimUI.mode === 'replay') return;
   const key = () => SimUI.mode + '|' + SimUI.week + '|' + SimUI.n, k0 = key(), t0 = performance.now();
   SimUI.running = true; SimUI.pct = 0;
+  track('simulation-run', 'Simulation run', true);
   const redraw = () => { if (S.view === 'sim') render(); };
   const p = SimUI.mode === 'week'
     ? simulateAsync(SimUI.n, { onlyWeek: SimUI.week }, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; })
@@ -121,7 +122,7 @@ function simGameCard(res, a, b) {
   const dist = (r) => {
     const s = r.weekScores.slice().sort((x, y) => x - y);
     const q = p => s[clamp(Math.floor(p * s.length), 0, s.length - 1)];
-    return `<b>${fmt(q(.5), 1)}</b> median · ${fmt(q(.1), 0)}–${fmt(q(.9), 0)} typical range`;
+    return [h('b', fmt(q(.5), 1)), ' median · ' + fmt(q(.1), 0) + '–' + fmt(q(.9), 0) + ' typical range'];
   };
   const side = (T, r, act, col, right) => h('div.sg-side' + (right ? '.r' : ''),
     teamFace(T, 44),
@@ -134,7 +135,8 @@ function simGameCard(res, a, b) {
       h('b.tiny', 'Week ' + wk + (played ? ' — final' : '')), isLive ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null),
     h('div.sg-main', side(A, ra, ga, ra.weekWin >= rb.weekWin ? CA : 'var(--text-muted)', false), h('div.sg-vs', 'vs'), side(B, rb, gb, rb.weekWin > ra.weekWin ? CB : 'var(--text-muted)', true)),
     h('div.sg-bar', h('i', { style: { width: (ra.weekWin * 100) + '%', background: CA } }), h('i', { style: { width: (rb.weekWin * 100) + '%', background: CB } })),
-    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px', lineHeight: 1.6 }, html: A.short + ': ' + dist(ra) + '<br>' + B.short + ': ' + dist(rb) })));
+    h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px', lineHeight: 1.6 } },
+      A.short + ': ', dist(ra), h('br'), B.short + ': ', dist(rb))));
 }
 function simWeekView(res) {
   const wrap = h('div.grid');

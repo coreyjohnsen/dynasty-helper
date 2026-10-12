@@ -3,6 +3,7 @@
 async function boot(leagueId, onStep) {
   try {
     S.busy = true;
+    hypClear();
     await loadLeague(leagueId, onStep);
     const me = LS.get('me', null);
     if (me) { const t = S.teams.find(t => t.ownerId === me); if (t) S.myRosterId = t.rosterId; }
@@ -13,6 +14,7 @@ async function boot(leagueId, onStep) {
     if (S.view === 'roster') S.view = 'home';
     S.busy = false;
     S.sim = null;
+    track('league-loaded', 'League loaded', true);
     shareApplyPending();
     render();
   } catch (e) {
@@ -34,7 +36,7 @@ setUiMode(LS.get('ui', 'simple'));   // a first visit should meet the calmer vie
 setNameMode(LS.get('names', 'user')); // people know each other by handle, not by team name
 watchViewport();
 const _link = shareParse(location.hash);
-if (_link) SHARE.pending = _link;
+if (_link) { SHARE.pending = _link; track('share-link-opened', 'Share link opened', true); }
 const _last = _link ? _link.league : LS.get('last', null);
 render();
 if (_last && /^\d{6,25}$/.test(String(_last))) {

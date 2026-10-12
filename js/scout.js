@@ -59,7 +59,7 @@ function viewScout() {
         },
         onclick: () => { ScoutUI.team = sc.team.rosterId; render(); }
       }, text);
-      bindTT(cell, `<div class="k">${sc.team.name} · ${p}</div>` +
+      bindTT(cell, `<div class="k">${esc(sc.team.name)} · ${p}</div>` +
         `Starters produce <b>${fmt(e.output, 1)}</b> pts/wk (${e.rank ? ord(e.rank) : '—'} of ${S.teams.length})<br>` +
         (d ? `Next man up <b>${fmt(d.nextUp, 1)}</b> against a league ${fmt(d.lgDepth, 1)}<br>` : '') +
         `${e.startable} startable for ${e.need} slot${e.need === 1 ? '' : 's'}<br>` +

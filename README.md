@@ -1,4 +1,4 @@
-# Dynasty Command Center
+# Dynasty Labs
 
 Live analysis for Sleeper dynasty leagues, served as a static site at
 **[fantasy.johnsencorey.com](https://fantasy.johnsencorey.com)**.
@@ -35,8 +35,22 @@ hours (IndexedDB), weekly projections for 6 hours (IndexedDB), trade values for 
 hours (localStorage). Stock mode also records one value snapshot per visit, so the
 value charts accumulate real observed history over time.
 
-**Nothing is uploaded anywhere and there are no secrets in this repo.** Sleeper's
-API is public and read-only; the app only ever reads.
+**Your league data is never uploaded and there are no secrets in this repo.** Sleeper's
+API is public and read-only; the app only ever reads. The one thing that leaves the page is an
+anonymous visit count to [GoatCounter](https://www.goatcounter.com) (no cookies, no personal
+data): `track()` in `js/core.js` sends the name of the page being viewed and a few events (league
+loaded, trade evaluated, simulation run, hypothetical change, share link copied or opened) —
+never a league ID, a team, a player, or the URL hash. To turn it off, delete the `<script>` tag
+with `data-goatcounter` in `index.html`; `track()` then does nothing.
+
+**Security.** Team, user and league names are typed by the people in a league, so they are treated as
+untrusted. Anything built as an HTML string (tooltips) goes through `esc()` (`js/core.js`) at the
+point a name is interpolated, and `ttShow()` runs the result through `safeHtml()` (`js/ui.js`), which
+keeps only formatting tags and drops everything else. Elsewhere names are set as text. Underneath
+both, `index.html` carries a Content Security Policy (a meta tag, since Pages cannot send headers):
+scripts only from this site and GoatCounter, data only from Sleeper, FantasyCalc, ESPN and the
+counter. If the app ever needs another host, add it to `connect-src` there or the browser will refuse
+the request.
 
 ---
 
@@ -130,8 +144,9 @@ pills read from, so a chart never changes meaning with the theme. Light, dark an
   `deskTray`, `assetBrowser`, `dealBar`) and the same look runs through **Head to Head** (matchup
   bar and headline hero), **Start / Sit** (compare tray plus a collapsible browser),
   **Trade Finder** (team card, player picker, two-tray result cards with a balance chip),
-  **Trade History** (a tray per side), the **Hypothetical** editor (roster as cards, acquire pool
-  as the browser) and **Stock Mode** (searchable player picker instead of a long dropdown).
+  **Trade History** (a tray per side), the **Hypothetical** page (its trade mode is the same desk;
+  the waiver and sandbox modes use the same browser) and **Stock Mode** (searchable player picker
+  instead of a long dropdown).
 - Navigation icons are inline SVG (`ICON` in the script); there are no icon fonts, web
   fonts or other dependencies.
 
@@ -222,3 +237,24 @@ open), roster and player pages. The address bar is kept in sync, so copying it
 works too. Trade, matchup, week and simulator pages also offer **Copy summary**,
 a plain-text snapshot of the numbers on screen. Hypothetical sandbox moves are
 never included. Codecs live in `js/share.js` (`SHARE.pages`).
+
+---
+
+## Hypothetical
+
+The **Hypothetical** tab (Tools) is where you try changes before making them. Three ways in:
+a **hypothetical trade** between any two teams (set it up exactly like the calculator, then
+*Process trade*), a **waiver / free-agent** move (pick someone to sign and, if the roster is full,
+who to drop), and a **sandbox** that makes any single move on any roster.
+
+Each trade, pickup or move is one entry in a log (`HYP.log` in `js/hypothetical.js`). Ownership
+for the rest of the app (`HYP.moves` / `HYP.picks`) is replayed from that log over the real league,
+so a whole trade is undone in one click, and undoing a change also removes later ones that moved
+the same players. Nothing is sent to Sleeper, and *Reset everything* restores the league exactly.
+
+While any change is in effect a slim banner at the top of the other pages lists what it is, with
+*Manage* and *Reset*; pages that are pure results (This Week, Active Rankings, Draft Board, Trade
+History) say so instead. At the top of the Hypothetical page the headline numbers for any affected
+team — playoff and title odds, projected wins, lineup points, power rank, capital — show before and
+after, from the same simulated seasons run on the same random draws, plus who else in the league
+moved the most. The simulations run in the background, so the page never waits on them.

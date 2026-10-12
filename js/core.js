@@ -1,6 +1,6 @@
 "use strict";
 /* ==================================================================
-   Dynasty Command Center — core
+   Dynasty Labs — core
    Live data: Sleeper API (league/rosters/matchups/drafts/players)
               FantasyCalc API (dynasty + redraft trade values, picks)
    ================================================================== */
@@ -35,6 +35,10 @@ function h(tag, props, ...kids) {
   kids.forEach(add);
   return e;
 }
+/** Make text safe to drop into an HTML string. Names in a league (team, user, league) are typed by its members, so
+ *  anything built with `innerHTML` has to pass them through this; h() children are already text and need nothing. */
+const esc = (s) => String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 /* ---------- viewport ----------
    Charts are drawn into a fixed viewBox and stretched to fit their container.
    On a phone that means a 760-wide drawing squeezed into ~380 CSS pixels, which
@@ -231,6 +235,18 @@ async function getJSON(url, tries) {
   throw new Error(url.replace(/^https:\/\//, '').split('?')[0] + ' — ' + err.message);
 }
 const sl = (p) => getJSON(SLEEPER + p);
+
+/* ---------- anonymous usage counts ----------
+   One call per page view or event, to GoatCounter (cookieless; see index.html). Only a short name goes out:
+   never a league ID, a team, a player or the URL hash. count.js loads async, so anything that fires before it
+   arrives waits and is sent when the page finishes loading; if it is blocked or offline the call is dropped. */
+const _trackQ = [];
+function track(path, title, isEvent) {
+  const gc = typeof window !== 'undefined' ? window.goatcounter : null;
+  if (gc && typeof gc.count === 'function') { try { gc.count({ path: path, title: title || path, event: !!isEvent }); } catch (e) { } }
+  else if (typeof document !== 'undefined' && document.readyState !== 'complete') _trackQ.push([path, title, isEvent]);
+}
+if (typeof window !== 'undefined') window.addEventListener('load', () => { _trackQ.splice(0).forEach(a => track(a[0], a[1], a[2])); });
 
 /* ---------- state ---------- */
 const S = {
