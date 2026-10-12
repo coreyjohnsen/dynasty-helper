@@ -14,89 +14,82 @@ function teamShort(rid) { const t = S.teams.find(t => t.rosterId === rid); retur
 async function loadLeague(leagueId, onStep) {
   const step = onStep || (() => { });
   step('Reading league settings…', 0.05);
-  const league = await sl('/league/' + leagueId);
+  // the league and the NFL state do not depend on each other
+  const [league, state] = await Promise.all([sl('/league/' + leagueId), sl('/state/nfl')]);
   if (!league) throw new Error('No league found with ID ' + leagueId + '. Check the 18-digit ID in your Sleeper league URL.');
-  S.league = league; S.leagueId = leagueId;
+  S.league = league; S.leagueId = leagueId; S.state = state;
   S.cfg = detectFormat(league);
-  // settled before anything is priced, because it decides what "value" means
   S.detected = detectLeagueType(league);
   S.dynasty = (leagueTypeChoice() === 'auto' ? S.detected : leagueTypeChoice()) === 'dynasty';
-
-  step('Loading NFL week…', 0.1);
-  S.state = await sl('/state/nfl');
   const season = +(league.season || S.state.season);
   S.season = season;
   const isCurrent = String(season) === String(S.state.season);
   S.week = isCurrent ? (S.state.week || 1) : 18;
   S.regEnd = (league.settings && league.settings.playoff_week_start ? league.settings.playoff_week_start - 1 : 14);
 
-  step('Loading rosters & managers…', 0.18);
-  const [users, rosters, drafts, tradedPicks] = await Promise.all([
-    sl(`/league/${leagueId}/users`), sl(`/league/${leagueId}/rosters`),
-    sl(`/league/${leagueId}/drafts`), sl(`/league/${leagueId}/traded_picks`)
-  ]);
+  // everything below needs only the league id, the season or the format: start it all now
+  step('Loading rosters, players & values…', 0.18);
+  const pRosters = Promise.all([sl(`/league/${leagueId}/users`), sl(`/league/${leagueId}/rosters`), sl(`/league/${leagueId}/drafts`), sl(`/league/${leagueId}/traded_picks`)]);
+  const pPlayers = loadSleeperPlayers();
+  const pEspn = loadEspnInjuries().catch(e => ({ d: null, at: null, state: 'down', error: String(e && e.message || e) }));
+  const pVals = loadValues(S.cfg);
+  const pRd = loadRedraftValues(S.cfg);
+  const weeks = []; for (let w = 1; w <= S.regEnd + 4; w++) weeks.push(w);
+  const pMatch = Promise.all(weeks.map(w => sl(`/league/${leagueId}/matchups/${w}`).catch(() => null)));
+  const pSched = loadNflSchedule(S.season);
+  const txWeeks = []; for (let w = 1; w <= 18; w++) txWeeks.push(w);
+  const pTx = Promise.all(txWeeks.map(w => sl(`/league/${leagueId}/transactions/${w}`).catch(() => [])));
+  [pPlayers, pVals, pRd, pMatch, pSched, pTx].forEach(p => p.catch(() => { }));   // surfaced where awaited
+
+  const [users, rosters, drafts, tradedPicks] = await pRosters;
   S.users = users || []; S.rosters = rosters || []; S.drafts = drafts || []; S.tradedPicks = tradedPicks || [];
+  // draft detail needs the draft list, and projections need only the roster ids
+  const pDrafts = Promise.all(S.drafts.map(d => Promise.all([sl('/draft/' + d.draft_id), sl(`/draft/${d.draft_id}/picks`)]).then(r => [d, r], () => [d, null])));
+  const rosterIds = Array.from(new Set([].concat.apply([], S.rosters.map(r => (r.players || []).map(String)))));
+  const pProj = loadWeeklyProjections(rosterIds, S.season, (d, n) => step(`Loading weekly projections… ${d}/${n}`, 0.88 + 0.1 * (d / n))).catch(() => ({}));
 
   step('Loading player database…', 0.3);
-  S.players = await loadSleeperPlayers();
-  // ESPN's injury report loads alongside everything else and is allowed to fail
-  const espnLoad = loadEspnInjuries().catch(e => ({ d: null, at: null, state: 'down', error: String(e && e.message || e) }));
-
+  S.players = await pPlayers;
   step('Loading ' + valueWord() + ' trade values…', 0.52);
-  S.values = await loadValues(S.cfg);
-  S.redraftApi = await loadRedraftValues(S.cfg);
+  S.values = await pVals;
+  S.redraftApi = await pRd;
   S.index = buildIndex(); S._sig = null; S._tl = null;
   if (isDynasty()) buildPickCurves();
 
   step('Loading weekly matchups…', 0.66);
-  const weeks = [];
-  for (let w = 1; w <= S.regEnd + 4; w++) weeks.push(w);
-  const results = await Promise.all(weeks.map(w => sl(`/league/${leagueId}/matchups/${w}`).catch(() => null)));
+  const results = await pMatch;
   S.matchups = {}; weeks.forEach((w, i) => { if (results[i] && results[i].length) S.matchups[w] = results[i]; });
-  // the NFL's own game statuses, so a week that is underway is not mistaken for
-  // a finished one the moment the Thursday game ends
-  S.nflSched = await loadNflSchedule(S.season);
+  S.nflSched = await pSched;
   S.lastWeek = 0;
   for (let w = 1; w <= S.regEnd; w++) {
     const m = S.matchups[w];
     if (m && m.some(x => (x.points || 0) > 0) && weekFinished(w)) S.lastWeek = w;
   }
-  // the week in progress: started, not finished, and the first such week left
   S.liveWeek = null;
   for (let w = S.lastWeek + 1; w <= S.regEnd; w++) {
     if (weekStarted(w) && !weekFinished(w)) { S.liveWeek = w; break; }
     if (weekStarted(w)) continue;
     break;
   }
-  // kickoff times and live quarters for the week being played
   S.weekScores = {};
-  if (S.liveWeek) await ensureWeekScores(S.liveWeek);
+  const pLive = S.liveWeek ? ensureWeekScores(S.liveWeek) : null;
 
   step('Loading drafts…', 0.82);
   S.draftPicks = {}; S.draftMeta = {};
-  for (const d of S.drafts) {
-    try {
-      const [meta, picks] = await Promise.all([sl('/draft/' + d.draft_id), sl(`/draft/${d.draft_id}/picks`)]);
-      S.draftMeta[d.draft_id] = meta || d; S.draftPicks[d.draft_id] = picks || [];
-    } catch (e) { S.draftPicks[d.draft_id] = []; }
-  }
+  (await pDrafts).forEach(([d, r]) => {
+    if (r) { S.draftMeta[d.draft_id] = r[0] || d; S.draftPicks[d.draft_id] = r[1] || []; } else S.draftPicks[d.draft_id] = [];
+  });
 
   step('Loading transactions…', 0.86);
-  // all 18 legs, not just the played ones — trades land in the offseason too
-  const txWeeks = [];
-  for (let w = 1; w <= 18; w++) txWeeks.push(w);
-  const txs = await Promise.all(txWeeks.map(w => sl(`/league/${leagueId}/transactions/${w}`).catch(() => [])));
+  const txs = await pTx;
   S.transactions = [].concat(...txs.map((x, i) => (x || []).map(t => Object.assign({ _week: txWeeks[i] }, t))));
+  if (pLive) await pLive;
 
   buildTeams();
   step('Loading weekly projections…', 0.88);
-  const rosteredIds = Array.from(new Set([].concat.apply([], S.teams.map(t => t.players.map(p => p.id)))));
-  try {
-    S.wproj = await loadWeeklyProjections(rosteredIds, S.season,
-      (d, n) => step(`Loading weekly projections… ${d}/${n}`, 0.88 + 0.1 * (d / n)));
-  } catch (e) { S.wproj = {}; }
+  S.wproj = await pProj;
   applyProjections();
-  S.espnInj = await espnLoad;
+  S.espnInj = await pEspn;
   applyAvailability();
 
   step('Building models…', 0.99);

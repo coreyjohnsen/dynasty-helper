@@ -73,17 +73,6 @@ function teamLogo(abbr) {
     alt: abbr, title: abbr, loading: 'lazy', onerror: e => { e.target.style.display = 'none'; }
   });
 }
-/** A player line with a face, for simple mode. */
-function playerCard(p, opts) {
-  opts = opts || {};
-  return h('div.pcard' + medalCls(p).replace(/ /g, '.'), { style: opts.style || null },
-    playerFace(p),
-    h('div.meta',
-      h('div.nm', pname(p, { face: false })),
-      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
-        opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury, p))),
-    opts.value !== undefined ? h('div.val', opts.value) : null);
-}
 /* Injury designations, abbreviated on a phone — "Questionable" is 85px of a
    348px card, and the full word is still on the tag's title. */
 const INJ_SHORT = { Questionable: 'Q', Doubtful: 'D', Out: 'OUT', IR: 'IR', PUP: 'PUP', Sus: 'SUSP', COV: 'COV', DNR: 'DNR', NA: 'NA' };

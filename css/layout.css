@@ -103,7 +103,6 @@
 .mring.anim.silver{animation:medal-flow 14s linear infinite}
 .pcard.medal.anim.diamond::after,.card.medal.mhero.anim.diamond::after{animation:medal-sweep 4.5s ease-in-out infinite}
 .pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
-.pcard.medal.anim.gold::after,.card.medal.mhero.anim.gold::after{animation:medal-sweep 7s ease-in-out infinite}
 @media (max-width:760px){ .mring.anim.silver,.pcard.medal.anim.gold::after{animation:none} }
 @media (prefers-reduced-motion:reduce){ .mring,.pcard.medal::after,.card.medal.mhero::after{animation:none!important} }
 :root[data-theme="dark"] .medal{--m-tint:rgba(255,255,255,.05)}

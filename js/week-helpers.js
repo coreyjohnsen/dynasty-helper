@@ -235,6 +235,10 @@ function probFromSides(la, lb, seed, n) {
   n = n || 4000;
   const mk = (l) => l.open.map(r => ({ m: r.used, sd: volFromMean(r.p.pos, r.used) }));
   const oa = mk(la), ob = mk(lb);
+  // seeded, so identical inputs give identical odds; callers get their own copy because they annotate the result
+  const key = (seed >>> 0) + '|' + n + '|' + la.banked + '|' + lb.banked + '|' + oa.map(x => x.m + ':' + x.sd).join(',') + '|' + ob.map(x => x.m + ':' + x.sd).join(',');
+  const hit = _probMemo.get(key);
+  if (hit) return Object.assign({}, hit);
   const draw = (arr, base) => {
     let s = 0;
     for (let k = 0; k < arr.length; k++) { if (rnd() < BUST_RATE) continue; s += drawScore(arr[k].m, arr[k].sd); }
@@ -250,12 +254,18 @@ function probFromSides(la, lb, seed, n) {
   }
   const srt = Array.from(margins).sort((x, y) => x - y);
   const q = (p) => srt[clamp(Math.floor(p * (n - 1)), 0, n - 1)];
-  return {
+  const out = {
     pA: aw / n, pB: (n - aw - tie) / n, tie: tie / n,
     med: q(.5), lo: q(.1), hi: q(.9),
     settled: !oa.length && !ob.length
   };
+  if (_probMemo.size > 2000) _probMemo.clear();
+  _probMemo.set(key, out);
+  return Object.assign({}, out);
 }
+const _probMemo = new Map();
+
+
 
 /** Win probability with the banked points held fixed and only the open slots drawn. */
 function liveWinProb(A, B, wk, n) {
@@ -324,15 +334,6 @@ function weekSlates(wk) {
     by[k].n += 0.5; if (GAME_OVER[sc[t].status]) by[k].done += 0.5;
   });
   return Object.values(by).sort((a, b) => a.start - b.start);
-}
-/** How many of the week's games are finished. */
-function weekGamesDone(wk) {
-  const ws = S.weekScores && S.weekScores[wk];
-  if (ws) return { done: ws.games.filter(g => g.over).length, total: ws.games.length };
-  const sc = S.nflSched && S.nflSched[wk];
-  if (!sc) return { done: 0, total: 0 };
-  const ks = Object.keys(sc);
-  return { done: ks.filter(t => GAME_OVER[sc[t].status]).length / 2, total: ks.length / 2 };
 }
 
 /* ---------- the week's own probability path ----------

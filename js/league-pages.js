@@ -434,24 +434,45 @@ function weekOutlook(p, wk) {
       state: lv ? lv.state : (bye ? 'bye' : 'out'), final: !!lv && lv.state !== 'upcoming'
     };
   }
-  const sd = volFromMean(p.pos, m), n = 3000;
-  seedRng(hashStr(p.id + '|' + wk));
+  const sd = volFromMean(p.pos, m);
+  const q = sampleOutlook(p.id, wk, p.pos, m, banked);
+  const mean = banked + m;
+  return {
+    mean: mean, sd, bye: false, opp: lv ? lv.opp : pwOpp(p, wk),
+    floor: q.floor, median: q.median, ceil: q.ceil,
+    bust: q.bust, boom: q.boom,
+    state: lv ? lv.state : null, actual: lv ? lv.actual : null, quarter: lv ? lv.quarter : null
+  };
+}
+/* The draws behind weekOutlook are seeded by player and week, so the same inputs always
+   give the same numbers; remembering them skips 3,000 gamma draws and a sort on every redraw. */
+const _outlookMemo = new Map();
+function sampleOutlook(id, wk, pos, m, banked) {
+  const key = id + '|' + wk + '|' + pos + '|' + m + '|' + banked;
+  let r = _outlookMemo.get(key);
+  if (r) return r;
+  const sd = volFromMean(pos, m), n = 3000;
+  seedRng(hashStr(id + '|' + wk));
   const s = new Array(n);
   for (let i = 0; i < n; i++) s[i] = banked + (rnd() < BUST_RATE ? 0 : drawScore(m, sd));
   s.sort((a, b) => a - b);
   const mean = banked + m;
-  return {
-    mean: mean, sd, bye: false, opp: lv ? lv.opp : pwOpp(p, wk),
+  r = {
     floor: s[Math.floor(n * 0.1)], median: s[n >> 1], ceil: s[Math.floor(n * 0.9)],
-    bust: s.filter(x => x < mean * 0.5).length / n, boom: s.filter(x => x > mean * 1.5).length / n,
-    state: lv ? lv.state : null, actual: lv ? lv.actual : null, quarter: lv ? lv.quarter : null
+    bust: s.filter(x => x < mean * 0.5).length / n, boom: s.filter(x => x > mean * 1.5).length / n
   };
+  if (_outlookMemo.size > 4000) _outlookMemo.clear();
+  _outlookMemo.set(key, r);
+  return r;
 }
 /** Probability a outscores b in a given week, from independent paired draws. */
 function pBeats(a, b, wk) {
   const ma = pwShown(a, wk), mb = pwShown(b, wk);
   if (!(ma > 0.05) && !(mb > 0.05)) return 0.5;
   const sa = volFromMean(a.pos, ma), sb = volFromMean(b.pos, mb);
+  const key = a.id + '|' + b.id + '|' + wk + '|' + a.pos + '|' + b.pos + '|' + ma + '|' + mb;
+  const hit = _beatsMemo.get(key);
+  if (hit !== undefined) return hit;
   const n = 12000; let w = 0;
   seedRng(hashStr(a.id + '|' + b.id + '|' + wk));
   for (let i = 0; i < n; i++) {
@@ -459,6 +480,9 @@ function pBeats(a, b, wk) {
     const y = mb > 0.05 ? (rnd() < BUST_RATE ? 0 : drawScore(mb, sb)) : 0;
     if (x > y) w++; else if (x === y) w += 0.5;
   }
+  if (_beatsMemo.size > 4000) _beatsMemo.clear();
+  _beatsMemo.set(key, w / n);
   return w / n;
 }
+const _beatsMemo = new Map();
 

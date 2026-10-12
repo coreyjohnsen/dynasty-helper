@@ -1,6 +1,5 @@
 "use strict";
 /* ================= 12. TRADE HISTORY ================= */
-const TradesUI = { team: null };
 function viewTrades() {
   const wrap = h('div.grid');
   const { list, trades } = traderStats();

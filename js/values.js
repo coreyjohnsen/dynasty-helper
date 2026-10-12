@@ -398,10 +398,13 @@ async function loadWeeklyProjections(ids, season, onProgress) {
     done++;
     if (onProgress && done % 12 === 0) onProgress(done, missing.length);
   };
+  // a rolling pool: the next request starts the moment any one finishes, instead of
+  // waiting for the slowest of a batch of twelve
   const CONC = 12;
-  for (let i = 0; i < missing.length; i += CONC) {
-    await Promise.all(missing.slice(i, i + CONC).map(fetchOne));
-  }
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(CONC, missing.length) }, async () => {
+    while (next < missing.length) await fetchOne(missing[next++]);
+  }));
   if (missing.length) { try { await idbSet(key, { t: Date.now(), d: have }); } catch (e) { } }
   return have;
 }
