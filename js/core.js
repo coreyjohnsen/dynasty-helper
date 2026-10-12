@@ -176,7 +176,6 @@ const svg = (tag, props) => {
 const clear = (e) => { while (e.firstChild) e.removeChild(e.firstChild); return e; };
 
 /* ---------- numbers ---------- */
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const sum = (a) => a.reduce((x, y) => x + y, 0);
 const mean = (a) => a.length ? sum(a) / a.length : 0;
 const sd_ = (a) => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(sum(a.map(x => (x - m) ** 2)) / (a.length - 1)); };
@@ -190,21 +189,6 @@ function rankOf(arr, desc) { // returns rank array 1-based
   const idx = arr.map((v, i) => [v, i]).sort((a, b) => desc === false ? a[0] - b[0] : b[0] - a[0]);
   const out = new Array(arr.length); idx.forEach(([, i], r) => out[i] = r + 1); return out;
 }
-/* fast RNG + gaussian */
-let _rs = 88675123 >>> 0;
-function rnd() { _rs ^= _rs << 13; _rs >>>= 0; _rs ^= _rs >> 17; _rs ^= _rs << 5; _rs >>>= 0; return _rs / 4294967296; }
-let _spare = null;
-/* Reseeding must also discard the cached Box-Muller spare, otherwise a run can
-   open with a deviate left over from whatever ran before it and two same-seed
-   runs diverge — which would quietly break every paired before/after comparison. */
-function seedRng(s) { _rs = (s >>> 0) || 88675123; _spare = null; }
-function gauss() {
-  if (_spare !== null) { const v = _spare; _spare = null; return v; }
-  let u, v, s;
-  do { u = rnd() * 2 - 1; v = rnd() * 2 - 1; s = u * u + v * v; } while (s >= 1 || s === 0);
-  const m = Math.sqrt(-2 * Math.log(s) / s); _spare = v * m; return u * m;
-}
-
 /* ---------- storage ---------- */
 const LS = {
   get(k, d) { try { const v = localStorage.getItem('dcc:' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },

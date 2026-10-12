@@ -81,8 +81,6 @@ function hypMovePick(key, toRosterId) {
   else HYP.picks[key] = toRosterId;
   HYP.after = null; hypSync();
 }
-/* which views actually change when a roster changes */
-const HYP_VIEWS = { roster: 1, lineup: 1, power: 1, sim: 1, finder: 1, trade: 1, scout: 1, stock: 1, player: 1 };
 const HYP_UNAFFECTED = {
   week: 'This Week is scored from games that are already happening. A hypothetical roster does not change points that have been banked, so the live totals and matchups here stay real.',
   standings: 'Active Rankings is pure results — wins, losses and points actually scored. A hypothetical roster cannot change games that have already been played.',

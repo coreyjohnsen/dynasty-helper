@@ -62,6 +62,8 @@ function playerFace(p, opts) {
     onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
   }));
 }
+/** Show that a button's work has started; the page redraws when the result arrives. */
+function busyBtn(b) { if (b) { b.disabled = true; b.textContent = 'Simulating…'; } }
 function medalTitle(p) {
   const m = MEDALS.find(x => x.k === p.medal);
   return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
@@ -72,17 +74,6 @@ function teamLogo(abbr) {
     src: 'https://sleepercdn.com/images/team_logos/nfl/' + abbr.toLowerCase() + '.png',
     alt: abbr, title: abbr, loading: 'lazy', onerror: e => { e.target.style.display = 'none'; }
   });
-}
-/** A player line with a face, for simple mode. */
-function playerCard(p, opts) {
-  opts = opts || {};
-  return h('div.pcard' + medalCls(p).replace(/ /g, '.'), { style: opts.style || null },
-    playerFace(p),
-    h('div.meta',
-      h('div.nm', pname(p, { face: false })),
-      h('div.sub', posPill(p.pos), p.team ? teamLogo(p.team) : null,
-        opts.sub ? h('span', opts.sub) : null, injuryTag(p.injury, p))),
-    opts.value !== undefined ? h('div.val', opts.value) : null);
 }
 /* Injury designations, abbreviated on a phone — "Questionable" is 85px of a
    348px card, and the full word is still on the tag's title. */

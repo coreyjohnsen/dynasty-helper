@@ -18,6 +18,11 @@ function afterPicks(t, out, incoming) {
  *  the trade itself produces. Landing a starter pushes you up the table, which
  *  pushes the pick you sent down the draft order — so the deal is often better
  *  for the seller than the sticker price suggests, and worse for the buyer. */
+/** The two runs a trade is judged by: the league as it is, and with the deal done, on the same random draws. */
+function tradeSimPlan(A, B, aAfter, bAfter) {
+  const overrides = {}; overrides[A.rosterId] = aAfter.act; overrides[B.rosterId] = bAfter.act;
+  return { overrides, seed: (Math.random() * 4294967296) >>> 0 };
+}
 function tradeEval(A, B, aOut, bOut, simN) {
   // phase 1: rosters and strength, with pick capital deliberately excluded
   const shell = (t, out, inc) => {
@@ -108,10 +113,9 @@ function tradeEval(A, B, aOut, bOut, simN) {
   if (simN) {
     // Common random numbers: identical seed on both runs, so the difference
     // reflects the trade rather than simulation noise.
-    const so = {}; so[A.rosterId] = aAfter.act; so[B.rosterId] = bAfter.act;
-    const pairSeed = (Math.random() * 4294967296) >>> 0;
-    simBefore = simulate(simN, { seed: pairSeed });
-    simAfter = simulate(simN, { overrides: so, seed: pairSeed });
+    const plan = tradeSimPlan(A, B, aAfter, bAfter);
+    simBefore = simulate(simN, { seed: plan.seed });
+    simAfter = simulate(simN, { overrides: plan.overrides, seed: plan.seed });
   }
   // headline balance stays at today's market prices — that is what you negotiate at
   const aVal = sum(aOut.map(a => a.dv)), bVal = sum(bOut.map(a => a.dv));
@@ -143,6 +147,29 @@ function tradeRunNow() {
   if (!A || !B || !(TradeUI.aOut.length || TradeUI.bOut.length)) { TradeUI.result = null; TradeUI.sig = null; return null; }
   TradeUI.result = tradeEval(A, B, TradeUI.aOut, TradeUI.bOut, TRADE_SIMS);
   TradeUI.sig = tradeSig();
+  return TradeUI.result;
+}
+/** Evaluate the current proposal with the simulations running in the background. */
+async function tradeRunAsync() {
+  const A = S.teamById[TradeUI.a], B = S.teamById[TradeUI.b];
+  if (!A || !B || !(TradeUI.aOut.length || TradeUI.bOut.length)) { TradeUI.result = null; TradeUI.sig = null; return null; }
+  if (TradeUI.running) return null;
+  TradeUI.running = true; render();
+  const redraw = () => { if (S.view === 'trade') render(); };
+  try {
+    await new Promise(r => setTimeout(r, 16));          // let the "Simulating…" state paint first
+    const sig = tradeSig();
+    const r = tradeEval(A, B, TradeUI.aOut, TradeUI.bOut, 0);
+    const plan = tradeSimPlan(A, B, r.aAfter, r.bAfter);
+    // both jobs are read from the league now, together, then played alongside each other
+    const pb = simulateAsync(TRADE_SIMS, { seed: plan.seed });
+    const pa = simulateAsync(TRADE_SIMS, { overrides: plan.overrides, seed: plan.seed });
+    const [sb, sa] = await Promise.all([pb, pa]);
+    // dropped if the league moved on, or the proposal was edited, while it ran
+    if (sb && sa && tradeSig() === sig) { r.simBefore = sb; r.simAfter = sa; TradeUI.result = r; TradeUI.sig = sig; }
+  } catch (e) { console.error(e); }
+  TradeUI.running = false; redraw();
+  setTimeout(() => { const el = $('#tresult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
   return TradeUI.result;
 }
 /* ================= desk components =================
@@ -319,12 +346,7 @@ function viewTrade() {
   /* ---- is it fair, and what next ---- */
   const run = () => {
     if (!canRun || TradeUI.running) return;
-    TradeUI.running = true; render();
-    setTimeout(() => {
-      try { tradeRunNow(); } catch (e) { console.error(e); }
-      TradeUI.running = false; render();
-      setTimeout(() => { const el = $('#tresult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
-    }, 16);
+    tradeRunAsync();
   };
   const sig = tradeSig();
   const fresh = TradeUI.result && TradeUI.sig === sig;

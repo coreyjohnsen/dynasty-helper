@@ -103,9 +103,9 @@ function viewWeek() {
       'which game moves the season most depends on the rest of the season, so this needs a full simulation',
       h('div.row', { style: { gap: '12px' } },
         h('button.btn.pri', {
-          onclick: () => { S.sim = simulate(2000); SimUI.res = S.sim; SimUI.mode = 'season'; render(); }
+          onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); }
         }, 'Run 2,000 seasons'),
-        h('span.tiny.muted', 'about a quarter of a second'))));
+        h('span.tiny.muted', 'runs in the background'))));
   }
 
   /* ---- the matchups ---- */
@@ -198,26 +198,6 @@ function leverageWorld(g, which) {
         h('b', pct(r.po, 0)), h('span.muted', ' playoffs · '), h('b', pct(r.ti, 1)), h('span.muted', ' title'))))));
 }
 
-/** Every starter on both sides of one matchup. */
-function weekPlayerTable(g) {
-  const rows = [];
-  g.a.rows.forEach(r => rows.push(Object.assign({ side: g.A }, r)));
-  g.b.rows.forEach(r => rows.push(Object.assign({ side: g.B }, r)));
-  const badge = (st) => st === 'done' ? h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'final')
-    : st === 'live' ? h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, 'playing')
-      : st === 'bye' ? h('span.tag', 'BYE') : h('span.tag', 'to play');
-  return table([
-    { k: 'side', h: 'Team', sort: r => r.side.name, f: r => h('span.tiny', r.side.short) },
-    { k: 'pos', prio: 2, h: 'Pos', sortable: false, f: r => posPill(r.p.pos) },
-    { k: 'name', h: 'Player', sort: r => r.p.name, f: r => isSimple()
-      ? h('div.row', { style: { gap: '7px', minWidth: 0 } }, playerFace(r.p), pname(r.p, { face: false }), r.p.team ? teamLogo(r.p.team) : null)
-      : pname(r.p) },
-    { k: 'st', h: 'Status', sortable: false, f: r => badge(r.state) },
-    { k: 'used', h: 'Counted', num: true, sort: r => r.used, f: r => h('b.mono', fmt(r.used, 1)) },
-    { k: 'actual', prio: 2, h: 'Actual', num: true, sort: r => r.actual || 0, f: r => r.actual === null ? '—' : h('span.mono', fmt(r.actual, 1)) },
-    { k: 'proj', prio: 2, h: 'Projected', num: true, sort: r => r.proj, f: r => h('span.mono.muted', fmt(r.proj, 1)) }
-  ], rows, { sortKey: 'used', sortDir: -1 });
-}
 
 /** One matchup's detail: how the odds moved, and every starter on both sides. */
 function weekDetail(wrap, g, wk, live) {

@@ -1,6 +1,25 @@
 "use strict";
 /* ================= 6. SIMULATOR ================= */
-const SimUI = { mode: 'season', week: null, n: 2000, res: null, team: null, replay: null, openWeek: null, sort: 'title' };
+const SimUI = { mode: 'season', week: null, n: 2000, res: null, team: null, replay: null, openWeek: null, sort: 'title', running: false, pct: 0 };
+/** Run the simulation the page is set up for, in the background. A result that no longer matches the settings is dropped. */
+function simRunAsync() {
+  if (SimUI.running || SimUI.mode === 'replay') return;
+  const key = () => SimUI.mode + '|' + SimUI.week + '|' + SimUI.n, k0 = key(), t0 = performance.now();
+  SimUI.running = true; SimUI.pct = 0;
+  const redraw = () => { if (S.view === 'sim') render(); };
+  const p = SimUI.mode === 'week'
+    ? simulateAsync(SimUI.n, { onlyWeek: SimUI.week }, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; })
+    : simulateAsync(SimUI.n, null, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; });
+  p.then(r => {
+    SimUI.running = false;
+    if (r && key() === k0) {
+      SimUI.res = r; r.ms = Math.round(performance.now() - t0);
+      if (SimUI.mode === 'season') S.sim = r;
+    }
+    redraw();
+  }, e => { SimUI.running = false; console.error(e); redraw(); });
+  redraw();
+}
 /* ================= simulator pieces =================
    Shared by all three modes: a badge for every team (its Sleeper avatar, or a
    coloured initial when it has none), a strip to pick a team, and a meter. */
@@ -40,11 +59,7 @@ function simDesk(weeks, isReplay) {
   const run = () => {
     const t0 = performance.now();
     if (isReplay) { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; SimUI.replay.ms = Math.round(performance.now() - t0); }
-    else {
-      SimUI.res = SimUI.mode === 'week' ? simulate(SimUI.n, { onlyWeek: SimUI.week }) : simulate(SimUI.n);
-      SimUI.res.ms = Math.round(performance.now() - t0);
-      if (SimUI.mode === 'season') S.sim = SimUI.res;
-    }
+    else { simRunAsync(); return; }
     render();
   };
   const status = !isReplay && SimUI.res ? `${kfmt(SimUI.res.n)} runs in ${SimUI.res.ms} ms`
@@ -59,7 +74,7 @@ function simDesk(weeks, isReplay) {
         weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,
       isReplay ? null : h('label.fld', 'Simulations', h('select', { onchange: e => { SimUI.n = +e.target.value; SimUI.res = null; render(); } },
         [1000, 2000, 5000, 10000].map(n => h('option', { value: n, selected: n === SimUI.n }, kfmt(n))))),
-      h('button.btn.pri.simrun', { onclick: run }, isReplay ? '▶ Play the season' : 'Run simulation')),
+      h('button.btn.pri.simrun', { onclick: run, disabled: !isReplay && SimUI.running }, isReplay ? '▶ Play the season' : SimUI.running ? 'Simulating… ' + Math.round(SimUI.pct * 100) + '%' : 'Run simulation')),
     status ? h('div.tiny.muted', status) : null));
 }
 function simEmpty(title, text) {
