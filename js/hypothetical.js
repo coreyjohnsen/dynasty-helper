@@ -100,6 +100,7 @@ function hypCommit(kind, short, label, steps) {
   }
   HYP.flash = null;
   HYP.log.push({ id: HYP.nextId++, kind, short, label, steps });
+  track('hypothetical-' + kind, 'Hypothetical ' + kind, true);
   hypRebuild();
 }
 /** Take a change back out, and anything later that moved the same players or picks —

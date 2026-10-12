@@ -6,6 +6,7 @@ function simRunAsync() {
   if (SimUI.running || SimUI.mode === 'replay') return;
   const key = () => SimUI.mode + '|' + SimUI.week + '|' + SimUI.n, k0 = key(), t0 = performance.now();
   SimUI.running = true; SimUI.pct = 0;
+  track('simulation-run', 'Simulation run', true);
   const redraw = () => { if (S.view === 'sim') render(); };
   const p = SimUI.mode === 'week'
     ? simulateAsync(SimUI.n, { onlyWeek: SimUI.week }, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; })

@@ -35,8 +35,13 @@ hours (IndexedDB), weekly projections for 6 hours (IndexedDB), trade values for 
 hours (localStorage). Stock mode also records one value snapshot per visit, so the
 value charts accumulate real observed history over time.
 
-**Nothing is uploaded anywhere and there are no secrets in this repo.** Sleeper's
-API is public and read-only; the app only ever reads.
+**Your league data is never uploaded and there are no secrets in this repo.** Sleeper's
+API is public and read-only; the app only ever reads. The one thing that leaves the page is an
+anonymous visit count to [GoatCounter](https://www.goatcounter.com) (no cookies, no personal
+data): `track()` in `js/core.js` sends the name of the page being viewed and a few events (league
+loaded, trade evaluated, simulation run, hypothetical change, share link copied or opened) —
+never a league ID, a team, a player, or the URL hash. To turn it off, delete the `<script>` tag
+with `data-goatcounter` in `index.html`; `track()` then does nothing.
 
 ---
 

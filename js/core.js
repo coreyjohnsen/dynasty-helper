@@ -232,6 +232,18 @@ async function getJSON(url, tries) {
 }
 const sl = (p) => getJSON(SLEEPER + p);
 
+/* ---------- anonymous usage counts ----------
+   One call per page view or event, to GoatCounter (cookieless; see index.html). Only a short name goes out:
+   never a league ID, a team, a player or the URL hash. count.js loads async, so anything that fires before it
+   arrives waits and is sent when the page finishes loading; if it is blocked or offline the call is dropped. */
+const _trackQ = [];
+function track(path, title, isEvent) {
+  const gc = typeof window !== 'undefined' ? window.goatcounter : null;
+  if (gc && typeof gc.count === 'function') { try { gc.count({ path: path, title: title || path, event: !!isEvent }); } catch (e) { } }
+  else if (typeof document !== 'undefined' && document.readyState !== 'complete') _trackQ.push([path, title, isEvent]);
+}
+if (typeof window !== 'undefined') window.addEventListener('load', () => { _trackQ.splice(0).forEach(a => track(a[0], a[1], a[2])); });
+
 /* ---------- state ---------- */
 const S = {
   view: 'home', leagueId: null, league: null, users: [], rosters: [], teams: [],

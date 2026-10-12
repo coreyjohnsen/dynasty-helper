@@ -184,6 +184,7 @@ function settingsMenu() {
 
 let moreOpen = false;
 let _lastView = null;
+let _lastTracked = null;
 const NAV_ORDER = ['Overview', 'Teams', 'Trading', 'League', 'Tools'];
 /* the four places most visits start from, plus "More" — what the phone tab bar shows */
 const TAB_VIEWS = ['home', 'week', 'roster', 'players'];
@@ -197,6 +198,13 @@ function render() {
   const keepY = _lastView === S.view ? (window.scrollY || 0) : 0;
   const app = $('#app');
   clear(app);
+  // one count per page visited (the start screen counts too, so visits that never load a league show up)
+  const seen = S.league ? S.view : 'start';
+  if (seen !== _lastTracked) {
+    _lastTracked = seen;
+    const pv = VIEWS.find(v => v.k === seen);
+    track('/' + seen, pv ? pv.label : seen === 'player' ? 'Player' : 'Start');
+  }
   if (!S.league) return app.appendChild(splash());
   let lastGrp = null;
   const navItems = [];
@@ -331,7 +339,7 @@ function splash() {
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
-      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — nothing is uploaded anywhere.')
+      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — your league data is never uploaded. The site only counts anonymous page visits.')
   )));
   const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };

@@ -166,7 +166,7 @@ async function tradeRunAsync() {
     const pa = simulateAsync(TRADE_SIMS, { overrides: plan.overrides, seed: plan.seed });
     const [sb, sa] = await Promise.all([pb, pa]);
     // dropped if the league moved on, or the proposal was edited, while it ran
-    if (sb && sa && tradeSig() === sig) { r.simBefore = sb; r.simAfter = sa; TradeUI.result = r; TradeUI.sig = sig; }
+    if (sb && sa && tradeSig() === sig) { r.simBefore = sb; r.simAfter = sa; TradeUI.result = r; TradeUI.sig = sig; track('trade-evaluated', 'Trade evaluated', true); }
   } catch (e) { console.error(e); }
   TradeUI.running = false; redraw();
   setTimeout(() => { const el = $('#tresult'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
