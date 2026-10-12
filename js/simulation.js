@@ -37,7 +37,8 @@ function buildWeeklyStarters(teams, weeks, rosterFor, live) {
   });
   return out;
 }
-function simulate(nSims, opts) {
+/** Read the league into a plain-data job (no functions, no page objects) that the kernel can play anywhere. */
+function prepareSim(nSims, opts) {
   opts = opts || {};
   const teams = S.teams, n = teams.length, idOf = {}; teams.forEach((t, i) => idOf[t.rosterId] = i);
   const sched = schedule();
@@ -75,182 +76,22 @@ function simulate(nSims, opts) {
   const levWeek = levGames.length ? levGames[0].week : null;
   const nG = levGames.length;
 
-  const acc = {
-    wins: new Float64Array(n), pts: new Float64Array(n), playoff: new Float64Array(n),
-    bye: new Float64Array(n), semi: new Float64Array(n), final: new Float64Array(n),
-    title: new Float64Array(n), seed: new Float64Array(n), best: new Float64Array(n).fill(99), worst: new Float64Array(n),
-    winDist: Array.from({ length: n }, () => new Float64Array(S.regEnd + 1)),
-    weekWin: new Float64Array(n), weekPts: new Float64Array(n), weekTop: new Float64Array(n),
-    weekScores: Array.from({ length: n }, () => []),
-    // --- expanded instrumentation ---
-    seedDist: Array.from({ length: n }, () => new Float64Array(n + 1)),
-    allPlay: new Float64Array(n),          // all-play wins over the simulated weeks
-    allPlayGames: 0,                       // (n-1) x weeks simulated, same for everyone
-    simWins: new Float64Array(n),          // wins earned in the simulated weeks only
-    oppPts: new Float64Array(n), oppGames: new Float64Array(n),   // rest-of-season SOS
-    ptsRuns: Array.from({ length: n }, () => []),                 // season PF per run
-    fieldAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // in the field after week w
-    aliveAt: Array.from({ length: n }, () => new Float64Array(S.regEnd + 2)),  // can still reach the cut
-    knockedBy: new Float64Array(n * n),    // [loser*n + winner] in the bracket
-    draftSum: new Float64Array(n),         // next draft: summed slot across runs
-    draftDist: Array.from({ length: n }, () => new Float64Array(n + 1)),
-    finalVs: new Float64Array(n * n),      // met in the title game
-    poWins: new Float64Array(n),           // playoff games won
-    // leverage: for each game in the next week, each side's odds when they win vs lose
-    lev: levGames.map(() => ({ nA: 0, nB: 0, poAw: 0, poAl: 0, poBw: 0, poBl: 0, tiAw: 0, tiAl: 0, tiBw: 0, tiBl: 0 }))
+  const seed = opts.seed !== undefined ? opts.seed : ((Math.random() * 4294967296) >>> 0);
+  const job = {
+    nSims, seed, n, idOf, sched, fromWeek, onlyWeek, regEnd: S.regEnd, playoffTeams, divOf, nDiv,
+    baseW, baseP, starters, fallbackWk, levGames, nG
   };
-  seedRng(opts.seed !== undefined ? opts.seed : ((Math.random() * 4294967296) >>> 0));
-
-  const score = (i, wk) => {
-    const byWeek = starters[wk] || starters[fallbackWk];
-    if (!byWeek) return 0;
-    const cell = byWeek[i]; const st = cell.arr; let s = 0;
-    for (let k = 0; k < st.length; k++) {
-      if (rnd() < BUST_RATE) continue;         // starter inactive or knocked out early
-      s += drawScore(st[k].m, st[k].sd);
-    }
-    return cell.banked + Math.max(0, s * Math.max(0.55, 1 + 0.05 * gauss()));
-  };
-
-  /* Seeding order for a given win/points state. Division winners take the top
-     seeds where the league uses divisions, which is Sleeper's default. */
-  const standingsOrder = (w, p) => {
-    let order = Array.from({ length: n }, (_, i) => i).sort((a, b) => (w[b] - w[a]) || (p[b] - p[a]));
-    if (nDiv > 1) {
-      const seen = new Set(), winners = [];
-      for (const i of order) { const d = divOf[i]; if (d && !seen.has(d)) { seen.add(d); winners.push(i); } }
-      const wset = new Set(winners);
-      order = winners.concat(order.filter(i => !wset.has(i)));
-    }
-    return order;
-  };
+  return { job, teams, levWeek };
+}
+/** Turn the kernel's tallies into the result every page reads. */
+function finishSim(prep, acc) {
+  const { job, teams, levWeek } = prep;
+  const { nSims, n, idOf, onlyWeek, fromWeek, playoffTeams, levGames, nG } = job;
   const simWeeks = Math.max(0, S.regEnd - fromWeek + 1);
-  acc.allPlayGames = simWeeks * Math.max(1, n - 1);
-  const levIdx = {};   // week|a|b -> index into acc.lev
-  levGames.forEach((g, gi) => { levIdx[g.week + '|' + g.a + '|' + g.b] = gi; });
-
-  for (let sim = 0; sim < nSims; sim++) {
-    const w = baseW.slice(), p = baseP.slice();
-    const levWon = new Int8Array(nG).fill(-1);
-    if (onlyWeek) {
-      const games = sched[onlyWeek - 1] || [];
-      const sc = new Float64Array(n);
-      for (let i = 0; i < n; i++) { sc[i] = score(i, onlyWeek); acc.weekPts[i] += sc[i]; acc.weekScores[i].push(sc[i]); }
-      let top = 0; for (let i = 1; i < n; i++) if (sc[i] > sc[top]) top = i;
-      acc.weekTop[top]++;
-      games.forEach(([a, b]) => {
-        const ia = idOf[a], ib = idOf[b]; if (ia === undefined || ib === undefined) return;
-        if (sc[ia] > sc[ib]) acc.weekWin[ia]++; else if (sc[ib] > sc[ia]) acc.weekWin[ib]++; else { acc.weekWin[ia] += .5; acc.weekWin[ib] += .5; }
-      });
-      continue;
-    }
-    for (let wk = fromWeek; wk <= S.regEnd; wk++) {
-      const games = sched[wk - 1] || [];
-      const sc = new Float64Array(n);
-      for (let i = 0; i < n; i++) sc[i] = score(i, wk);
-      for (let i = 0; i < n; i++) p[i] += sc[i];
-      // all-play: how many teams you would have beaten this week. Comparing this
-      // with the games you actually won is what separates a good team from a
-      // lucky one, and it costs one sort a week.
-      const byScore = Array.from({ length: n }, (_, i) => i).sort((a, b) => sc[b] - sc[a]);
-      for (let r = 0; r < n; r++) acc.allPlay[byScore[r]] += (n - 1 - r);
-      games.forEach(([a, b]) => {
-        const ia = idOf[a], ib = idOf[b]; if (ia === undefined || ib === undefined) return;
-        acc.oppPts[ia] += sc[ib]; acc.oppPts[ib] += sc[ia]; acc.oppGames[ia]++; acc.oppGames[ib]++;
-        let res;
-        if (sc[ia] > sc[ib]) { w[ia]++; res = 0; }
-        else if (sc[ib] > sc[ia]) { w[ib]++; res = 1; }
-        else { w[ia] += .5; w[ib] += .5; res = -1; }
-        if (nG) { const gi = levIdx[wk + '|' + a + '|' + b]; if (gi !== undefined) levWon[gi] = res; }
-      });
-      // where everyone stands with the season paused here
-      const ord = standingsOrder(w, p);
-      for (let s = 0; s < playoffTeams && s < n; s++) acc.fieldAt[ord[s]][wk]++;
-      // still able to reach the cut line on wins alone — an approximation, since
-      // it ignores who plays whom from here, but it is the shape of a magic number
-      const cut = w[ord[Math.min(playoffTeams, n) - 1]];
-      const left = S.regEnd - wk;
-      for (let i = 0; i < n; i++) if (w[i] + left >= cut) acc.aliveAt[i][wk]++;
-    }
-    for (let i = 0; i < n; i++) { acc.simWins[i] += w[i] - baseW[i]; acc.ptsRuns[i].push(p[i]); }
-    const order = standingsOrder(w, p);
-    for (let s = 0; s < n; s++) {
-      const i = order[s];
-      acc.wins[i] += w[i]; acc.pts[i] += p[i]; acc.seed[i] += s + 1;
-      if (s + 1 < acc.best[i]) acc.best[i] = s + 1;
-      if (s + 1 > acc.worst[i]) acc.worst[i] = s + 1;
-      const wi = clamp(Math.round(w[i]), 0, S.regEnd); acc.winDist[i][wi] += 1;
-      acc.seedDist[i][s + 1]++;
-    }
-    const field = order.slice(0, playoffTeams);
-    field.forEach(i => acc.playoff[i]++);
-    // how far each playoff team got, which is what orders the back half of the
-    // draft: -1 never made it, then 1 for a first-round exit upward
-    const exit = new Int16Array(n).fill(-1);
-    let roundNo = 0;
-    let round = field.slice();
-    const byes = (1 << Math.ceil(Math.log2(Math.max(2, playoffTeams)))) - playoffTeams;
-    if (byes > 0) round.slice(0, byes).forEach(i => acc.bye[i]++);
-    let pwk = S.regEnd + 1;
-    const play = (list, wk) => {
-      const nx = [];
-      const arr = list.slice();
-      roundNo++;
-      if (arr.length % 2 === 1) nx.push(arr.shift());
-      for (let i = 0; i < arr.length / 2; i++) {
-        const a = arr[i], b = arr[arr.length - 1 - i];
-        const aWins = score(a, wk) >= score(b, wk);
-        const win = aWins ? a : b, lose = aWins ? b : a;
-        acc.knockedBy[lose * n + win]++; acc.poWins[win]++;
-        exit[lose] = roundNo;
-        nx.push(win);
-      }
-      return nx.sort((x, y) => field.indexOf(x) - field.indexOf(y));
-    };
-    if (byes > 0 && round.length > 2) {
-      const seeded = round.slice(0, byes), rest = round.slice(byes);
-      round = seeded.concat(play(rest, pwk)).sort((x, y) => field.indexOf(x) - field.indexOf(y));
-      pwk++;
-    }
-    while (round.length > 4) { round = play(round, pwk); pwk++; }
-    round.forEach(i => acc.semi[i]++);
-    while (round.length > 2) { round = play(round, pwk); pwk++; }
-    round.forEach(i => acc.final[i]++);
-    if (round.length === 2) { acc.finalVs[round[0] * n + round[1]]++; acc.finalVs[round[1] * n + round[0]]++; }
-    while (round.length > 1) { round = play(round, pwk); pwk++; }
-    const champ = round[0];
-    if (champ !== undefined) { acc.title[champ]++; exit[champ] = roundNo + 1; }
-
-    /* Next year's draft order, the way most leagues run it: everyone who missed
-       the playoffs picks first, worst scoring first, and the playoff teams follow
-       in the order they went out — champion last. Points break every tie, which
-       is what the standings already do. */
-    {
-      const miss = [], made = [];
-      for (let i = 0; i < n; i++) (exit[i] >= 0 ? made : miss).push(i);
-      miss.sort((a, b) => p[a] - p[b]);
-      made.sort((a, b) => (exit[a] - exit[b]) || (p[a] - p[b]));
-      const dOrder = miss.concat(made);
-      for (let sl = 0; sl < n; sl++) { acc.draftSum[dOrder[sl]] += sl + 1; acc.draftDist[dOrder[sl]][sl + 1]++; }
-    }
-
-    /* Leverage. One pass of the same simulation answers "what does this week's
-       game actually do to my season": condition the final outcome on who won
-       each of this week's games. No extra runs — the sims are already there. */
-    if (nG) {
-      const made = new Uint8Array(n); field.forEach(i => made[i] = 1);
-      for (let gi = 0; gi < nG; gi++) {
-        const r = levWon[gi]; if (r < 0) continue;      // a tie tells us nothing either way
-        const ia = idOf[levGames[gi].a], ib = idOf[levGames[gi].b];
-        const L = acc.lev[gi];
-        if (r === 0) { L.nA++; L.poAw += made[ia]; L.poBl += made[ib]; L.tiAw += (champ === ia ? 1 : 0); L.tiBl += (champ === ib ? 1 : 0); }
-        else { L.nB++; L.poBw += made[ib]; L.poAl += made[ia]; L.tiBw += (champ === ib ? 1 : 0); L.tiAl += (champ === ia ? 1 : 0); }
-      }
-    }
-  }
-
-  const qOf = (arr, q) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[clamp(Math.floor(q * (a.length - 1)), 0, a.length - 1)] : 0; };
+  // sorted once per team: the three quantiles below all read the same ordering
+  const qOf = (a, q) => a.length ? a[clamp(Math.floor(q * (a.length - 1)), 0, a.length - 1)] : 0;
   const res = teams.map((t, i) => {
+    const ptsSorted = acc.ptsRuns[i].slice().sort((x, y) => x - y);
     const allPlayPct = acc.allPlayGames ? acc.allPlay[i] / nSims / acc.allPlayGames : null;
     const simW = acc.simWins[i] / nSims;
     return {
@@ -269,7 +110,7 @@ function simulate(nSims, opts) {
       // wins the schedule hands you (or takes) beyond what your scoring earns
       luck: allPlayPct === null ? null : simW - allPlayPct * simWeeks,
       sos: acc.oppGames[i] ? acc.oppPts[i] / acc.oppGames[i] : null,
-      ptsP10: qOf(acc.ptsRuns[i], 0.10), ptsP50: qOf(acc.ptsRuns[i], 0.50), ptsP90: qOf(acc.ptsRuns[i], 0.90),
+      ptsP10: qOf(ptsSorted, 0.10), ptsP50: qOf(ptsSorted, 0.50), ptsP90: qOf(ptsSorted, 0.90),
       fieldAt: Array.from(acc.fieldAt[i]).map(v => v / nSims),
       aliveAt: Array.from(acc.aliveAt[i]).map(v => v / nSims),
       poWins: acc.poWins[i] / nSims,
@@ -309,6 +150,96 @@ function simulate(nSims, opts) {
     n: nSims, list: res, by: byRoster, onlyWeek, playoffTeams,
     fromWeek, simWeeks, leverage, levWeek
   };
+}
+
+function simulate(nSims, opts) {
+  const prep = prepareSim(nSims, opts);
+  const run = createSimRun(prep.job);
+  run.step(prep.job.nSims);
+  return finishSim(prep, run.acc);
+}
+/* ================= running it off the page's thread =================
+   Two thousand seasons hold the page for a quarter of a second on a laptop and several
+   times that on a phone. The loop is pure arithmetic on a plain-data job, so it runs in a
+   worker; where a worker is not available (a page opened straight from disk, say) the same
+   kernel is played in short slices instead, which keeps the page responsive and gives the
+   same numbers. */
+function simRunSliced(job, onProgress) {
+  return new Promise((resolve, reject) => {
+    let run;
+    try { run = createSimRun(job); } catch (e) { return reject(e); }
+    const tick = () => {
+      try {
+        const t0 = performance.now();
+        while (!run.finished() && performance.now() - t0 < 10) run.step(5);
+      } catch (e) { return reject(e); }
+      if (onProgress) onProgress(run.progress());
+      if (run.finished()) resolve(run.acc); else setTimeout(tick, 0);
+    };
+    tick();
+  });
+}
+const SimPool = {
+  workers: [], queue: [], seq: 0, broken: false,
+  max: Math.max(1, Math.min(2, (typeof navigator !== 'undefined' && navigator.hardwareConcurrency || 2) - 1)),
+  run(job, onProgress) {
+    return new Promise((resolve, reject) => { this.queue.push({ job, onProgress, resolve, reject }); this.pump(); });
+  },
+  pump() {
+    while (this.queue.length) {
+      if (this.broken) { const t = this.queue.shift(); simRunSliced(t.job, t.onProgress).then(t.resolve, t.reject); continue; }
+      let w = this.workers.find(x => !x.task);
+      if (!w && this.workers.length < this.max) w = this.spawn();
+      if (!w) { if (this.broken) continue; return; }     // every worker is busy; one will call pump() again
+      const t = this.queue.shift();
+      w.task = t; w.id = ++this.seq;
+      w.postMessage({ id: w.id, job: t.job });
+    }
+  },
+  spawn() {
+    let w;
+    try { w = new Worker('js/sim-worker.js'); } catch (e) { this.broken = true; return null; }
+    w.task = null;
+    w.onmessage = (ev) => {
+      const m = ev.data, t = w.task;
+      if (!t || m.id !== w.id) return;
+      if (m.p !== undefined) { if (t.onProgress) t.onProgress(m.p); return; }
+      w.task = null;
+      if (m.error) t.reject(new Error(m.error)); else t.resolve(m.acc);
+      this.pump();
+    };
+    // the worker could not start (blocked, missing, or crashed): finish what it was given on the page instead
+    w.onerror = (ev) => {
+      if (ev && ev.preventDefault) ev.preventDefault();
+      this.broken = true;
+      const t = w.task; w.task = null;
+      this.workers = this.workers.filter(x => x !== w);
+      try { w.terminate(); } catch (e) { }
+      if (t) simRunSliced(t.job, t.onProgress).then(t.resolve, t.reject);
+      this.pump();
+    };
+    this.workers.push(w);
+    return w;
+  }
+};
+/** Same as simulate(), but the page stays live while it runs. Resolves to null if the league changed meanwhile. */
+function simulateAsync(nSims, opts, onProgress) {
+  const prep = prepareSim(nSims, opts), teams = S.teams;
+  return SimPool.run(prep.job, onProgress).then(acc => S.teams !== teams ? null : finishSim(prep, acc));
+}
+/** Run the league-wide season simulation in the background and keep it as the season's odds.
+ *  Redraws only if you are still on the page that asked, so it never pulls a typing cursor away. */
+function runSeasonSim(n, then) {
+  if (S._simRun) return S._simRun;
+  const view = S.view;
+  const done = (r) => {
+    S._simRun = null;
+    if (r) { S.sim = r; SimUI.res = r; if (then) then(r); }
+    if (S.view === view) render();
+  };
+  // if the background run fails outright, play it on the page once rather than leave the odds empty
+  S._simRun = simulateAsync(n).then(done, e => { console.error(e); let r = null; try { r = simulate(n); } catch (e2) { console.error(e2); } done(r); });
+  return S._simRun;
 }
 
 /* ================= value history (stock mode) ================= */

@@ -386,7 +386,7 @@ function leagueStrip() {
     + (sim ? ' · and what the simulator makes of it' : ''),
     podium,
     sim ? null : h('button.btn.sm', {
-      onclick: () => { S.sim = simulate(S.simN); SimUI.res = S.sim; render(); }
+      onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(S.simN); }
     }, 'Run ' + kfmt(S.simN) + ' seasons'));
 }
 

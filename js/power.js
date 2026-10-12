@@ -16,10 +16,10 @@ function viewPower() {
       : 'Preseason — rating is 100% projection')));
 
   if (PowerUI.mode === 'pos') return wrap.appendChild(powerByPosition()), wrap;
-  // The first look runs a few thousand simulated seasons, which holds the page for about half a second. Show the
-  // page at once with a note, and run the simulation just after it has painted. (The tab above never needs it.)
+  // The first look runs a few thousand simulated seasons. Show the page at once with a note, and run the
+  // simulation in the background just after it has painted. (The tab above never needs it.)
   if (!S.sim) {
-    setTimeout(() => { if (!S.sim) S.sim = simulate(S.simN); if (S.view === 'power') render(); }, 40);
+    setTimeout(() => { if (!S.sim && !S._simRun) runSeasonSim(S.simN); }, 40);
     wrap.appendChild(card('Power rankings', 'blended rating, then simulated playoff and championship odds',
       h('div.empty', { style: { padding: '34px 18px' } }, h('span.spin'), h('div', { style: { marginTop: '10px' } }, 'Simulating ' + kfmt(S.simN) + ' seasons…'))));
     return wrap;

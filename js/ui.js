@@ -62,6 +62,8 @@ function playerFace(p, opts) {
     onerror: e => { try { e.target.replaceWith(stub()); } catch (err) { e.target.style.visibility = 'hidden'; } }
   }));
 }
+/** Show that a button's work has started; the page redraws when the result arrives. */
+function busyBtn(b) { if (b) { b.disabled = true; b.textContent = 'Simulating…'; } }
 function medalTitle(p) {
   const m = MEDALS.find(x => x.k === p.medal);
   return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';

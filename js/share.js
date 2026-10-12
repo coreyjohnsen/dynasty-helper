@@ -39,7 +39,7 @@ const SHARE = {
         TradeUI.aOut = pick(S.teamById[TradeUI.a], p.ao);
         TradeUI.bOut = pick(S.teamById[TradeUI.b], p.bo);
         TradeUI.result = null; TradeUI.sig = null;
-        if (TradeUI.aOut.length || TradeUI.bOut.length) tradeRunNow();
+        if (TradeUI.aOut.length || TradeUI.bOut.length) tradeRunAsync();
       },
       text: () => {
         const r = TradeUI.result; if (!r) return null;
@@ -81,12 +81,7 @@ const SHARE = {
         if (+p.w) SimUI.week = +p.w;
         if ([1000, 2000, 5000, 10000].includes(+p.n)) SimUI.n = +p.n;
         if (S.teamById[+p.t]) SimUI.team = +p.t;
-        if (p.run === '1' && SimUI.mode !== 'replay') {
-          const t0 = performance.now();
-          SimUI.res = SimUI.mode === 'week' ? simulate(SimUI.n, { onlyWeek: SimUI.week }) : simulate(SimUI.n);
-          SimUI.res.ms = Math.round(performance.now() - t0);
-          if (SimUI.mode === 'season') S.sim = SimUI.res;
-        }
+        if (p.run === '1' && SimUI.mode !== 'replay') simRunAsync();
       },
       text: () => {
         const r = SimUI.res; if (!r || SimUI.mode !== 'season') return null;

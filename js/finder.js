@@ -700,8 +700,9 @@ function tradeCardRow(r, T, i) {
           onclick: () => {
             TradeUI.a = T.rosterId; TradeUI.b = r.partner.rosterId;
             TradeUI.aOut = r.give.slice(); TradeUI.bOut = r.get.slice();
-            tradeRunNow();
+            TradeUI.result = null; TradeUI.sig = null;
             S.view = 'trade'; render(); window.scrollTo(0, 0);
+            tradeRunAsync();
           }
         }, 'Open in calculator'))),
     h('div.tcols', tray(r.give, 'a', 'You send'), h('div.swap', '⇄'), tray(r.get, 'b', 'You get')),

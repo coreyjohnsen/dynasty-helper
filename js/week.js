@@ -103,9 +103,9 @@ function viewWeek() {
       'which game moves the season most depends on the rest of the season, so this needs a full simulation',
       h('div.row', { style: { gap: '12px' } },
         h('button.btn.pri', {
-          onclick: () => { S.sim = simulate(2000); SimUI.res = S.sim; SimUI.mode = 'season'; render(); }
+          onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); }
         }, 'Run 2,000 seasons'),
-        h('span.tiny.muted', 'about a quarter of a second'))));
+        h('span.tiny.muted', 'runs in the background'))));
   }
 
   /* ---- the matchups ---- */

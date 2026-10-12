@@ -248,7 +248,7 @@ function viewH2H() {
     wrap.appendChild(card('Season outlook', 'needs a full-season simulation to compare playoff and title odds',
       h('div.row', { style: { gap: '12px' } },
         h('button.btn.pri', {
-          onclick: () => { S.sim = simulate(2000); SimUI.res = S.sim; SimUI.mode = 'season'; render(); }
+          onclick: (e) => { busyBtn(e.currentTarget); runSeasonSim(2000, () => { SimUI.mode = 'season'; }); }
         }, 'Run 2,000 seasons'),
         h('span.tiny.muted', 'the Simulator tab keeps the full result'))));
   }

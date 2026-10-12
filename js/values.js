@@ -276,35 +276,9 @@ function pickLabel(pk) {
   return `${pk.season} ${rw}${who}`;
 }
 
-/* ================= gamma sampling =================
-   Weekly fantasy scores are right-skewed and never negative. A truncated normal
-   gets both wrong: it piles mass at exactly zero and makes the low tail far too
-   fat, which is where absurd 20-point team weeks came from. Gamma has the right
-   shape — bounded below, long upper tail — for the same mean and spread. */
-function gammaShape(k) {               // Marsaglia–Tsang, unit scale
-  if (k < 1) { const u = Math.max(1e-12, rnd()); return gammaShape(1 + k) * Math.pow(u, 1 / k); }
-  const d = k - 1 / 3, c = 1 / Math.sqrt(9 * d);
-  for (let guard = 0; guard < 200; guard++) {
-    let x, v;
-    do { x = gauss(); v = 1 + c * x; } while (v <= 0);
-    v = v * v * v;
-    const u = rnd();
-    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
-    if (Math.log(Math.max(1e-12, u)) < 0.5 * x * x + d * (1 - v + Math.log(v))) return d * v;
-  }
-  return d;
-}
-/** Draw one weekly score for a mean and standard deviation. */
-function drawScore(mu, sd) {
-  if (!(mu > 0.05)) return 0;
-  const s = Math.max(0.35, sd);
-  const k = (mu / s) * (mu / s);
-  return gammaShape(k) * (s * s / mu);
-}
 /* per-position weekly coefficient of variation, calibrated so that a full
    starting lineup lands near the 0.22 team-level CV measured from real leagues */
 const POS_CV = { QB: 0.36, RB: 0.53, WR: 0.58, TE: 0.61, K: 0.39, DEF: 0.53 };
-const BUST_RATE = 0.012;               // starter unexpectedly inactive / knocked out early
 /* Tags that mean "will not play". Sleeper reports the NFL's own designation. */
 const OUT_TAGS = ['IR', 'Out', 'PUP', 'Sus', 'DNR', 'COV'];
 function volFromMean(pos, mu) { return (POS_CV[pos] || 0.65) * mu + 1.15; }

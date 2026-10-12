@@ -76,7 +76,7 @@ so allow a few minutes before a hard refresh shows the change.
 |---|---|
 | `index.html` | Page shell: metadata, then `css/*.css` and `js/*.js` in load order. |
 | `css/` | `tokens` (colours, themes) → `layout` (shell, cards) → `components` (page-specific parts) → `simple` (Default view, menus, share) → `responsive` (narrow screens). |
-| `js/` | Classic scripts sharing one global scope, loaded in the order `index.html` lists them: `core` (dom helpers, storage, state) → `values`/`league`/`simulation` (data and models) → `ui`/`shell` (shared widgets, app frame) → one file per page → `share` → `boot`. No build step; order matters because later files use earlier ones. |
+| `js/` | Classic scripts sharing one global scope, loaded in the order `index.html` lists them: `core` (dom helpers, storage, state) → `values`/`league`/`simulation` (data and models) → `ui`/`shell` (shared widgets, app frame) → one file per page → `share` → `boot`. No build step; order matters because later files use earlier ones. `sim-kernel.js` loads first: it is the random-number generator and the season loop, with no page state or DOM, so the same file also runs inside `sim-worker.js`, which plays simulations off the page's thread (opened from disk, where workers are blocked, the same kernel runs in short slices on the page instead). |
 | `CNAME` | Tells GitHub Pages which custom domain serves this repo. |
 | `.nojekyll` | Skips Jekyll processing — nothing here needs it, and it makes deploys quicker. |
 | `favicon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` | Tab icon and home-screen icons. |
