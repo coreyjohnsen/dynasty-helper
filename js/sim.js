@@ -9,8 +9,8 @@ function simRunAsync() {
   track('simulation-run', 'Simulation run', true);
   const redraw = () => { if (S.view === 'sim') render(); };
   const p = SimUI.mode === 'week'
-    ? simulateAsync(SimUI.n, { onlyWeek: SimUI.week }, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; })
-    : simulateAsync(SimUI.n, null, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating… ' + Math.round(f * 100) + '%'; });
+    ? simulateAsync(SimUI.n, { onlyWeek: SimUI.week }, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating... ' + Math.round(f * 100) + '%'; })
+    : simulateAsync(SimUI.n, null, f => { SimUI.pct = f; const b = $('.simrun'); if (b) b.textContent = 'Simulating... ' + Math.round(f * 100) + '%'; });
   p.then(r => {
     SimUI.running = false;
     if (r && key() === k0) {
@@ -36,7 +36,7 @@ function teamFace(T, size) {
 /** A team as a badge and a name, for the places a table cell has no room for more. */
 function teamLine(T, size) {
   return h('div.row', { style: { gap: '8px', minWidth: 0, flexWrap: 'nowrap' } }, teamFace(T, size || 26),
-    h('span', { style: { fontWeight: 580, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, title: T.name + ' — ' + T.owner }, T.name));
+    h('span', { style: { fontWeight: 580, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }, title: T.name + ' · ' + T.owner }, T.name));
 }
 /** Pick one team from a scrolling row of badges. */
 function teamStrip(teams, selected, onPick) {
@@ -69,13 +69,13 @@ function simDesk(weeks, isReplay) {
     h('div.smodes', { role: 'tablist' }, SIM_MODES.map(m =>
       h('button.smode' + (m.k === SimUI.mode ? '.on' : ''), { role: 'tab', 'aria-selected': m.k === SimUI.mode ? 'true' : 'false', onclick: () => { SimUI.mode = m.k; SimUI.res = null; render(); } },
         h('span.smode-ic', ico(m.ic)), h('span.smode-t', m.t)))),
-    h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random — the same settings will not give you the same season twice.'),
+    h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random: the same settings will not give you the same season twice.'),
     h('div.simctl',
       SimUI.mode === 'week' ? h('label.fld', 'Week', h('select', { onchange: e => { SimUI.week = +e.target.value; SimUI.res = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,
       isReplay ? null : h('label.fld', 'Simulations', h('select', { onchange: e => { SimUI.n = +e.target.value; SimUI.res = null; render(); } },
         [1000, 2000, 5000, 10000].map(n => h('option', { value: n, selected: n === SimUI.n }, kfmt(n))))),
-      h('button.btn.pri.simrun', { onclick: run, disabled: !isReplay && SimUI.running }, isReplay ? '▶ Play the season' : SimUI.running ? 'Simulating… ' + Math.round(SimUI.pct * 100) + '%' : 'Run simulation')),
+      h('button.btn.pri.simrun', { onclick: run, disabled: !isReplay && SimUI.running }, isReplay ? '▶ Play the season' : SimUI.running ? 'Simulating... ' + Math.round(SimUI.pct * 100) + '%' : 'Run simulation')),
     status ? h('div.tiny.muted', status) : null));
 }
 function simEmpty(title, text) {
@@ -95,7 +95,7 @@ function viewSim() {
   if (isReplay) {
     if (!SimUI.replay) {
       wrap.appendChild(simEmpty('Play one season all the way through',
-        'Not odds — one actual season. Every remaining week gets played out game by game, the table sorts itself out, the bracket runs, and somebody lifts the trophy. '
+        'Not odds. One actual season. Every remaining week gets played out game by game, the table sorts itself out, the bracket runs, and somebody lifts the trophy. '
         + (S.lastWeek ? `Weeks 1–${S.lastWeek} are your real results; week ${S.lastWeek + 1} onward is where it goes off-script.` : 'Nothing has happened yet, so the whole thing is up for grabs.')));
       return wrap;
     }
@@ -132,7 +132,7 @@ function simGameCard(res, a, b) {
     act ? h('div.tiny', { style: { fontWeight: 650 } }, (isLive ? 'live ' : 'actual ') + fmt(act.points || 0, 1)) : h('div.tiny.muted', 'top scorer ' + pct(r.weekTop, 1)));
   return h('div.card.sgame', h('div.bd',
     h('div.row', { style: { justifyContent: 'space-between' } },
-      h('b.tiny', 'Week ' + wk + (played ? ' — final' : '')), isLive ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null),
+      h('b.tiny', 'Week ' + wk + (played ? ' (final)' : '')), isLive ? h('span.tag', { style: { borderColor: CA, color: CA } }, '● live') : null),
     h('div.sg-main', side(A, ra, ga, ra.weekWin >= rb.weekWin ? CA : 'var(--text-muted)', false), h('div.sg-vs', 'vs'), side(B, rb, gb, rb.weekWin > ra.weekWin ? CB : 'var(--text-muted)', true)),
     h('div.sg-bar', h('i', { style: { width: (ra.weekWin * 100) + '%', background: CA } }), h('i', { style: { width: (rb.weekWin * 100) + '%', background: CB } })),
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '8px', lineHeight: 1.6 } },
@@ -155,7 +155,7 @@ function simWeekView(res) {
   const bins = Array.from({ length: NB }, (_, i) => ({ x: Math.round(lo + i * bw), v: 0, label: `${fmt(lo + i * bw, 0)}–${fmt(lo + (i + 1) * bw, 0)} pts` }));
   scores.forEach(s => { const i = clamp(Math.floor((s - lo) / bw), 0, NB - 1); bins[i].v++; });
   bins.forEach(b => b.v /= scores.length);
-  wrap.appendChild(card('Score distribution — week ' + res.onlyWeek, 'what this team could plausibly put up',
+  wrap.appendChild(card('Score distribution, week ' + res.onlyWeek, 'what this team could plausibly put up',
     h('div', { style: { display: 'grid', gap: '12px', gridTemplateColumns: 'minmax(0,1fr)' } },
       teamStrip(teams, SimUI.team, id => { SimUI.team = id; render(); }),
       h('div', histogram(bins, { h: 175, w: chartW(900, 360), stretch: true, aria: 'score distribution' }),

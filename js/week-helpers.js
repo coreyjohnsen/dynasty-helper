@@ -222,7 +222,7 @@ function liveBadge(p, wk) {
   const v = liveValue(p, wk);
   if (v.state === 'bye') return h('span.tag', 'BYE');
   if (v.state === 'done') return h('span.tag', { style: { borderColor: 'var(--good)', color: 'var(--good-text)' } }, 'final');
-  if (v.state === 'live') return h('span.tag', { title: 'game in progress — points so far are banked, the rest of the projection still counts', style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, v.quarter ? String(v.quarter) : 'playing');
+  if (v.state === 'live') return h('span.tag', { title: 'game in progress: points so far are banked, the rest of the projection still counts', style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, v.quarter ? String(v.quarter) : 'playing');
   return h('span.tag', 'to play');
 }
 
@@ -479,8 +479,8 @@ function scoreVsProj(ps, opts) {
   const beat = ps.actual >= ps.proj;
   const cls = !ps.final ? '' : beat ? 'up' : 'down';
   const tip = ps.final
-    ? `<div class="k">${beat ? 'Beat' : 'Missed'} his projection</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected — ${beat ? '+' : '−'}${fmt(Math.abs(ps.actual - ps.proj), 1)}`
-    : `<div class="k">Still playing${ps.quarter ? ' — ' + ps.quarter : ''}</div><b>${fmt(ps.actual, 1)}</b> so far, projected <b>${fmt(ps.proj, 1)}</b> for the game`;
+    ? `<div class="k">${beat ? 'Beat' : 'Missed'} his projection</div>Scored <b>${fmt(ps.actual, 1)}</b> against <b>${fmt(ps.proj, 1)}</b> projected, ${beat ? '+' : '−'}${fmt(Math.abs(ps.actual - ps.proj), 1)}`
+    : `<div class="k">Still playing${ps.quarter ? ', ' + ps.quarter : ''}</div><b>${fmt(ps.actual, 1)}</b> so far, projected <b>${fmt(ps.proj, 1)}</b> for the game`;
   return bindTT(h('div', { tabindex: 0 },
     h('b.mono.score' + (cls ? '.' + cls : ''), fmt(ps.actual, 1)),
     opts.sub === false ? null : h('div.tiny.mono.muted', { style: { lineHeight: '1.15' } },

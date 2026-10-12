@@ -87,10 +87,10 @@ function playerFace(p, opts) {
 }
 /** Show that a button's work has started; the page redraws when the result arrives. Only buttons call this, so
  *  it is also where a person asking for a simulation is counted (the Power page starts its own, uncounted). */
-function busyBtn(b) { track('simulation-run', 'Simulation run', true); if (b) { b.disabled = true; b.textContent = 'Simulating…'; } }
+function busyBtn(b) { track('simulation-run', 'Simulation run', true); if (b) { b.disabled = true; b.textContent = 'Simulating...'; } }
 function medalTitle(p) {
   const m = MEDALS.find(x => x.k === p.medal);
-  return m ? m.label + ' tier — overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
+  return m ? m.label + ' tier: overall #' + (MEDALS.indexOf(m) ? MEDALS[MEDALS.indexOf(m) - 1].upTo + 1 : 1) + '–' + m.upTo + ' by value' : '';
 }
 function teamLogo(abbr) {
   if (!abbr || typeof abbr !== 'string') return null;
@@ -122,7 +122,7 @@ function injuryTag(inj, p, opts) {
 /** The hover text for an injury tag: what, where, back when, and how we know. */
 function injuryTitle(p) {
   const j = p && p.inj; if (!j) return '';
-  const bits = [p.injury + (j.body ? ' — ' + j.body : '')];
+  const bits = [p.injury + (j.body ? ', ' + j.body : '')];
   if (j.kind === 'long' && j.label) bits.push(j.season ? 'out for the season' : 'expected back ' + (j.retDate ? fmtDay(j.retDate) + ' (' + j.label + ')' : j.label));
   else if (j.text) bits.push(j.text);
   if (j.kind === 'long') bits.push(j.text);
@@ -141,13 +141,13 @@ function injFeedLine() {
   const f = S.injFeedInfo;
   const lead = INJ.enabled()
     ? 'Players who are out are projected at zero only until their estimated return, and IR-slot players due back count toward the lineup and the simulator. '
-    : 'Off: anyone tagged Out or on IR is projected at zero for the rest of the season, as Sleeper’s tag alone implies. ';
+    : 'Off: anyone tagged Out or on IR is projected at zero for the rest of the season, as Sleeper\'s tag alone implies. ';
   if (!f) return lead;
   const ago = f.at ? Math.max(1, Math.round((Date.now() - f.at) / 60000)) : null;
   const when = ago === null ? '' : ago < 90 ? ago + ' min ago' : Math.round(ago / 60) + ' h ago';
   const feed = f.state === 'ok' ? `ESPN feed: ${f.listed} players listed, ${f.matched} of your ${f.flagged} flagged players matched · updated ${when}.`
     : f.state === 'stale' ? `ESPN feed unreachable, using a saved copy from ${when}.`
-      : 'ESPN feed unavailable (blocked or offline) — using the injury notes and typical recovery times instead.';
+      : 'ESPN feed unavailable (blocked or offline). Using the injury notes and typical recovery times instead.';
   return lead + feed;
 }
 /** A few words for why a week's projection is reduced. */
@@ -170,13 +170,13 @@ function injuryCard(p) {
   const words = [feed && (feed.long || feed.short), j.note].filter((x, i, a) => x && a.indexOf(x) === i);
   const strip = h('div.availstrip', { role: 'img', 'aria-label': 'Chance of playing each week' }, weeks.map(k => {
     const a = availability(p, k), bye = onBye(p, k);
-    return h('div.availcell' + (bye ? '.bye' : ''), { title: 'Week ' + k + (bye ? ' — bye' : ' — ' + Math.round(a * 100) + '% likely to play') },
+    return h('div.availcell' + (bye ? '.bye' : ''), { title: 'Week ' + k + (bye ? ': bye' : ': ' + Math.round(a * 100) + '% likely to play') },
       h('span.tiny.mono.muted', 'Wk ' + k),
       h('span.availbar', h('i', { style: { height: bye ? '0%' : Math.round(a * 100) + '%' } })),
       h('span.tiny.mono', bye ? 'bye' : Math.round(a * 100) + '%'));
   }));
   return card('Injury report',
-    on ? 'return estimates feed his projection, lineups and the simulator' : 'estimates are switched off in Settings — projections use the status tag only',
+    on ? 'return estimates feed his projection, lineups and the simulator' : 'estimates are switched off in Settings: projections use the status tag only',
     h('div', { style: { display: 'grid', gap: '14px', gridTemplateColumns: 'minmax(0,1fr)' } },
       h('div.ifacts',
         fact('Status', injuryTag(p.injury, p) || p.injury, j.body ? j.body + (feed && feed.side ? ' (' + feed.side.toLowerCase() + ')' : '') : 'body part not listed'),
@@ -185,7 +185,7 @@ function injuryCard(p) {
         fact('Source', j.espn && j.retDate ? 'ESPN' : j.src === 'note' ? 'Injury notes' : j.src === 'tag' ? 'Sleeper tag' : 'Estimate',
           j.espn ? 'ESPN lists him' : 'ESPN has no return date for him')),
       h('div', h('div.tiny.muted', { style: { marginBottom: '6px' } }, 'Chance he plays'), strip),
-      words.length ? h('div.inotes', words.map(w => h('div.tiny', '“' + String(w).slice(0, 360) + '”'))) : null));
+      words.length ? h('div.inotes', words.map(w => h('div.tiny', '"' + String(w).slice(0, 360) + '"'))) : null));
 }
 function fmtDay(iso) { const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); return isFinite(d) ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : iso; }
 function teamCell(t, opts) {
@@ -198,13 +198,13 @@ function teamCell(t, opts) {
     // in simple mode the badge carries the identity, so it gets a little more room
     return h('div.tm',
       h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }),
-      h('div', { style: { minWidth: 0 } }, h('div.nm', { title: t.name + ' — ' + t.owner }, t.name),
+      h('div', { style: { minWidth: 0 } }, h('div.nm', { title: t.name + ' · ' + t.owner }, t.name),
         sub ? h('div.tiny.muted', { style: { lineHeight: '1.2' } }, sub) : null));
   }
   return h('div.tm',
     narrow ? null : (t.avatar ? h('img.avatar', { src: t.avatar, alt: '', loading: 'lazy', onerror: e => e.target.style.visibility = 'hidden' }) : h('div.avatar')),
     h('div', { style: { minWidth: 0 } },
-      h('div.nm', { title: t.name + ' — ' + t.owner }, t.name),
+      h('div.nm', { title: t.name + ' · ' + t.owner }, t.name),
       sub ? h('div.tiny.muted', { style: { lineHeight: '1.2' } }, sub) : null)
   );
 }
@@ -727,7 +727,7 @@ function depthBars(e, opts) {
     const hit = svg('rect', { x: x, y: m.t, width: bw, height: ih, fill: 'transparent' });
     bindTT(hit, p
       ? `<div class="k">${starter ? 'Starter' : 'Bench'} ${i + 1}</div><b>${esc(p.name)}</b><br>${fmt(v, 1)} pts/wk`
-      : `<div class="k">Slot ${i + 1}</div>Nobody — the wire is worth ${fmt(e.base, 1)}`);
+      : `<div class="k">Slot ${i + 1}</div>Nobody. The wire is worth ${fmt(e.base, 1)}`);
     g.appendChild(hit);
   }
   // the line between who starts and who waits

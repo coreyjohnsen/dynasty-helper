@@ -232,7 +232,7 @@ async function getJSON(url, tries) {
       return await r.json();
     } catch (e) { err = e; if (i < tries - 1) await new Promise(s => setTimeout(s, 350 * (i + 1))); }
   }
-  throw new Error(url.replace(/^https:\/\//, '').split('?')[0] + ' — ' + err.message);
+  throw new Error(url.replace(/^https:\/\//, '').split('?')[0] + ': ' + err.message);
 }
 const sl = (p) => getJSON(SLEEPER + p);
 

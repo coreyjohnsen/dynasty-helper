@@ -9,7 +9,7 @@
 function blurbFor(k) {
   if (!isDynasty()) {
     if (k === 'power') return 'The league ranked on this season, by projection and by results';
-    if (k === 'scout') return 'Who needs what — every roster’s holes and surpluses right now';
+    if (k === 'scout') return 'Who needs what: every roster\'s holes and surpluses right now';
     if (k === 'stock') return 'Redraft value over time, for a player or a whole franchise';
     if (k === 'trade') return 'Price a trade at redraft value and see what it does to the season';
     if (k === 'players') return 'Every player ranked on this season, and the waiver wire';
@@ -18,16 +18,16 @@ function blurbFor(k) {
 }
 const VIEW_BLURB = {
   week: 'Live scores, win probability and the game that matters most',
-  roster: 'Any roster in full — value, projections and the starting lineup',
+  roster: 'Any roster in full: value, projections and the starting lineup',
   players: 'Every player ranked, the waiver wire, and where the picks fall',
-  lineup: 'Who to start this week, with the calls actually worth thinking about',
+  lineup: 'Who to start this week, with the calls worth thinking about',
   trade: 'Price a trade and see what it does to the season',
   finder: 'Trades that fit both rosters, scanned across the league',
-  trades: 'Every completed trade, graded at today’s market',
+  trades: 'Every completed trade, graded at today\'s market',
   h2h: 'Two teams side by side, this week and as franchises',
   power: 'The league ranked, by projection and by what has happened',
-  standings: 'Wins, losses and points actually scored',
-  scout: 'Who needs what — every roster’s holes and surpluses',
+  standings: 'Wins, losses and points scored',
+  scout: 'Who needs what: every roster\'s holes and surpluses',
   sim: 'Playoff odds, seeds, and the games with most riding on them',
   draft: 'The draft board, shaded by value against slot par',
   stock: 'Value over time, for a player or a whole franchise',
@@ -97,7 +97,7 @@ function viewHome() {
       const pMe = p, pThem = 1 - p;
       // the same team · odds · team layout as the This Week page, so a game reads
       // the same wherever it appears
-      weekCard = card('Your week ' + S.liveWeek, 'scored live — banked where the games are over, projected where they are not',
+      weekCard = card('Your week ' + S.liveWeek, 'scored live: banked where the games are over, projected where they are not',
         h('div', { style: { display: 'grid', gap: '16px' } },
           h('div.mvs.mvs-lg',
             matchupSide(my, me, 'var(--s1)'),
@@ -107,7 +107,7 @@ function viewHome() {
                 h('span', { style: { color: pThem > 0.5 ? 'var(--s2)' : 'var(--text-muted)' } }, pct(pThem, 0))),
               h('div.bar', { style: { background: 'var(--s2)' } },
                 h('i', { style: { width: (pMe * 100) + '%', background: 'var(--s1)' } })),
-              h('div.cap', pMe >= 0.5 ? 'you’re favoured' : 'you’re the underdog')),
+              h('div.cap', pMe >= 0.5 ? 'you\'re favoured' : 'you\'re the underdog')),
             matchupSide(th, them, 'var(--s2)')),
           h('div.row', { style: { gap: '10px', justifyContent: 'center' } },
             h('button.btn.pri', { onclick: () => goView('week') }, 'This week →'),
@@ -139,12 +139,12 @@ function viewHome() {
   wrap.appendChild(card('Where this comes from', null,
     h('div.tiny.sec', { style: { lineHeight: '1.55' } },
       'Rosters, matchups, drafts and trades are read live from ', h('b', 'Sleeper'),
-      '; weekly projections are Sleeper’s own lines re-scored through this league’s settings; ',
+      '; weekly projections are Sleeper\'s own lines re-scored through this league\'s settings; ',
       isDynasty() ? 'player and pick values are ' : 'player values are ',
       h('b', 'FantasyCalc'), ' ', valueWord(), ' prices for a ', cfg.superflex ? 'superflex' : '1QB', ' ', String(cfg.numTeams),
       '-team ', cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'half-PPR' : 'standard', ' league.',
-      isDynasty() ? null : h('span', ' Because this is a redraft league, nothing carries to next season: no long-range projections, no ageing curve, and next year’s draft is a fresh start rather than an asset to hold.'),
-      ' Everything is computed in this browser — nothing is stored anywhere else.')));
+      isDynasty() ? null : h('span', ' Because this is a redraft league, nothing carries to next season: no long-range projections, no ageing curve, and next year\'s draft is a fresh start rather than an asset to hold.'),
+      ' Everything is computed in this browser. Nothing is stored anywhere else.')));
   return wrap;
 }
 
@@ -187,7 +187,7 @@ function leaguePodium(ranked, live) {
   const step = (idx) => {
     const r = top[idx], t = r.t;
     return h('div.pod.p' + (idx + 1) + (t.rosterId === S.myRosterId ? '.mine' : ''), {
-      tabindex: 0, role: 'button', title: t.name + ' — ' + t.owner,
+      tabindex: 0, role: 'button', title: t.name + ' · ' + t.owner,
       onclick: () => { RosterUI.team = t.rosterId; goView('roster'); },
       onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RosterUI.team = t.rosterId; goView('roster'); } }
     },
@@ -369,7 +369,7 @@ function valueQuadrants() {
   const note = h('div.tiny.muted', { style: { marginTop: '8px' } },
     'Whole-roster trade value' + (isDynasty() ? ', picks included in dynasty' : '') + '. Lines mark the league median on each axis; the shaded corners are where the two disagree.');
   wt.body.appendChild(note);
-  return card('Dynasty vs. redraft', 'every team’s roster priced both ways — where you’d sit if the league ended this year or in three', wt.body, wt.btn);
+  return card('Dynasty vs. redraft', 'every team\'s roster priced both ways: where you\'d sit if the league ended this year or in three', wt.body, wt.btn);
 }
 function leagueStrip() {
   const sim = S.sim && S.sim.by ? S.sim : null;
@@ -383,7 +383,7 @@ function leagueStrip() {
   const podium = leaguePodium(rows, live);
   if (!podium) return null;
   return card('The league',
-    (live ? 'the table as it stands — wins, then points' : 'nothing played yet, so this is the projection')
+    (live ? 'the table as it stands: wins, then points' : 'nothing played yet, so this is the projection')
     + (sim ? ' · and what the simulator makes of it' : ''),
     podium,
     sim ? null : h('button.btn.sm', {
@@ -417,7 +417,7 @@ function myHeadliners(me) {
     const l = live ? liveValue(p, S.liveWeek) : null;
     return h('div.lup', {
       style: { '--i': String(i) },
-      tabindex: 0, role: 'button', title: p.name + ' — ' + p.pos + (p.team ? ' · ' + p.team : ''),
+      tabindex: 0, role: 'button', title: p.name + ' · ' + p.pos + (p.team ? ' · ' + p.team : ''),
       onclick: () => openPlayer(p.id, 'home'),
       onkeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(p.id, 'home'); } }
     },
@@ -439,9 +439,9 @@ function myHeadliners(me) {
             : l ? h('span', h('b.sec', fmt(l.used, 1)), ' pts')
               : h('span', h('b.sec', fmt(p.ppg || 0, 1)), ' proj')));
     };
-    return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any card for the full page',
+    return card('The headliners', me.name + '\'s most valuable ' + best.length + ' (click any card for the full page)',
       h('div.pcxhand', best.map(hand)));
   }
-  return card('The headliners', me.name + '’s most valuable ' + best.length + ' — click any face for the full page',
+  return card('The headliners', me.name + '\'s most valuable ' + best.length + ' (click any face for the full page)',
     h('div.lineup', best.map(one)));
 }

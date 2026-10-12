@@ -26,8 +26,8 @@ function viewScout() {
      knock away from a hole; shape says which trade they would actually take. */
   const DEPTH = depthLeague();
   const MODES = [
-    { k: 'starters', label: 'Starters', blurb: 'what each position produces now — red is a hole worth exploiting, blue is a surplus they can sell from' },
-    { k: 'depth', label: 'Depth', blurb: 'what the first man off the bench is worth — red means a bye or a knock turns that position into a hole' },
+    { k: 'starters', label: 'Starters', blurb: 'what each position produces now: red is a hole worth exploiting, blue is a surplus they can sell from' },
+    { k: 'depth', label: 'Depth', blurb: 'what the first man off the bench is worth: red means a bye or a knock turns that position into a hole' },
     { k: 'shape', label: 'Shape', blurb: 'what the group looks like, and so what they would trade for: THIN needs a starter, TOP wants depth, FLAT wants a difference-maker, DEEP can sell' }
   ];
   if (!MODES.some(m => m.k === ScoutUI.mode)) ScoutUI.mode = 'starters';
@@ -63,7 +63,7 @@ function viewScout() {
         `Starters produce <b>${fmt(e.output, 1)}</b> pts/wk (${e.rank ? ord(e.rank) : '—'} of ${S.teams.length})<br>` +
         (d ? `Next man up <b>${fmt(d.nextUp, 1)}</b> against a league ${fmt(d.lgDepth, 1)}<br>` : '') +
         `${e.startable} startable for ${e.need} slot${e.need === 1 ? '' : 's'}<br>` +
-        (d ? `<b style="color:${d.verdict.colour}">${d.verdict.label}</b>${d.verdict.want ? ' — they want ' + d.verdict.want : ''}<br>${d.note}`
+        (d ? `<b style="color:${d.verdict.colour}">${d.verdict.label}</b>${d.verdict.want ? ': they want ' + d.verdict.want : ''}<br>${d.note}`
           : (e.hole ? '<b style="color:var(--bad-text)">A hole they should be shopping for</b>' : e.surplus ? '<b style="color:var(--good-text)">Surplus they can afford to sell from</b>' : 'Adequately covered')));
       grid.appendChild(cell);
     });
@@ -77,13 +77,13 @@ function viewScout() {
         mode === 'shape'
           ? Object.keys(DEPTH_SHAPES).filter(k => k !== 'covered').map(k => h('span',
             h('i', { style: { background: DEPTH_SHAPES[k].colour } }),
-            DEPTH_SHAPES[k].tag + ' ' + DEPTH_SHAPES[k].label.toLowerCase() + (DEPTH_SHAPES[k].want ? ' — wants ' + DEPTH_SHAPES[k].want : '')))
-          : [h('span', h('i', { style: { background: 'var(--s8)' } }), mode === 'depth' ? 'Nothing behind the starters' : 'Weak — they need help here'),
+            DEPTH_SHAPES[k].tag + ' ' + DEPTH_SHAPES[k].label.toLowerCase() + (DEPTH_SHAPES[k].want ? ': wants ' + DEPTH_SHAPES[k].want : '')))
+          : [h('span', h('i', { style: { background: 'var(--s8)' } }), mode === 'depth' ? 'Nothing behind the starters' : 'Weak: they need help here'),
           h('span', h('i', { style: { background: 'var(--surface-3)' } }), 'Covered'),
-          h('span', h('i', { style: { background: 'var(--s1)' } }), mode === 'depth' ? 'Real players on the bench' : 'Strong — they can trade from it')]))));
+          h('span', h('i', { style: { background: 'var(--s1)' } }), mode === 'depth' ? 'Real players on the bench' : 'Strong: they can trade from it')]))));
 
   // ---- summary table ----
-  wrap.appendChild(card('Every team at a glance', 'strategy is inferred from the roster and from the trades they have actually made',
+  wrap.appendChild(card('Every team at a glance', 'strategy is inferred from the roster and from the trades they have made',
     table([
       { k: 'name', h: 'Team', sort: r => r.team.name, f: r => teamCell(r.team) },
       { k: 'power', prio: 2, h: 'Power', num: true, sort: r => r.team.powerRank, f: r => '#' + r.team.powerRank },
@@ -104,7 +104,7 @@ function viewScout() {
   const sc = scouts.find(x => x.team.rosterId === ScoutUI.team) || scouts[0];
   const t = sc.team;
   const dpOf = (pos) => (DEPTH.byTeam[t.rosterId] || {})[pos] || null;
-  wrap.appendChild(card('Scouting report — ' + t.name, t.owner,
+  wrap.appendChild(card('Scouting report: ' + t.name, t.owner,
     h('div', { style: { display: 'grid', gap: '14px' } },
       h('div.row', { style: { gap: '9px' } },
         h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, sc.strategy.headline),
@@ -141,11 +141,11 @@ function viewScout() {
       h('div.tiny.muted',
         sc.holes.length
           ? 'Approach: offer them ' + sc.holes.map(x => x.pos).join(' or ') + ' help, and ask for ' + (sc.surplus.length ? sc.surplus.map(x => x.pos).join(' or ') : 'picks') + ' back.'
-          : 'No obvious hole to exploit — they are covered everywhere that matters.'))));
+          : 'No obvious hole to exploit. They are covered everywhere that matters.'))));
 
   /* ---- the same roster as shapes rather than totals ---- */
   const prof = depthProfile(t);
-  const depthCard = proOnly(card('Starters and depth — ' + t.name,
+  const depthCard = proOnly(card('Starters and depth: ' + t.name,
     'each group tallest first: filled bars start, hollow bars wait. The dashed rule is what the league gets from its starters at that position, the dotted one is what the wire is worth',
     h('div',
       h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(236px,100%),1fr))', gap: '12px' } },
@@ -162,10 +162,10 @@ function viewScout() {
           h('div.tiny.muted', { style: { marginTop: '4px' } }, e.note)))),
       h('div.tiny.muted', { style: { marginTop: '10px' } },
         'A group is judged on three things rather than its total: what the starters produce against the rest of the league, '
-        + 'what stands behind them, and whether anyone in it is a difference-maker — a best player a clear step above the best the rest of the league has, '
+        + 'what stands behind them, and whether anyone in it is a difference-maker: a best player a clear step above the best the rest of the league has, '
         + fmt((depthLeague().base[prof[0] ? prof[0].pos : 'QB'] || {}).elite || 0, 1) + ' a week at ' + (prof[0] ? prof[0].pos : '') + '. '
         + 'Two stars and a cliff and four of the same player both read as "covered" on output alone, and they want opposite trades. '
-        + 'A slot is never counted below the dotted line, because nobody starts a player projecting nothing when the wire is there — '
+        + 'A slot is never counted below the dotted line, because nobody starts a player projecting nothing when the wire is there, '
         + 'so a bar under that line is a body, not a starter.'))));
   if (depthCard) wrap.appendChild(depthCard);
 
@@ -176,7 +176,7 @@ function viewScout() {
   const rel = (mine ? openings : openings.filter(o => o.team.rosterId === sc.team.rosterId)).slice(0, mine ? 8 : 6);
   const kindTag = { depth: 'wants depth', starter: 'needs a starter', consolidate: 'wants a difference-maker' };
   wrap.appendChild(card(mine ? 'Where your shape fits the league' : 'How to trade with ' + t.name,
-    mine ? 'positions where somebody else\'s shape and yours point at the same deal — priced evenly, these are the trades both sides want'
+    mine ? 'positions where somebody else\'s shape and yours point at the same deal: priced evenly, these are the trades both sides want'
       : 'read off their shape against your roster, not off the price of the pieces',
     rel.length
       ? h('div', { style: { display: 'grid', gap: '9px' } },
@@ -203,7 +203,7 @@ function viewScout() {
             }
           }, 'Build it'))))
       : h('div.empty', mine
-        ? 'Nobody in the league is shaped the opposite way to you right now — no position where their gap is your spare.'
+        ? 'Nobody in the league is shaped the opposite way to you right now. No position where their gap is your spare.'
         : 'Their groups are the same shape as yours, so there is no depth-for-star deal here. The value finder is the way in.')));
   return wrap;
 }

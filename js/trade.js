@@ -277,7 +277,7 @@ function assetBrowser(o) {
     h('div.bd', tabs,
       h('div.bbar',
         h('div.bsearch', ico('finder'), h('input', {
-          type: 'search', placeholder: o.placeholder || 'Search…', value: st.q, 'aria-label': 'Search',
+          type: 'search', placeholder: o.placeholder || 'Search...', value: st.q, 'aria-label': 'Search',
           oninput: e => { st.q = e.target.value; st.limit = step; fill(e.target.value); }
         })),
         h('div.chipwrap', posOpts.map(p => h('button.chip' + (st.pos === p ? '.on' : ''), {
@@ -352,7 +352,7 @@ function viewTrade() {
   const fresh = TradeUI.result && TradeUI.sig === sig;
   if (!canRun) { TradeUI.result = null; TradeUI.sig = null; }
   const runBtn = () => h('button.btn.pri.trun', { disabled: !canRun || TradeUI.running, onclick: run },
-    TradeUI.running ? h('span', h('span.spin'), ' Simulating…') : !canRun ? 'Add an asset to start' : fresh ? 'Re-evaluate' : 'Evaluate trade');
+    TradeUI.running ? h('span', h('span.spin'), ' Simulating...') : !canRun ? 'Add an asset to start' : fresh ? 'Re-evaluate' : 'Evaluate trade');
   const gap = Math.abs(sumA - sumB), overpay = sumA > sumB ? A : B;
   const balanceBody = () => !canRun
     ? [h('div.bal-empty', ico('trade'), h('div', h('b', 'Nothing in the deal yet'), h('div.tiny.muted', 'Add assets to either side and the balance appears here.')))]
@@ -392,7 +392,7 @@ function viewTrade() {
     tabs: ['a', 'b'].map(w => ({ k: w, color: w, label: who(T_OF[w]) === 'You' ? 'Your roster' : T_OF[w].name, n: outOf(w).length })), tab: bw,
     onTab: k => { TradeUI.tab = k; TradeUI.st.pos = 'all'; TradeUI.st.limit = 30; render(); },
     assets: assetsOf(BT).sort((x, y) => y.dv - x.dv), chosen: new Set(outOf(bw).map(a => a.id)),
-    placeholder: 'Search ' + BT.short + ' assets…',
+    placeholder: 'Search ' + BT.short + ' assets...',
     onToggle: (a, inDeal) => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a])),
     onChange: () => render()
   }));
@@ -423,7 +423,7 @@ function tradeResult(R) {
   wrap.appendChild(card('Verdict', null, h('div', { style: { display: 'grid', gap: '16px' } },
     h('div.helps', helpBox(A, 'a', aBefore, aAfter), helpBox(B, 'b', bBefore, bAfter)),
     h('div.row', { style: { justifyContent: 'space-between', alignItems: 'flex-end' } },
-      h('div', h('div.hero', pct(f, 0)), h('div.tiny.muted', 'value balance — 100% is a dead-even swap')),
+      h('div', h('div.hero', pct(f, 0)), h('div.tiny.muted', 'value balance: 100% is a dead-even swap')),
       h('div', { style: { textAlign: 'right' } },
         h('div.row', { style: { justifyContent: 'flex-end', gap: '6px' } },
           h('span', { style: { width: '9px', height: '9px', borderRadius: '50%', background: verdict[1], display: 'inline-block' } }),
@@ -437,7 +437,7 @@ function tradeResult(R) {
         h('b.mono', kfmt(Math.round(v))));
       return h('div.recv', row(A, 'a', R.bGives), row(B, 'b', R.aGives));
     })(),
-    h('div.tiny.muted', 'Values are live FantasyCalc ' + valueWord() + ' values for this league’s exact format. Balance alone does not make a trade good — the impact tables below are what matter.')
+    h('div.tiny.muted', 'Values are live FantasyCalc ' + valueWord() + ' values for this league\'s exact format. Balance alone does not make a trade good. The impact tables below are what matter.')
   )));
 
   const impact = (T, before, after, sim) => {
@@ -504,15 +504,15 @@ function tradeResult(R) {
           { k: 'delta', h: 'Change', num: true, sort: r => r.delta, f: r => Math.abs(r.delta) < 1 ? h('span.flat.tiny', '–') : deltaTag(r.delta, 0) }
         ], moved, { sortKey: 'delta', sortDir: 1 }),
         h('div.tiny.muted', { style: { marginTop: '9px' } },
-          'Slots assume the usual inverse-standings order, projected from each team\u2019s roster after the trade — weighted toward where a roster is heading the further out the pick is. '
-          + 'The headline balance above still uses today\u2019s market prices, which is what you would actually negotiate at; this table is what the picks are likely to become.'))));
+          'Slots assume the usual inverse-standings order, projected from each team\'s roster after the trade, weighted toward where a roster is heading the further out the pick is. '
+          + 'The headline balance above still uses today\'s market prices, which is what you would negotiate at; this table is what the picks are likely to become.'))));
     if (repriceCard) wrap.appendChild(repriceCard);
   }
 
   if (R.simAfter) {
     const rows = S.teams.map(t => ({ t, b: R.simBefore.by[t.rosterId], a: R.simAfter.by[t.rosterId] }))
       .sort((x, y) => y.a.title - x.a.title);
-    wrap.appendChild(card('League-wide contender shake-up', 'how everyone’s championship odds move — third parties shift too',
+    wrap.appendChild(card('League-wide contender shake-up', 'how everyone\'s championship odds move: third parties shift too',
       divBar(rows.map(r => ({
         label: r.t.name, v: (r.a.title - r.b.title) * 100, vl: sgn((r.a.title - r.b.title) * 100, 1) + 'pp',
         tip: `<div class="k">${esc(r.t.name)}</div>Title odds <b>${pct(r.b.title, 1)}</b> → <b>${pct(r.a.title, 1)}</b><br>Playoffs <b>${pct(r.b.playoff, 0)}</b> → <b>${pct(r.a.playoff, 0)}</b>`

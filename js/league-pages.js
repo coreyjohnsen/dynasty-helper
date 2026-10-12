@@ -161,17 +161,17 @@ function shapeVerdict(e, b) {
     // not enough bodies and enough bodies who are not good enough are both thin,
     // and a manager hears them as different problems
     e.note = e.bodies < Math.ceil(e.need) - 0.001
-      ? `${e.bodies} startable for ${fmt(e.need, 1)} slot${e.need === 1 ? '' : 's'} — they have to buy one.`
-      : `${e.bodies} bodies but only ${fmt(e.startAvg, 1)} a slot against a league ${fmt(b.start, 1)} — the quantity is there, the quality is not.`;
+      ? `${e.bodies} startable for ${fmt(e.need, 1)} slot${e.need === 1 ? '' : 's'}. They have to buy one.`
+      : `${e.bodies} bodies but only ${fmt(e.startAvg, 1)} a slot against a league ${fmt(b.start, 1)}. Enough players, not enough quality.`;
   } else if (e.zStart >= 0.2 && (e.zDepth <= -0.45 || e.cliff >= Math.max(3, 0.45 * e.last))) {
     e.shape = 'topHeavy';
-    e.note = `${nm(e.best)} carries it and the next man up is ${fmt(e.nextUp, 1)} a week — a bye or a knock costs them ${fmt(Math.max(0, e.cliff), 1)}.`;
+    e.note = `${nm(e.best)} carries it and the next man up is ${fmt(e.nextUp, 1)} a week. A bye or a knock costs them ${fmt(Math.max(0, e.cliff), 1)}.`;
   } else if (!e.hasStar && e.bodies >= e.n + 1 && e.spread <= 0.22 * e.startAvg) {
     e.shape = 'committee';
-    e.note = `${e.bodies} of much the same player and nobody above ${fmt(e.elite, 1)} — they would send two for one better one.`;
+    e.note = `${e.bodies} of much the same player and nobody above ${fmt(e.elite, 1)}. They would send two for one better one.`;
   } else if (e.zStart >= 0.4 && e.zDepth >= 0.35) {
     e.shape = 'deep';
-    e.note = `${fmt(e.startAvg, 1)} from the starters and ${fmt(e.nextUp, 1)} still on the bench — they can sell from it.`;
+    e.note = `${fmt(e.startAvg, 1)} from the starters and ${fmt(e.nextUp, 1)} still on the bench. They can sell from it.`;
   } else {
     e.shape = 'covered';
     e.note = `${fmt(e.startAvg, 1)} a week from the starters against a league ${fmt(e.lgStart, 1)}, with ${fmt(e.nextUp, 1)} behind them.`;
@@ -387,12 +387,12 @@ function projectedStrategy(t, stat) {
     const inPlay = S.sim && S.sim.by[t.rosterId] ? S.sim.by[t.rosterId].playoff : null;
     let headline, detail;
     if (strong && dir.label === 'Buying') { headline = 'Going for it'; detail = 'A strong roster and they are still adding. Expect them to pay up for a difference-maker.'; }
-    else if (strong && dir.label === 'Selling') { headline = 'Selling from strength'; detail = 'Good enough to win and still moving pieces out — usually depth for a starter, so they will want quality back.'; }
+    else if (strong && dir.label === 'Selling') { headline = 'Selling from strength'; detail = 'Good enough to win and still moving pieces out, usually depth for a starter, so they will want quality back.'; }
     else if (weak && dir.label === 'Selling') { headline = 'Punting the season'; detail = 'Out of it and shipping useful players. The best place in the league to buy production cheaply.'; }
     else if (weak && dir.label === 'Buying') { headline = 'Chasing it'; detail = 'Behind and still buying. Either they like their odds more than the table does, or they are a soft touch.'; }
     else if (strong) { headline = 'Standing pat'; detail = 'Strong roster, no trades yet. Likely to move only for a clear upgrade.'; }
-    else if (weak) { headline = 'Stuck'; detail = 'Weak roster, not trading. Worth an offer — they may not have realised the season is gone.'; }
-    else headline = 'In the pack', detail = 'Middle of the table and not committed either way — the hardest kind of team to read.';
+    else if (weak) { headline = 'Stuck'; detail = 'Weak roster, not trading. Worth an offer. They may not have realised the season is gone.'; }
+    else headline = 'In the pack', detail = 'Middle of the table and not committed either way. The hardest kind of team to read.';
     if (inPlay !== null && inPlay < 0.12 && !/Punting|Stuck/.test(headline)) detail += ' The simulator gives them ' + pct(inPlay, 0) + ' to make the playoffs.';
     return { headline, detail, direction: dir, window: null };
   }
@@ -400,12 +400,12 @@ function projectedStrategy(t, stat) {
   const rebuilding = ['Rebuild', 'Retool'].includes(win);
   let headline, detail;
   if (contending && dir.label === 'Buying') { headline = 'All-in'; detail = 'A contending roster and they are spending future capital to push it further.'; }
-  else if (contending && dir.label === 'Selling') { headline = 'Selling high'; detail = 'Good enough to win now, but cashing pieces in — either hedging or they do not rate their own window.'; }
+  else if (contending && dir.label === 'Selling') { headline = 'Selling high'; detail = 'Good enough to win now, but cashing pieces in: either hedging or they do not rate their own window.'; }
   else if (rebuilding && dir.label === 'Selling') { headline = 'Committed rebuild'; detail = 'Weak roster, moving veterans out for picks and youth. Expect them to keep selling.'; }
   else if (rebuilding && dir.label === 'Buying') { headline = 'Buying against the window'; detail = 'Adding win-now pieces to a roster that is not close. Often a source of value if they overpay.'; }
   else if (contending) { headline = 'Standing pat'; detail = 'Contending roster, no directional trading yet. Likely to buy if the price is right.'; }
   else if (rebuilding) { headline = 'Rebuilding quietly'; detail = 'Bottom of the table and not yet trading. A candidate to start selling veterans.'; }
-  else headline = 'Middling', detail = 'Neither clearly contending nor rebuilding — the hardest kind of team to read.';
+  else headline = 'Middling', detail = 'Neither clearly contending nor rebuilding. The hardest kind of team to read.';
   return { headline, detail, direction: dir, window: win };
 }
 /* ================= weekly outlook helpers ================= */

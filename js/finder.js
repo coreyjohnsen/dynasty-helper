@@ -3,10 +3,10 @@
 const FinderUI = { team: null, mode: 'auto', results: null, tol: 0.14, positions: [], shape: 'any', partners: [], focus: null, signal: 'prefer', autorun: false, boardOpen: false, pickOpen: false, pickTab: 'mine', pst: { q: '', pos: 'all', limit: 30 } };
 const SHAPES = [
   { k: 'any', label: 'Any shape', blurb: 'No constraint on how many pieces move each way.' },
-  { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player — fewer, stronger starters.' },
-  { k: 'spread', label: 'Downtier', blurb: 'Break one of your studs into several useful pieces — more depth, less top end.' },
+  { k: 'consolidate', label: 'Uptier', blurb: 'Package two or three of your pieces for one better player: fewer, stronger starters.' },
+  { k: 'spread', label: 'Downtier', blurb: 'Break one of your studs into several useful pieces: more depth, less top end.' },
   { k: 'even', label: 'One-for-one', blurb: 'Straight swaps only.' },
-  { k: 'roster', label: 'Roster crunch', blurb: 'Two of your players for one better one — then use the roster spot you just freed on the best free agent available.' }
+  { k: 'roster', label: 'Roster crunch', blurb: 'Two of your players for one better one. Then use the roster spot you just freed on the best free agent available.' }
 ];
 function viewFinder() {
   const teams = S.teams;
@@ -31,7 +31,7 @@ function viewFinder() {
       onclick: () => { FinderUI.partners = []; dirty(); render(); }
     }, 'Everyone')].concat(others.map(t =>
       h('button.chip' + ((focus && focus.side === 'get' ? focus.owner.rosterId === t.rosterId : FinderUI.partners.includes(t.rosterId)) ? '.on' : ''), {
-        title: t.name + (t.window ? ' — ' + t.window : ''),
+        title: t.name + (t.window ? ' · ' + t.window : ''),
         disabled: !!(focus && focus.side === 'get'),
         onclick: () => { FinderUI.partners = toggle(FinderUI.partners, t.rosterId); dirty(); render(); }
       }, t.name))));
@@ -48,7 +48,7 @@ function viewFinder() {
     const box = h('div', { style: { display: 'grid', gap: '10px' } });
     if (focus) box.appendChild(assetCard(assetOfPlayer(focusP), {
       compact: true, onRemove: () => { FinderUI.focus = null; dirty(); render(); },
-      meta: focus.side === 'give' ? 'yours — shopping him' : 'on ' + focusOwner.name + ' — going to get him'
+      meta: focus.side === 'give' ? 'yours, shopping him' : 'on ' + focusOwner.name + ', going to get him'
     }));
     box.appendChild(h('div.row', h('button.btn', { onclick: () => { FinderUI.pickOpen = !FinderUI.pickOpen; render(); } },
       ico(FinderUI.pickOpen ? 'chevup' : 'finder'), FinderUI.pickOpen ? 'Close the list' : focus ? 'Choose a different player' : 'Choose a player')));
@@ -61,14 +61,14 @@ function viewFinder() {
         tabs: [{ k: 'mine', color: 'a', label: 'Your roster · sell' }, { k: 'others', color: 'b', label: 'Rest of the league · buy' }], tab,
         onTab: k => { FinderUI.pickTab = k; FinderUI.pst.pos = 'all'; FinderUI.pst.limit = 30; render(); },
         assets: pool.filter(p => (p.dv || 0) > 0).map(assetOfPlayer).sort((x, y) => y.dv - x.dv), chosen: new Set(focus ? [focus.id] : []),
-        meta: a => (tab === 'others' && ownerOf[a.id] ? ownerOf[a.id].short + ' · ' : '') + assetMeta(a), placeholder: 'Search players…',
+        meta: a => (tab === 'others' && ownerOf[a.id] ? ownerOf[a.id].short + ' · ' : '') + assetMeta(a), placeholder: 'Search players...',
         onToggle: (a, inDeal) => { FinderUI.focus = inDeal ? null : a.id; FinderUI.pickOpen = false; dirty(); render(); }, onChange: () => render()
       }));
     }
     return box;
   })();
   const focusBlurb = !focus
-    ? 'Pick anyone in the league and every suggestion will be built around them — one of yours to shop, or someone else’s to go and get.'
+    ? 'Pick anyone in the league and every suggestion will be built around them. One of yours to shop, or someone else\'s to go and get.'
     : focus.side === 'give'
       ? `Shopping ${focusP.name}. Every package below sends them out, and the return has to move you forward on your own objective.`
       : `Going after ${focusP.name} from ${focusOwner.name}. Every package below brings them back, and ${focusOwner.short} has to want it too.`;
@@ -93,7 +93,7 @@ function viewFinder() {
       h('div',
         h('div.row', { style: { justifyContent: 'space-between', marginBottom: '5px' } },
           h('label.fld', { style: { gap: 0 } }, 'Target positions'),
-          FinderUI.positions.length ? h('button.btn.sm', { onclick: () => { FinderUI.positions = []; dirty(); render(); } }, 'Clear') : h('span.tiny.muted', 'off — any position')),
+          FinderUI.positions.length ? h('button.btn.sm', { onclick: () => { FinderUI.positions = []; dirty(); render(); } }, 'Clear') : h('span.tiny.muted', 'off (any position)')),
         posChips,
         FinderUI.positions.length ? h('div.tiny.muted', { style: { marginTop: '5px' } },
           'Every suggestion will bring back at least one ' + FinderUI.positions.join(' or ') + '.') : null),
@@ -103,14 +103,14 @@ function viewFinder() {
       h('div',
         h('div.row', { style: { justifyContent: 'space-between', marginBottom: '5px' } },
           h('label.fld', { style: { gap: 0 } }, 'Trade partners'),
-          h('span.tiny.muted', focus && focus.side === 'get' ? 'fixed — ' + focus.owner.name + ' owns him'
-            : FinderUI.partners.length ? FinderUI.partners.length + ' selected' : 'off — every team')),
+          h('span.tiny.muted', focus && focus.side === 'get' ? 'fixed: ' + focus.owner.name + ' owns him'
+            : FinderUI.partners.length ? FinderUI.partners.length + ' selected' : 'off (every team)')),
         partnerChips()),
       h('div',
         h('div.row', { style: { justifyContent: 'space-between', marginBottom: '5px' } },
           h('label.fld', { style: { gap: 0 } }, 'Build around one player'),
           focus ? h('button.btn.sm', { onclick: () => { FinderUI.focus = null; dirty(); render(); } }, 'Clear')
-            : h('span.tiny.muted', 'off — any player')),
+            : h('span.tiny.muted', 'off (any player)')),
         focusSel,
         h('div.tiny.muted', { style: { marginTop: '5px' } }, focusBlurb))),
     h('div',
@@ -135,9 +135,9 @@ function viewFinder() {
         'Every suggestion has to help both sides on their own objective and stay inside your value tolerance. '
         + (res.focus
           ? (res.focus.side === 'give'
-            ? `Nothing on the board makes ${res.focus.player.name} worth moving at your current strategy — that is itself an answer. Try a looser tolerance, or a different objective.`
+            ? `Nothing on the board makes ${res.focus.player.name} worth moving at your current strategy. That is itself an answer. Try a looser tolerance, or a different objective.`
             : `${res.focus.owner.name} has no reason to part with ${res.focus.player.name} for anything you can put together right now. A looser tolerance or a different objective may open something up.`)
-          : res.filtered ? `${kfmt(res.filtered)} combinations were thrown out by your filters alone — try loosening those first, then the tolerance.` : 'Try a looser tolerance, or a different strategy.')))));
+          : res.filtered ? `${kfmt(res.filtered)} combinations were thrown out by your filters alone. Try loosening those first, then the tolerance.` : 'Try a looser tolerance, or a different strategy.')))));
     else {
       const activeFilters = [
         res.focus ? (res.focus.side === 'give' ? 'shopping ' + res.focus.player.name : 'buying ' + res.focus.player.name) : null,
@@ -159,10 +159,10 @@ function viewFinder() {
 }
 function windowToMode(w) { return ['Contend', 'Win-now'].includes(w) ? 'contend' : ['Rebuild', 'Retool'].includes(w) ? 'rebuild' : 'balanced'; }
 function modeBlurb(m) {
-  if (!isDynasty()) return 'Looking for deals that raise your starting lineup this season — the only season there is.';
+  if (!isDynasty()) return 'Looking for deals that raise your starting lineup this season. The only season there is.';
   return {
-    contend: 'Looking for deals that raise your starting lineup now — you give up youth and picks, you get proven production.',
-    rebuild: 'Looking for deals that raise your future value — you sell aging producers for young players and draft capital.',
+    contend: 'Looking for deals that raise your starting lineup now: you give up youth and picks and get proven production.',
+    rebuild: 'Looking for deals that raise your future value: you sell aging producers for young players and draft capital.',
     balanced: 'Looking for deals that add value on both timelines without punting either one.'
   }[m];
 }
@@ -239,14 +239,14 @@ function computeSignal(x, cal) {
   /* a month of price movement is routine, so on its own it never flags anyone —
      it only reinforces a read that production, age or injury has already made */
   if (tr <= -0.08 && (p.age || 99) <= 27) { buy += 0.2; rb.push(`value down ${Math.round(-tr * 100)}% in 30 days`); }
-  if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days — close to a peak`); }
-  if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos} — values fall away from here`); }
+  if (tr >= 0.10) { sell += 0.2; rs.push(`value up ${Math.round(tr * 100)}% in 30 days, close to a peak`); }
+  if (p.age && AGE_CLIFF[p.pos] && p.age >= AGE_CLIFF[p.pos] && p.dv >= 1200) { sell += 0.5; rs.push(`age ${fmt(p.age, 0)} ${p.pos}: values fall away from here`); }
   if (x.recovering) {
     /* Back soon: his price is low because he is hurt, but only for a few weeks. That is
        the one injured case worth flagging — and only as a buy, never a sell. */
     sell = 0; rs.length = 0;
     const left = Math.max(0, S.regEnd - p.inj.R + 1);
-    if (tr <= -0.05) { buy += 0.45; rb.push(`out until ${p.inj.label.toLowerCase().replace('wk', 'week')}, and his price is down ${Math.round(-tr * 100)}% — he returns with ${left} regular-season game${left === 1 ? '' : 's'} left`); }
+    if (tr <= -0.05) { buy += 0.45; rb.push(`out until ${p.inj.label.toLowerCase().replace('wk', 'week')}, and his price is down ${Math.round(-tr * 100)}%. He returns with ${left} regular-season game${left === 1 ? '' : 's'} left`); }
     else if (buy > 0) rb.push(`back ${p.inj.label.toLowerCase().replace('wk', 'week')}, so the dip is short-term`);
   }
   if (Math.max(buy, sell) < 0.35) return null;
@@ -324,8 +324,8 @@ function timelineMap() {
 const TL_LABEL = { now: 'Win now', later: 'Rebuild' };
 function timelineWhy(t) {
   return t.kind === 'now'
-    ? `Redraft #${t.redRank} but dynasty #${t.dynRank}: worth more this season than over the long run. A contender’s buy, a rebuilder’s sale.`
-    : `Dynasty #${t.dynRank} but redraft #${t.redRank}: worth more over the long run than this season. A rebuilder’s buy, a contender’s sale.`;
+    ? `Redraft #${t.redRank} but dynasty #${t.dynRank}: worth more this season than over the long run. A contender's buy, a rebuilder's sale.`
+    : `Dynasty #${t.dynRank} but redraft #${t.redRank}: worth more over the long run than this season. A rebuilder's buy, a contender's sale.`;
 }
 /** The small tags that say what the market thinks of a player. */
 function marketTags(p) {
@@ -353,25 +353,25 @@ function explainTrade(r, T, scT, scP) {
   const names = (arr) => arr.map(a => a.name).join(' + ');
   const gotPos = Array.from(new Set(tp.map(a => a.pos)));
   const myHole = scT.holes.find(x => gotPos.includes(x.pos));
-  if (myHole) out.push({ k: 'need', t: `You’re thin at ${myHole.pos} (${myHole.startable} startable for ${myHole.need} lineup spots), and ${names(tp.filter(a => a.pos === myHole.pos))} fills it.` });
+  if (myHole) out.push({ k: 'need', t: `You're thin at ${myHole.pos} (${myHole.startable} startable for ${myHole.need} lineup spots), and ${names(tp.filter(a => a.pos === myHole.pos))} fills it.` });
   const after = optimalLineup(afterRoster(T, r.give, r.get).filter(p => !T.taxi.has(p.id) && !T.ir.has(p.id)), 'ppg');
   const newSt = after.filter(s => s.player && !T.starterIds.has(s.player.id)).sort((a, b) => b.player.ppg - a.player.ppg);
   const dNow = r.myAfter.now - r.myBase.now;
   if (newSt.length && dNow > 0.05) {
     const s = newSt[0];
-    out.push({ k: 'lineup', t: `${s.player.name} starts at ${SLOT_LABEL[s.slot] || s.slot} (${fmt(s.player.ppg, 1)} pts/wk) — your lineup improves by ${fmt(dNow, 1)} pts/wk.` });
+    out.push({ k: 'lineup', t: `${s.player.name} starts at ${SLOT_LABEL[s.slot] || s.slot} (${fmt(s.player.ppg, 1)} pts/wk), improving your lineup by ${fmt(dNow, 1)} pts/wk.` });
   }
   const theirHole = scP.holes.find(x => r.give.some(a => a.pos === x.pos));
-  if (theirHole) out.push({ k: 'them', t: `${P.name} is thin at ${theirHole.pos}; ${names(r.give.filter(a => a.pos === theirHole.pos))} solves that, which is why they’d say yes.` });
-  else if (r.pGain > 0) out.push({ k: 'them', t: `${P.name}${P.window ? ' (' + P.window.toLowerCase() + ')' : ''} also comes out ahead on their own plan, so there’s something in it for them.` });
+  if (theirHole) out.push({ k: 'them', t: `${P.name} is thin at ${theirHole.pos}; ${names(r.give.filter(a => a.pos === theirHole.pos))} solves that, which is why they'd say yes.` });
+  else if (r.pGain > 0) out.push({ k: 'them', t: `${P.name}${P.window ? ' (' + P.window.toLowerCase() + ')' : ''} also comes out ahead on their own plan, so there's something in it for them.` });
   if (isDynasty()) {
     const ag = (arr) => { const x = arr.filter(a => a.kind === 'player' && a.ref.age); return x.length ? sum(x.map(a => a.ref.age * a.dv)) / sum(x.map(a => a.dv)) : null; };
     const a1 = ag(r.give), a2 = ag(r.get);
-    if (a1 && a2 && Math.abs(a1 - a2) >= 2) out.push({ k: 'age', t: a2 < a1 ? `You get younger — ${fmt(a2, 1)} against ${fmt(a1, 1)} years on average, value that holds.` : `You get older — ${fmt(a2, 1)} against ${fmt(a1, 1)} years: more now, a shorter shelf life.` });
+    if (a1 && a2 && Math.abs(a1 - a2) >= 2) out.push({ k: 'age', t: a2 < a1 ? `You get younger: ${fmt(a2, 1)} against ${fmt(a1, 1)} years on average, value that holds.` : `You get older: ${fmt(a2, 1)} against ${fmt(a1, 1)} years: more now, a shorter shelf life.` });
   }
-  (r.signals || []).slice(0, 2).forEach(s => out.push({ k: s.kind, t: `${s.kind === 'buy' ? 'Buy low' : 'Sell high'}: ${s.asset.name} — ${s.reasons[0]}.` }));
+  (r.signals || []).slice(0, 2).forEach(s => out.push({ k: s.kind, t: `${s.kind === 'buy' ? 'Buy low' : 'Sell high'}: ${s.asset.name}, ${s.reasons[0]}.` }));
   if (r.theirDrops && r.theirDrops.length) out.push({ k: 'cost', t: `${P.short} would have to cut ${names(r.theirDrops.map(p => ({ name: p.name })))} to fit the extra roster spot.` });
-  if (r.myDrops && r.myDrops.length) out.push({ k: 'cost', t: `You’d have to cut ${names(r.myDrops.map(p => ({ name: p.name })))} to fit.` });
+  if (r.myDrops && r.myDrops.length) out.push({ k: 'cost', t: `You'd have to cut ${names(r.myDrops.map(p => ({ name: p.name })))} to fit.` });
   return out;
 }
 
@@ -587,7 +587,7 @@ function findTrades(T, mode, tol, filters) {
       const signal = sum(give.map(a => sigMap[a.id] && sigMap[a.id].kind === 'sell' ? sigMap[a.id].strength : 0))
         + sum(get.map(a => sigMap[a.id] && sigMap[a.id].kind === 'buy' ? sigMap[a.id].strength : 0));
       if (filters.signal === 'only' && signal < 0.35) return;
-      out.push({ partner: P, give, get, myGain, pGain, gv, gt, myAfter, myBase, signal, myDrops: myAfter.drops, theirDrops: pAfter.drops,
+      out.push({ partner: P, give, get, myGain, pGain, gv, gt, myAfter, myBase, theirAfter: pAfter, theirBase: pBase, signal, myDrops: myAfter.drops, theirDrops: pAfter.drops,
         score: myGain + pGain * 0.55 + (filters.signal === 'off' ? 0 : 0.35 * signal)
           - 0.12 * pAfter.drops.length - 0.04 * myAfter.drops.length, fair: lo / hi });
     });
@@ -660,14 +660,14 @@ function signalBoard(T, shop) {
       h('div.chd-t', h('h3', 'Buy low / sell high ideas'), h('span.note', summary)),
       h('span.chd-hint', open ? 'Hide' : 'Show'), h('span.chev', ico('chev'))),
     open ? h('div.bd', { style: { display: 'grid', gap: '14px', paddingTop: '4px' } },
-      h('div.tiny.muted', 'Where a player’s price and his production disagree. Pick one to build a trade search around him.'),
+      h('div.tiny.muted', 'Where a player\'s price and his production disagree. Pick one to build a trade search around him.'),
       any ? h('div.sigcols',
-        col('Sell high', 'yours — the market is paying more than the production earns', sells, 'Shop him', false),
-        col('Buy low', 'on other rosters — price is ahead of production, or temporarily down', buys, 'Get him', true),
-        holds.length ? col('Don’t sell yet', 'yours — scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
-        : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out — production lines up with price across the league.'),
+        col('Sell high', 'yours: the market is paying more than the production earns', sells, 'Shop him', false),
+        col('Buy low', 'on other rosters: price is ahead of production, or temporarily down', buys, 'Get him', true),
+        holds.length ? col('Don\'t sell yet', 'yours: scoring under his price; moving him now sells at the bottom', holds, null, false) : null)
+        : h('div.empty', { style: { padding: '18px' } }, 'Nothing stands out. Production lines up with price across the league.'),
       h('div.tiny.muted', S.lastWeek
-        ? `Production is each player’s average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out, because their price is explained by the injury — unless they are due back within about three weeks with games left to play, when only a buy-low can be flagged.`
+        ? `Production is each player's average over the games he has played this season (${S.lastWeek} week${S.lastWeek > 1 ? 's' : ''}), set against what his value rank typically scores. A gap only counts when it is bigger than normal week-to-week noise for that many games, so early in the season fewer players qualify. Value trend and age add to the read. Players who are out or on injured reserve are left out, because their price is explained by the injury, unless they are due back within about three weeks with games left to play, when only a buy-low can be flagged.`
         : 'No games have been played yet, so flags come only from age cliffs. Production-based flags appear once the season starts.')) : null);
 }
 
@@ -710,16 +710,21 @@ function tradeCardRow(r, T, i) {
       h('ul', r.why.slice(0, 5).map(w => h('li.w-' + w.k, w.t)))) : null,
     r.fa && r.fa.length ? h('div', { style: { marginTop: '10px', borderTop: '1px dashed var(--border)', paddingTop: '8px' } },
       h('div.tiny.muted', { style: { marginBottom: '6px' } },
-        (r.freed > 1 ? r.freed + ' roster spots open up' : 'A roster spot opens up') + ' — best free agent to sign with it:'),
+        (r.freed > 1 ? r.freed + ' roster spots open up' : 'A roster spot opens up') + '. Best free agent to sign with it:'),
       h('div.row', { style: { gap: '8px', flexWrap: 'wrap' } }, r.fa.map((f, ix) =>
         h('div.asset', { style: { cursor: 'default', opacity: ix ? 0.62 : 1 } }, posPill(f.p.pos),
           pname(f.p, { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }),
           h('span.v', f.gain > 0.05 ? '+' + f.gain.toFixed(1) + ' pts/wk' : kfmt(Math.round(f.p.dv || 0))))))) : null,
-    h('div.row', { style: { marginTop: '10px', gap: '6px 16px', borderTop: '1px solid var(--border)', paddingTop: '9px' } },
-      h('span.tiny.sec', 'Your lineup ', deltaTag(r.myAfter.now - r.myBase.now, 1, ' pts/wk')),
-      dynOnly(h('span.tiny.sec', 'Your future ', deltaTag(r.myAfter.future - r.myBase.future, 1))),
-      dynOnly(h('span.tiny.sec', 'Pick capital ', deltaTag(r.myAfter.pickCapital - r.myBase.pickCapital, 0))),
-      h('span', { style: { flex: 1 } }),
-      h('span.tiny.muted', 'they gain too — that’s why this is worth sending')));
+    h('div.tc-deltas',
+      effectRow('You', r.myAfter, r.myBase),
+      effectRow(r.partner.name, r.theirAfter, r.theirBase)));
+}
+/** What a deal does to one side: lineup points, future outlook and pick capital, before to after. */
+function effectRow(who, after, before) {
+  return h('div.tc-eff',
+    h('b.tiny.tc-eff-who', who),
+    h('span.tiny.sec', 'Lineup ', deltaTag(after.now - before.now, 1, ' pts/wk')),
+    dynOnly(h('span.tiny.sec', 'Future ', deltaTag(after.future - before.future, 1))),
+    dynOnly(h('span.tiny.sec', 'Pick capital ', deltaTag(after.pickCapital - before.pickCapital, 0))));
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "Fantasy Lab",
   "short_name": "Fantasy Lab",
-  "description": "Live Sleeper dynasty league analysis — rosters, trades, power rankings, simulation and draft-pick pricing.",
+  "description": "Live Sleeper dynasty league analysis: rosters, trades, power rankings, simulation and draft-pick pricing.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

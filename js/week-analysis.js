@@ -106,8 +106,8 @@ function simLeverageCard(res) {
   ], picked, { sortKey: 'swing', sortDir: -1 });
   const wt = withTable(h('div', controls, body, more), allTbl);
 
-  return card(LevUI.week === 'all' ? 'Games that matter most — rest of season' : 'Games that matter most — week ' + LevUI.week,
-    'ranked by how much of the playoff picture each game moves — open one to see where both teams stand if it goes either way',
+  return card(LevUI.week === 'all' ? 'Games that matter most, rest of season' : 'Games that matter most, week ' + LevUI.week,
+    'ranked by how much of the playoff picture each game moves: open one to see where both teams stand if it goes either way',
     wt.body, wt.btn);
 }
 
@@ -151,7 +151,7 @@ function simTrajectoryCard(res) {
   const wt = withTable(h('div', chart, legend), tbl);
   return card('Playoff position, week by week',
     'the share of simulated seasons in which each team is inside the cut with the season paused at that week'
-    + (anchor ? ' — week ' + anchor + ' is where the real table stands today' : ''),
+    + (anchor ? '. Week ' + anchor + ' is where the real table stands today' : ''),
     wt.body, wt.btn);
 }
 
@@ -166,7 +166,7 @@ function simSeedCard(res) {
     tip: (t, c, v) => `<div class="k">${esc(t.name)} · ${ord(+c)} seed</div><b>${fmt(v, 1)}%</b> of simulated seasons`
       + (+c <= res.playoffTeams ? '<br>inside the playoff cut' : '<br>missed the playoffs')
   });
-  return card('Where everyone finishes', 'percentage of simulated seasons ending at each seed — ' + res.playoffTeams + ' make the bracket',
+  return card('Where everyone finishes', 'percentage of simulated seasons ending at each seed. ' + res.playoffTeams + ' make the bracket',
     h('div', grid, h('div', { style: { marginTop: '10px' } }, seqLegend('never', 'often', 'Share of seasons'))));
 }
 
@@ -184,11 +184,11 @@ function simLuckCard(res) {
       + `Schedule is worth <b>${sgn(r.s.luck, 2)}</b> wins`
   }));
   return card('What the schedule is worth',
-    'simulated wins minus the wins that scoring alone earns — blue means the remaining fixtures are doing a team a favour',
+    'simulated wins minus the wins that scoring alone earns: blue means the remaining fixtures are doing a team a favour',
     h('div',
       divBar(bars, { labelW: isNarrow() ? '110px' : '170px', dec: 2 }),
       h('div.tiny.muted', { style: { marginTop: '10px' } },
-        'A team that beats 60% of the league each week "deserves" 0.6 wins a week. The gap between that and the games it is actually projected to win is the schedule.'),
+        'A team that beats 60% of the league each week "deserves" 0.6 wins a week. The gap between that and the games it is projected to win is the schedule.'),
       table([
         { k: 'name', h: 'Team', sort: r => r.t.name, f: r => teamCell(r.t) },
         { k: 'allplay', h: 'Beats', num: true, tip: 'Share of the league this team outscores in a typical remaining week', sort: r => r.s.allPlayPct, f: r => pct(r.s.allPlayPct, 0) },

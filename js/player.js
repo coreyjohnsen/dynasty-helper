@@ -178,7 +178,7 @@ function tradingCardStage(p, owner) {
     h('div.pcxcap',
       h('div.row', { style: { gap: '8px', justifyContent: 'center', flexWrap: 'wrap' } }, p.injury ? injuryTag(p.injury, p) : null, bits ? h('span.tiny.sec', bits) : null),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
-        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league')));
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' (taxi squad)' : owner.ir.has(p.id) ? ' (injured reserve)' : owner.starterIds.has(p.id) ? ' (projected starter)' : ' (bench)') : 'Not on any roster in this league')));
 }
 function viewPlayer() {
   const wrap = h('div.grid');
@@ -224,7 +224,7 @@ function viewPlayer() {
         p.college || null,
         p.draft ? `${p.draft.year} round ${p.draft.round}, pick ${p.draft.pick}` : null].filter(Boolean).join(' · ')),
       h('div.tiny.muted', { style: { marginTop: '3px' } },
-        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' — taxi squad' : owner.ir.has(p.id) ? ' — injured reserve' : owner.starterIds.has(p.id) ? ' — projected starter' : ' — bench') : 'Not on any roster in this league'))));
+        owner ? `Rostered by ${owner.name}` + (owner.taxi.has(p.id) ? ' (taxi squad)' : owner.ir.has(p.id) ? ' (injured reserve)' : owner.starterIds.has(p.id) ? ' (projected starter)' : ' (bench)') : 'Not on any roster in this league'))));
   const heroSlot = isSimple() ? h('div.pcxhero', tradingCardStage(p, owner)) : null;
   wrap.appendChild(heroSlot || hdr);
 
@@ -244,13 +244,13 @@ function viewPlayer() {
   const trendPct = p.trend30 && (p.dv - p.trend30) > 0 ? p.trend30 / (p.dv - p.trend30) : 0;
   const kpis = h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(146px,100%),1fr))' } },
     kpi(isDynasty() ? 'Dynasty value' : 'Redraft value', kfmt(Math.round(p.dv || 0)), p.rank ? 'overall #' + p.rank : 'unranked',
-      `<div class="k">FantasyCalc ${valueWord()} value</div>Priced for this league's exact format — ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
+      `<div class="k">FantasyCalc ${valueWord()} value</div>Priced for this league's exact format: ${S.cfg.superflex ? 'superflex' : '1QB'}, ${S.cfg.numTeams}-team, ${S.cfg.ppr === 1 ? 'PPR' : S.cfg.ppr === 0.5 ? 'half-PPR' : 'standard'}.`),
     kpi('Position rank', (p.pos || '') + (p.posRank || (myIdx >= 0 ? myIdx + 1 : '—')), p.tier ? 'tier ' + p.tier : 'of ' + posPeers.length + ' ranked'),
     kpi('30-day trend', p.trend30 ? sgn(p.trend30, 0) : 'flat', p.trend30 ? sgn(trendPct * 100, 1) + '%' : 'no movement'),
     kpi('Projected', fmt(p.ppg || 0, 1), p.wk ? 'pts / week remaining' : 'pts / week now',
       p.wk
         ? `<div class="k">Sleeper weekly projections</div>Average over the weeks still to play, byes excluded. Each week's projected stat line is scored with this league's own settings, so custom scoring is respected.` + (p.inj && INJ.enabled() ? '<br>Weeks he is expected to miss count as zero, so this is lower than his healthy rate.' : '')
-        : `<div class="k">Estimated</div>Sleeper publishes no weekly projection for this player, so this comes from the redraft value's positional rank adjusted for league scoring.` + (p.injury ? '<br>Discounted for the <b>' + p.injury + '</b> tag' + (p.inj && INJ.enabled() && p.inj.kind === 'long' ? ' — zero until ' + (p.inj.season ? 'next season' : p.inj.label.toLowerCase()) + '.' : '.') : '')),
+        : `<div class="k">Estimated</div>Sleeper publishes no weekly projection for this player, so this comes from the redraft value's positional rank adjusted for league scoring.` + (p.injury ? '<br>Discounted for the <b>' + p.injury + '</b> tag' + (p.inj && INJ.enabled() && p.inj.kind === 'long' ? ', zero until ' + (p.inj.season ? 'next season' : p.inj.label.toLowerCase()) + '.' : '.') : '')),
     dynOnly(kpi('Projected 2–3 yrs', fmt(p.fppg || 0, 1), 'pts / week',
       `<div class="k">Future outlook</div>Dynasty-value rank run through the same curve, then aged with a ${p.pos}-specific decline profile.`)),
     // in a redraft league the dynasty price is the interesting comparison, not
@@ -273,9 +273,9 @@ function viewPlayer() {
     const vsProj = g.proj !== undefined && g.pts !== null ? ` · projected ${fmt(g.proj, 1)}` : '';
     bars.push({
       x: g.week, v: g.rostered || g.fromStats ? g.pts : null, kind: g.state === 'live' ? 'live' : 'actual',
-      note: g.fromStats ? 'On no roster in this league — scored from his raw stats with this league’s settings'
-        : !g.rostered ? (WSTATS.state[g.week] === 'fail' ? 'Not rostered in this league, and his stats could not be loaded' + (WSTATS.err[g.week] ? ' (' + WSTATS.err[g.week] + ')' : '') : blank.includes(g.week) ? 'Not rostered in this league — loading his stats…' : 'Not rostered in this league — no stats listed for him this week')
-        : g.state === 'live' ? `In progress${g.quarter ? ' (' + g.quarter + ')' : ''} — ${fmt(g.pts || 0, 1)} so far${vsProj}`
+      note: g.fromStats ? 'On no roster in this league, scored from his raw stats with this league\'s settings'
+        : !g.rostered ? (WSTATS.state[g.week] === 'fail' ? 'Not rostered in this league, and his stats could not be loaded' + (WSTATS.err[g.week] ? ' (' + WSTATS.err[g.week] + ')' : '') : blank.includes(g.week) ? 'Not rostered in this league. Loading his stats...' : 'Not rostered in this league. No stats listed for him this week')
+        : g.state === 'live' ? `In progress${g.quarter ? ' (' + g.quarter + ')' : ''}, ${fmt(g.pts || 0, 1)} so far${vsProj}`
           : (g.started ? 'Started' : 'On the bench') + (g.week === S.liveWeek ? ' · final' + vsProj : '')
     });
   });
@@ -289,13 +289,13 @@ function viewPlayer() {
       // nothing projected, not a bye, and the chart has to say so.
       if (r) {
         const a = availability(p, w);
-        if (p.inj && a < 0.05) bars.push({ x: w, v: 0, kind: 'proj', mark: 'OUT', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') + ' if healthy — ' + injuryWhy(p, w) });
+        if (p.inj && a < 0.05) bars.push({ x: w, v: 0, kind: 'proj', mark: 'OUT', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') + ' if healthy: ' + injuryWhy(p, w) });
         else bars.push({ x: w, v: Math.round(r.p * a * 10) / 10, kind: 'proj', note: 'Projected ' + (r.h ? 'vs ' : 'at ') + (r.o || '—') + (a < 0.995 ? ' · ' + Math.round(a * 100) + '% likely to play (' + injuryWhy(p, w) + ')' : '') });
       }
       else if (onBye(p, w)) bars.push({ x: w, v: null, kind: 'proj', bye: true, note: 'Bye week' });
       else bars.push({
         x: w, v: 0, kind: 'proj', mark: 'OUT',
-        note: 'Nothing projected — not expected to play' + (p.injury ? ' (' + p.injury + ')' : '')
+        note: 'Nothing projected: not expected to play' + (p.injury ? ' (' + p.injury + ')' : '')
       });
     } else {
       const a = availability(p, w);
@@ -324,8 +324,8 @@ function viewPlayer() {
       played.length ? h('span.tiny.muted', `${fmt(mean(played.map(g => g.pts)), 1)} avg · ${fmt(Math.max(...played.map(g => g.pts)), 1)} best`
         + (startedGames.length ? ` · started ${startedGames.length} of ${played.length}` : '')) : h('span.tiny.muted', 'No games played yet this season'))), logTable);
   wrap.appendChild(card('Weekly scoring',
-    (S.lastWeek ? `weeks 1–${S.lastWeek} actual, the rest projected` : 'all projected — the season has not started')
-    + (p.wk ? ' · Sleeper weekly projections, scored with this league’s settings' : ' · no weekly projection published, so this is a flat estimate')
+    (S.lastWeek ? `weeks 1–${S.lastWeek} actual, the rest projected` : 'all projected: the season has not started')
+    + (p.wk ? ' · Sleeper weekly projections, scored with this league\'s settings' : ' · no weekly projection published, so this is a flat estimate')
     + (byeList.length ? ' · bye week ' + byeList.join(', ') : ''),
     wt.body, wt.btn));
 
@@ -347,7 +347,7 @@ function viewPlayer() {
 
   // ---- comparables ----
   const lo = Math.max(0, myIdx - 4), peers = posPeers.slice(lo, lo + 9);
-  wrap.appendChild(card('Around him at ' + p.pos, 'nearest players by ' + valueWord() + ' value — click any name',
+  wrap.appendChild(card('Around him at ' + p.pos, 'nearest players by ' + valueWord() + ' value. Click any name',
     table([
       { k: 'rk', h: '#', num: true, sortable: false, f: (r) => posPeers.indexOf(r) + 1 },
       { k: 'name', h: 'Player', sort: r => r.name, f: r => h('div.row', { style: { gap: '6px' } }, pname(r, { style: r.id === p.id ? { fontWeight: '700' } : null }), r.id === p.id ? h('span.tag', 'this player') : null) },
@@ -355,7 +355,7 @@ function viewPlayer() {
       { k: 'age', h: 'Age', num: true, f: r => r.age ? fmt(r.age, 1) : '—' },
       { k: 'dv', h: 'Value', num: true, f: r => h('b.mono', kfmt(Math.round(r.dv || 0))) },
       { k: 'ppg', h: 'Proj', num: true, f: r => fmt(r.ppg || 0, 1) },
-      isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj ’28', num: true, f: r => fmt(r.fppg || 0, 1) } : null,
+      isDynasty() ? { k: 'fppg', prio: 2, h: 'Proj \'28', num: true, f: r => fmt(r.fppg || 0, 1) } : null,
       { k: 'trend30', prio: 2, h: '30d', num: true, f: r => r.trend30 ? deltaTag(r.trend30, 0) : h('span.flat.tiny', '–') },
       { k: 'own', prio: 2, h: 'Roster', sortable: false, f: r => { const o = ownerOfPlayer(r.id); return o ? h('span.tiny', o.short) : h('span.tiny.muted', 'FA'); } }
     ], peers, { onRow: r => openPlayer(r.id) })));

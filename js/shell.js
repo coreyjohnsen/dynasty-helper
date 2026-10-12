@@ -132,7 +132,7 @@ function settingsMenu() {
         m => { setUiMode(m); render(); }),
       S.ui === 'simple'
         ? 'Cards, photos and the numbers that matter.'
-        : 'Stripped back and dense — every table, column and chart, no imagery.'),
+        : 'Stripped back and dense: every table, column and chart, no imagery.'),
     group('Theme',
       segmented([{ k: 'system', label: 'Auto' }, { k: 'light', label: 'Light' }, { k: 'dark', label: 'Dark' }],
         currentTheme(), t => { setTheme(t); render(); })),
@@ -149,14 +149,14 @@ function settingsMenu() {
           style: { background: `linear-gradient(135deg,${a.a},${a.b})` },
           onclick: () => { setAccent(a.k); render(); }
         }))),
-      (ACCENTS.find(a => a.k === currentAccent()) || ACCENTS[0]).label + ' — the colour of buttons, links, the sidebar and the home banner.'),
+      (ACCENTS.find(a => a.k === currentAccent()) || ACCENTS[0]).label + ': the colour of buttons, links, the sidebar and the home banner.'),
     S.league ? group('League type',
       segmented([{ k: 'auto', label: 'Auto' }, { k: 'dynasty', label: 'Dynasty' }, { k: 'redraft', label: 'Redraft' }],
         leagueTypeChoice(), m => { setLeagueType(m); render(); }),
       (leagueTypeChoice() === 'auto' ? 'Sleeper says ' + S.detected + '. ' : 'Overriding Sleeper, which says ' + S.detected + '. ')
       + (isDynasty()
         ? 'Players are priced at dynasty value; future projections, ageing and pick capital are all in play.'
-        : 'Players are priced at redraft value. No future projections, no ageing, no pick capital — nothing carries to next year.')) : null,
+        : 'Players are priced at redraft value. No future projections, no ageing, no pick capital. Nothing carries to next year.')) : null,
     S.ui === 'simple' ? group('Player tiers',
       segmented([{ k: 'animated', label: 'Animated' }, { k: 'static', label: 'Static' }, { k: 'off', label: 'Off' }], medalMode(),
         m => { setMedalMode(m); render(); }),
@@ -165,7 +165,7 @@ function settingsMenu() {
     S.ui === 'simple' ? group('Hover cards',
       segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], LS.get('hovercards', true) !== false,
         v => { LS.set('hovercards', v); hideCardPop(); render(); }),
-      'Rest on a player’s name and his card floats up beside it. Mouse only.') : null,
+      'Rest on a player\'s name and his card floats up beside it. Mouse only.') : null,
     S.league ? group('Injury return dates',
       segmented([{ k: true, label: 'On' }, { k: false, label: 'Off' }], INJ.enabled(), v => { setInjuryEstimates(v); render(); }),
       injFeedLine()) : null,
@@ -315,7 +315,7 @@ function splash() {
     go.disabled = true; clear(list); status.innerHTML = '';
     try {
       if (/^\d{6,25}$/.test(v)) { LS.set('last', v); await boot(v, setStatus); return; }
-      setStatus('Looking up ' + v + '…', .2);
+      setStatus('Looking up ' + v + '...', .2);
       const u = await sl('/user/' + encodeURIComponent(v));
       if (!u) throw new Error('No Sleeper user named "' + v + '".');
       const lgs = await sl(`/user/${u.user_id}/leagues/nfl/${seasonSel.value}`);
@@ -340,21 +340,21 @@ function splash() {
 
   box.appendChild(card(null, null, h('div', { style: { display: 'grid', gap: '16px' } },
     h('div', h('h2.sp-title', 'Load your league'),
-      h('div.tiny.muted', 'Public Sleeper data — no sign-in, no key.')),
+      h('div.tiny.muted', 'Public Sleeper data. No sign-in or key needed.')),
     h('div', { style: { display: 'grid', gap: '12px' } },
       h('label.fld', 'Sleeper username or league ID', inp),
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
-      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser — your league data is never uploaded. The site only counts anonymous page visits.')
+      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser. Your league data is never uploaded. The site only counts anonymous page visits.')
   )));
   const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
   return h('div.splash',
     h('div.sp-art',
       h('div.sp-logo', h('div.mark', { html: MARK_SVG }), h('b', 'Fantasy Lab')),
-      h('h1', 'Every fantasy decision, ', h('span', 'tested in the lab.')),
-      h('p', 'Live analysis for any Sleeper league: who’s really winning, what a trade is worth, and what the season looks like when you play it a thousand times.'),
+      h('h1', 'Trades, lineups and title odds ', h('span', 'for any Sleeper league.')),
+      h('p', 'See who is winning, what a trade is worth, and how the season plays out across a thousand simulations.'),
       h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
     h('div.sp-form', box));
 }
