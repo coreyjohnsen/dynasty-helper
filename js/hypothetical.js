@@ -331,7 +331,7 @@ function hypTradePanel() {
       h('div.tiny.sec.bal-line', f >= 0.995 ? 'Dead even' : `${nameOf(overpay)} ${nameOf(overpay) === 'You' ? 'are' : 'is'} sending ${kfmt(Math.round(gap))} more in trade value`)];
   out.appendChild(h('div.deal', tray('a'),
     h('div.dealmid', balanceBody(), processBtn(),
-      h('div.tiny.muted.trun-note', 'Rebuilds the league with this deal in it. Nothing is sent to Sleeper.')),
+      h('div.tiny.muted.trun-note', 'Rebuilds the league with this deal in it.')),
     tray('b')));
   // roster spots: informational, since a real league would make someone cut down
   const spots = S.cfg.activeSpots || 0;

@@ -185,7 +185,7 @@ function timelineCard(ownerOf) {
         : h('div.empty', { style: { padding: '18px' } }, S.redraftPricesMissing
           ? 'The value feed carried no redraft prices, so there is nothing to compare dynasty against.'
           : 'No player\'s redraft and dynasty prices disagree enough to call.'),
-      h('div.tiny.muted', 'Compared by rank among the players the market prices, so it works whatever the two values\' scales. A player has to rank at least 40% and six places better in one than the other. Follows the Rostered filter above.')));
+      h('div.tiny.muted', 'A player has to rank at least 40% and six places better in one price than the other. Follows the Rostered filter above.')));
 }
 /* a strength meter: one to three dots */
 function pipsOf(s) {
@@ -245,7 +245,7 @@ function waiverCard(ownerOf, me) {
   // Sleeper's weekly lines are only fetched for rostered players, so a free
   // agent's projection is the league-scoring estimate from his market rank
   return card('On the waiver wire',
-    'the most valuable players nobody in this league has rostered · ' + pool.length + ' available · projections are estimated from market rank',
+    pool.length + ' available, most valuable first · projections are estimated from market rank',
     h('div', { style: { display: 'grid', gap: '12px' } },
       chips,
       best && (adds[best.id] || 0) > 0.05

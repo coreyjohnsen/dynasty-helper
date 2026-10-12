@@ -422,3 +422,25 @@ table.tbl tbody tr.trm td:first-child{background-image:var(--m-bar),linear-gradi
 @media (prefers-reduced-motion:reduce){ .ssdrawer,.ssdrawer-back{animation:none} }
 .sspc-pct{flex:none;max-width:44%;text-align:right}
 .sspc-pct span{display:block;line-height:1.25}
+
+/* ---- start/sit: simulated odds ---- */
+.ssmatch{display:grid;gap:6px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+.ssm-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.ssm-top b{font-size:22px;letter-spacing:-.03em}
+.sspc-odds{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;line-height:1.5}
+.sspc-odds b{color:var(--text-primary)}
+.sspc-odds .up{color:var(--good-text)}
+.sspc-odds .down{color:var(--bad-text)}
+.sspc-insight{padding:9px 12px;border-left:3px solid var(--brand);border-radius:0 var(--r-sm) var(--r-sm) 0;background:var(--surface-2);color:var(--text-secondary);line-height:1.55}
+.sspc-insight b{color:var(--text-primary)}
+
+/* ---- link to the repository ---- */
+.ghlink{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;color:inherit;opacity:.62;transition:opacity .15s,background .15s}
+.ghlink svg{width:16px;height:16px}
+.ghlink:hover,.ghlink:focus-visible{opacity:1;background:rgba(127,133,160,.18)}
+.ghlink:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+/* pinned to the bottom corner of the sidebar even when the menu is taller than the window and scrolls */
+.side .foot .ghlink{position:fixed;left:208px;bottom:10px;z-index:5;color:rgba(190,196,224,.9);background:rgba(18,22,48,.55)}
+.sp-form{position:relative}
+.sp-form .ghlink{position:absolute;right:16px;bottom:14px;color:var(--text-muted)}
+.sheet-foot{display:flex;align-items:center;gap:8px;margin:16px 4px 0;padding-top:12px;border-top:1px solid var(--border);color:var(--text-muted)}

@@ -51,12 +51,11 @@ function simMeter(label, v, colour, text) {
     h('b.mono', text));
 }
 const SIM_MODES = [
-  { k: 'season', ic: 'standings', t: 'Season odds', d: 'Playoff, bye and title odds for every team, plus the games that swing them.' },
-  { k: 'week', ic: 'week', t: 'Single week', d: 'Win chances and score ranges for every matchup in one week.' },
-  { k: 'replay', ic: 'power', t: 'Play a season', d: 'One actual season, game by game, through the bracket to a champion.' }
+  { k: 'season', ic: 'standings', t: 'Season odds' },
+  { k: 'week', ic: 'week', t: 'Single week' },
+  { k: 'replay', ic: 'power', t: 'Play a season' }
 ];
 function simDesk(weeks, isReplay) {
-  const mode = SIM_MODES.find(m => m.k === SimUI.mode) || SIM_MODES[0];
   const run = () => {
     const t0 = performance.now();
     if (isReplay) { SimUI.replay = simulateOneSeason(); SimUI.openWeek = null; SimUI.replay.ms = Math.round(performance.now() - t0); }
@@ -69,15 +68,13 @@ function simDesk(weeks, isReplay) {
     h('div.smodes', { role: 'tablist' }, SIM_MODES.map(m =>
       h('button.smode' + (m.k === SimUI.mode ? '.on' : ''), { role: 'tab', 'aria-selected': m.k === SimUI.mode ? 'true' : 'false', onclick: () => { SimUI.mode = m.k; SimUI.res = null; render(); } },
         h('span.smode-ic', ico(m.ic)), h('span.smode-t', m.t)))),
-    h('div.simnote',
-      h('div.tiny.muted', { style: { lineHeight: 1.5 } }, mode.d + ' Every run is freshly random: the same settings will not give you the same season twice.'),
-      h('button.btn.sm.siminfo', { type: 'button', onclick: openSimInfo, 'aria-haspopup': 'dialog' }, ico('info'), 'How it works')),
     h('div.simctl',
       SimUI.mode === 'week' ? h('label.fld', 'Week', h('select', { onchange: e => { SimUI.week = +e.target.value; SimUI.res = null; render(); } },
         weeks.map(w => h('option', { value: w, selected: w === SimUI.week }, 'Week ' + w + (w <= S.lastWeek ? ' (played)' : ''))))) : null,
       isReplay ? null : h('label.fld', 'Simulations', h('select', { onchange: e => { SimUI.n = +e.target.value; SimUI.res = null; render(); } },
         [1000, 2000, 5000, 10000].map(n => h('option', { value: n, selected: n === SimUI.n }, kfmt(n))))),
-      h('button.btn.pri.simrun', { onclick: run, disabled: !isReplay && SimUI.running }, isReplay ? '▶ Play the season' : SimUI.running ? 'Simulating... ' + Math.round(SimUI.pct * 100) + '%' : 'Run simulation')),
+      h('button.btn.pri.simrun', { onclick: run, disabled: !isReplay && SimUI.running }, isReplay ? '▶ Play the season' : SimUI.running ? 'Simulating... ' + Math.round(SimUI.pct * 100) + '%' : 'Run simulation'),
+      h('button.btn.sm.siminfo', { type: 'button', onclick: openSimInfo, 'aria-haspopup': 'dialog' }, ico('info'), 'How it works')),
     status ? h('div.tiny.muted', status) : null));
 }
 function simEmpty(title, text) {
@@ -105,8 +102,7 @@ function viewSim() {
     return wrap;
   }
   if (!SimUI.res) {
-    wrap.appendChild(simEmpty('Pick a mode and press Run',
-      'Every player gets a projected mean and a weekly standard deviation. Each simulated week draws a score for each starter, adds a team-level swing, resolves your real schedule, then seeds and plays the bracket. Weeks already played are locked to their actual results.'));
+    wrap.appendChild(simEmpty('Pick a mode and press Run', null));
     return wrap;
   }
   return SimUI.mode === 'week' ? (wrap.appendChild(simWeekView(SimUI.res)), wrap) : (wrap.appendChild(simSeasonView(SimUI.res)), wrap);

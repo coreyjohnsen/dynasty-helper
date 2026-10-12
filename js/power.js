@@ -20,7 +20,7 @@ function viewPower() {
   // simulation in the background just after it has painted. (The tab above never needs it.)
   if (!S.sim) {
     setTimeout(() => { if (!S.sim && !S._simRun) runSeasonSim(S.simN); }, 40);
-    wrap.appendChild(card('Power rankings', 'blended rating, then simulated playoff and championship odds',
+    wrap.appendChild(card('Power rankings', null,
       h('div.empty', { style: { padding: '34px 18px' } }, h('span.spin'), h('div', { style: { marginTop: '10px' } }, 'Simulating ' + kfmt(S.simN) + ' seasons...'))));
     return wrap;
   }
@@ -113,7 +113,7 @@ function viewPower() {
         h('div.tiny.muted', r.s ? 'playoffs · ' + pct(r.s.title, 1) + ' title' : 'rating')));
   }));
   wrap.appendChild(card(future ? 'Future power rankings' : 'Power rankings',
-    future ? '2–3 years out: age-adjusted lineup value plus draft capital' : 'blended rating, then simulated playoff and championship odds',
+    future ? '2–3 years out: age-adjusted lineup value plus draft capital' : null,
     isSimple() ? rankList() : table(cols, rows, { sortKey: 'rating', sortDir: -1 })));
 
   if (!future) {

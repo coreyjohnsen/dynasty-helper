@@ -32,6 +32,12 @@ const ICON = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/>',
   share: '<path d="M12 15V4M8 7.5 12 3.5l4 4"/><path d="M5 12v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V12"/>'
 };
+/* a small GitHub mark that links to the repository */
+const REPO_URL = 'https://github.com/coreyjohnsen/dynasty-helper';
+const GH_MARK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
+function ghLink() {
+  return h('a.ghlink', { href: REPO_URL, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Fantasy Lab on GitHub', title: 'View the source on GitHub', html: GH_MARK });
+}
 function ico(name) {
   return h('span.ic', { html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[name] || '') + '</svg>' });
 }
@@ -220,7 +226,8 @@ function render() {
     h('div.spacer'),
     h('div.foot',
       h('div', 'Values: FantasyCalc'), h('div', 'League: Sleeper'),
-      h('div', 'Updated ' + new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })))
+      h('div', 'Updated ' + new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })),
+      ghLink())
   );
   const cfg = S.cfg;
   const fmtStr = `${cfg.superflex ? 'Superflex' : '1QB'} · ${cfg.actualTeams}-team · ${cfg.ppr === 1 ? 'PPR' : cfg.ppr === 0.5 ? 'Half-PPR' : 'Standard'}`;
@@ -244,7 +251,7 @@ function render() {
     const pv = VIEWS.find(v => v.k === S.view);
     if (pv && S.view !== 'home') {
       content.appendChild(h('div.pagehead', h('div.pic', ico(pv.ic)),
-        h('div', h('h2', pv.label), h('p', blurbFor(pv.k)))));
+        h('div', h('h2', pv.label))));
     }
     const hbar = hypBanner(S.view);
     if (hbar) content.appendChild(hbar);
@@ -264,7 +271,8 @@ function render() {
     app.appendChild(h('div.sheet', { role: 'dialog', 'aria-label': 'All pages' },
       h('div.grab'), h('h4', 'All pages'),
       NAV_ORDER.map(g => [h('div.sg', g), h('div.sgrid', VIEWS.filter(v => v.grp === g).map(v =>
-        h('button.sitem' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label)))])));
+        h('button.sitem' + (S.view === v.k ? '.on' : ''), { onclick: () => go(v.k) }, ico(v.ic), v.label)))]),
+      h('div.sheet-foot', ghLink(), h('span.tiny.muted', 'Source on GitHub'))));
   }
   shareSyncUrl();
   if (keepY > 0) window.scrollTo(0, keepY);
@@ -304,7 +312,7 @@ function splash() {
   const box = h('div.box');
   const status = h('div.tiny.muted.sp-status', { style: { minHeight: '18px' } });
   const bar = h('div.loadbar', h('i'));
-  const inp = h('input', { placeholder: 'Sleeper username or 18-digit league ID', style: { width: '100%' }, value: LS.get('last', '') });
+  const inp = h('input', { style: { width: '100%' }, value: LS.get('last', '') });
   const seasonSel = h('select', [String(new Date().getFullYear()), String(new Date().getFullYear() - 1)].map(y => h('option', { value: y }, y)));
   const list = h('div', { style: { display: 'grid', gap: '6px', marginTop: '10px' } });
   const go = h('button.btn.pri', { style: { width: '100%', minHeight: '42px', fontSize: '14px' } }, 'Load league');
@@ -347,7 +355,7 @@ function splash() {
       h('label.fld', 'Season (only used for username lookup)', seasonSel)),
     go, bar, status, list,
     h('div.tiny.muted', { style: { borderTop: '1px solid var(--border)', paddingTop: '14px', lineHeight: '1.55' } },
-      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Everything runs in this browser. Your league data is never uploaded. The site only counts anonymous page visits.')
+      'The league ID is the long number in your league URL: sleeper.com/leagues/', h('b', '1234567890123456789'), '/team. Your league data stays in this browser. The site only counts anonymous page visits.')
   )));
   const feats = ['week', 'roster', 'trade', 'power', 'sim', 'draft', 'stock', 'flask'];
   const featLabel = { week: 'Live scores & win odds', roster: 'Rosters & values', trade: 'Trade calculator', power: 'Power rankings', sim: 'Season simulator', draft: 'Draft board', stock: 'Value charts', flask: 'Hypothetical sandbox' };
@@ -357,6 +365,6 @@ function splash() {
       h('h1', 'Trades, lineups and title odds ', h('span', 'for any Sleeper league.')),
       h('p', 'See who is winning, what a trade is worth, and how the season plays out across a thousand simulations.'),
       h('div.sp-feats', feats.map(k => h('span', ico(k), featLabel[k])))),
-    h('div.sp-form', box));
+    h('div.sp-form', box, ghLink()));
 }
 

@@ -68,7 +68,7 @@ function viewFinder() {
     return box;
   })();
   const focusBlurb = !focus
-    ? 'Pick anyone in the league and every suggestion will be built around them. One of yours to shop, or someone else\'s to go and get.'
+    ? 'Pick anyone in the league and every suggestion is built around them.'
     : focus.side === 'give'
       ? `Shopping ${focusP.name}. Every package below sends them out, and the return has to move you forward on your own objective.`
       : `Going after ${focusP.name} from ${focusOwner.name}. Every package below brings them back, and ${focusOwner.short} has to want it too.`;
@@ -80,7 +80,7 @@ function viewFinder() {
   };
   if (FinderUI.autorun) { FinderUI.autorun = false; run(); }
 
-  wrap.appendChild(card('What are you trying to do?', 'the filters below are all optional', h('div', { style: { display: 'grid', gap: '14px' } },
+  wrap.appendChild(card('What are you trying to do?', null, h('div', { style: { display: 'grid', gap: '14px' } },
     h('div.row', { style: { gap: '14px' } },
       h('div', { style: { flex: '1 1 300px', maxWidth: '440px', display: 'flex' } },
         teamCard('a', T, { key: 'finder', label: 'Your team', onPick: id => { FinderUI.team = id; FinderUI.partners = []; dirty(); render(); } })),
