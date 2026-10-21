@@ -292,6 +292,48 @@ function dealBar(head, sub, action) {
   return h('div.dealbar', h('div.dealbar-l', head, sub || null), action);
 }
 
+/** Both teams' best lineups with and without a deal, before anything is simulated. */
+function tradeLineups(A, B, aOut, bOut) {
+  const side = (T, out, inc) => {
+    const actv = (arr) => arr.filter(p => !T.taxi.has(p.id) && !T.ir.has(p.id));
+    return { before: optimalLineup(actv(T.players), 'ppg'), after: optimalLineup(actv(afterRoster(T, out, inc)), 'ppg') };
+  };
+  return { a: side(A, aOut, bOut), b: side(B, bOut, aOut) };
+}
+/** One team's starting lineup after a deal, slot by slot: who starts, who is new, and who they replace. */
+function lineupAfter(T, which, before, after, incoming, outgoing) {
+  const outIds = new Set(outgoing.filter(a => a.kind === 'player').map(a => a.id));
+  const inIds = new Set(incoming.filter(a => a.kind === 'player').map(a => a.id));
+  const startedAfter = new Set(after.filter(s => s.player).map(s => s.player.id));
+  const startedBefore = new Set(before.filter(s => s.player).map(s => s.player.id));
+  const tot = (lu) => sum(lu.map(s => s.player ? s.player.ppg || 0 : 0));
+  const tb = tot(before), ta = tot(after);
+  // a starter sliding from RB1 to RB2 has not changed anything; only a new face in the lineup has
+  const rows = after.map(s => {
+    const p = s.player, fresh = p && !startedBefore.has(p.id);
+    return h('div.lurow' + (fresh ? '.chg' : ''),
+      h('span.tag.luslot', SLOT_LABEL[s.slot] || s.slot),
+      h('div.lumain',
+        h('div.row', { style: { gap: '6px', flexWrap: 'nowrap', minWidth: 0 } },
+          p && (SLOT_ELIG[s.slot] || [s.slot]).length > 1 ? posPill(p.pos) : null,
+          p ? pname(p, { face: false }) : h('span.muted.tiny', 'empty'),
+          fresh ? (inIds.has(p.id) ? h('span.tag.lunew', 'NEW') : h('span.tag', { style: { flex: 'none' } }, 'from bench')) : null)),
+      h('span.mono.luv', p ? fmt(p.ppg || 0, 1) : '—'));
+  });
+  // starters who lose their place: traded away, or pushed to the bench by someone new
+  const benched = before.filter(s => s.player && !startedAfter.has(s.player.id)).map(s => s.player);
+  return h('div.lucmp.' + which,
+    h('div.lucmp-hd', teamCell(T), h('span', { style: { flex: 1 } }),
+      h('span.tiny.muted.mono', fmt(tb, 1) + ' → '), h('b.mono', fmt(ta, 1)), deltaTag(ta - tb, 1)),
+    h('div.lurows', rows),
+    benched.length ? h('div.tiny.muted.luout', 'Out of the lineup: ' + benched.map(p => p.name + (outIds.has(p.id) ? ' (traded)' : ' (to the bench)')).join(', ')) : null);
+}
+/** The two lineups side by side. */
+function lineupsCard(A, B, lu, aOut, bOut) {
+  return card('Projected starting lineups after the trade', 'best lineup from each roster, by projected points a week · highlighted: starters who were not starting before',
+    h('div.lucmps', lineupAfter(A, 'a', lu.a.before, lu.a.after, bOut, aOut), lineupAfter(B, 'b', lu.b.before, lu.b.after, aOut, bOut)));
+}
+
 /** The words and colour for a value balance. */
 function tradeVerdict(f) {
   return f >= 0.93 ? ['Even trade', 'var(--good)'] : f >= 0.82 ? ['Slightly lopsided', 'var(--warning)'] : f >= 0.68 ? ['Lopsided', 'var(--serious)'] : ['Very lopsided', 'var(--critical)'];
@@ -440,7 +482,10 @@ function tradeResult(R) {
     h('div.tiny.muted', 'Values are live FantasyCalc ' + valueWord() + ' values for this league\'s exact format. Balance alone does not make a trade good. The impact tables below are what matter.')
   )));
 
+  // picks a team keeps are still repriced, because the deal moves where that team is expected to finish
+  const repriced = (T) => sum((R.shifts || []).filter(x => x.heldBefore === T && x.heldAfter === T).map(x => x.delta));
   const impact = (T, before, after, sim) => {
+    const rp = isDynasty() ? repriced(T) : 0;
     const sb = R.simBefore ? R.simBefore.by[T.rosterId] : null;
     const sa = R.simAfter ? R.simAfter.by[T.rosterId] : null;
     const rows = [
@@ -465,12 +510,15 @@ function tradeResult(R) {
           h('span.tiny.mono.muted', isPct ? pct(b, d) : fmt(b, d)),
           h('span.tiny.muted', '→'),
           h('span.mono', { style: { fontWeight: 640, minWidth: '86px', textAlign: 'right' } },
-            isPct ? pct(a, d) : fmt(a, d), ' ', deltaTag(isPct ? (a - b) * 100 : a - b, isPct ? 1 : 1, isPct ? 'pp' : '')))))) : null
+            isPct ? pct(a, d) : fmt(a, d), ' ', deltaTag(isPct ? (a - b) * 100 : a - b, isPct ? 1 : 1, isPct ? 'pp' : '')))))) : null,
+      Math.abs(rp) >= 1 ? h('div.tiny.muted', `${capitalLabel()} and future rating include ${sgn(Math.round(rp), 0)} from draft picks ${T.rosterId === S.myRosterId ? 'you' : T.short} already own${T.rosterId === S.myRosterId ? '' : 's'}: `
+        + `they are not in the deal, but the deal moves where ${T.rosterId === S.myRosterId ? 'you are' : 'this team is'} expected to finish, and so where those picks land.`) : null
     );
   };
   wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(340px,100%),1fr))' } },
     card('Impact on ' + A.name, null, impact(A, aBefore, aAfter)),
     card('Impact on ' + B.name, null, impact(B, bBefore, bAfter))));
+  wrap.appendChild(lineupsCard(A, B, { a: { before: aBefore.starters, after: aAfter.starters }, b: { before: bBefore.starters, after: bAfter.starters } }, R.aOut, R.bOut));
 
   // positional impact
   const posRows = [];
@@ -490,22 +538,29 @@ function tradeResult(R) {
   if (posCard) wrap.appendChild(posCard);
 
   const moved = (R.shifts || []).filter(x => Math.abs(x.delta) >= 25 || x.moved);
+  // picks that change hands, and picks that stay put but are worth something different afterwards
+  const traded = moved.filter(x => x.heldBefore !== x.heldAfter), kept = moved.filter(x => x.heldBefore === x.heldAfter);
+  const anyPickInDeal = R.aOut.concat(R.bOut).some(a => a.kind === 'pick');
   if (moved.length) {
     const who = (t) => t ? t.short : '—';
-    const repriceCard = proOnly(card('How this trade moves the draft order',
-      'a pick is worth what its slot is worth, and this trade changes where these teams finish',
-      h('div',
-        table([
-          { k: 'label', h: 'Pick', sort: r => r.season * 10 + r.round, f: r => h('div.row', { style: { gap: '6px' } }, posPill('PICK'), h('b', r.label)) },
-          { k: 'holder', prio: 2, h: 'Ends up with', sortable: false, f: r => r.heldBefore && r.heldAfter && r.heldBefore !== r.heldAfter ? h('span', h('span.muted', who(r.heldBefore) + ' → '), h('b', who(r.heldAfter))) : h('span', who(r.heldAfter || r.heldBefore)) },
-          { k: 'slot', h: 'Projected slot', num: true, sort: r => r.after.slot, f: r => r.before.slot === r.after.slot ? h('span.mono', r.round + '.' + String(r.after.slot).padStart(2, '0')) : h('span.mono', h('span.muted', r.round + '.' + String(r.before.slot).padStart(2, '0') + ' → '), h('b', r.round + '.' + String(r.after.slot).padStart(2, '0'))) },
-          { k: 'tier', prio: 2, h: 'Tier', sortable: false, f: r => r.before.tier === r.after.tier ? h('span.tag', r.after.tier) : h('span', h('span.tiny.muted', r.before.tier + ' → '), h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, r.after.tier)) },
-          { k: 'val', h: 'Value', num: true, sort: r => r.after.value, f: r => h('span.mono', h('span.muted', kfmt(r.before.value) + ' → '), h('b', kfmt(r.after.value))) },
-          { k: 'delta', h: 'Change', num: true, sort: r => r.delta, f: r => Math.abs(r.delta) < 1 ? h('span.flat.tiny', '–') : deltaTag(r.delta, 0) }
-        ], moved, { sortKey: 'delta', sortDir: 1 }),
-        h('div.tiny.muted', { style: { marginTop: '9px' } },
+    const pickTable = (rows, showHolder) => table([
+      { k: 'label', h: 'Pick', sort: r => r.season * 10 + r.round, f: r => h('div.row', { style: { gap: '6px' } }, posPill('PICK'), h('b', r.label)) },
+      { k: 'holder', prio: 2, h: showHolder ? 'Ends up with' : 'Held by', sortable: false, f: r => r.heldBefore && r.heldAfter && r.heldBefore !== r.heldAfter ? h('span', h('span.muted', who(r.heldBefore) + ' → '), h('b', who(r.heldAfter))) : h('span', who(r.heldAfter || r.heldBefore)) },
+      { k: 'slot', h: 'Projected slot', num: true, sort: r => r.after.slot, f: r => r.before.slot === r.after.slot ? h('span.mono', r.round + '.' + String(r.after.slot).padStart(2, '0')) : h('span.mono', h('span.muted', r.round + '.' + String(r.before.slot).padStart(2, '0') + ' → '), h('b', r.round + '.' + String(r.after.slot).padStart(2, '0'))) },
+      { k: 'tier', prio: 2, h: 'Tier', sortable: false, f: r => r.before.tier === r.after.tier ? h('span.tag', r.after.tier) : h('span', h('span.tiny.muted', r.before.tier + ' → '), h('span.tag', { style: { borderColor: 'var(--s1)', color: 'var(--s1)' } }, r.after.tier)) },
+      { k: 'val', h: 'Value', num: true, sort: r => r.after.value, f: r => h('span.mono', h('span.muted', kfmt(r.before.value) + ' → '), h('b', kfmt(r.after.value))) },
+      { k: 'delta', h: 'Change', num: true, sort: r => r.delta, f: r => Math.abs(r.delta) < 1 ? h('span.flat.tiny', '–') : deltaTag(r.delta, 0) }
+    ], rows, { sortKey: 'delta', sortDir: 1 });
+    const sub = (t, n) => h('div.tiny.sec', { style: { margin: '2px 0 6px', fontWeight: 600 } }, t, n ? h('span.muted', { style: { fontWeight: 400 } }, ' · ' + n) : null);
+    const repriceCard = proOnly(card(anyPickInDeal ? 'How this trade moves the draft order' : 'Side effect: picks repriced by this trade',
+      anyPickInDeal ? 'a pick is worth what its slot is worth, and this trade changes where these teams finish'
+        : 'no pick changes hands, but the picks both teams already own are worth something different afterwards',
+      h('div', { style: { display: 'grid', gap: '14px' } },
+        traded.length ? h('div', sub('Picks in this deal'), pickTable(traded, true)) : null,
+        kept.length ? h('div', sub('Picks already owned, repriced', 'not part of the deal: the trade makes a team stronger or weaker, which moves where its own picks are expected to land'), pickTable(kept, false)) : null,
+        h('div.tiny.muted',
           'Slots assume the usual inverse-standings order, projected from each team\'s roster after the trade, weighted toward where a roster is heading the further out the pick is. '
-          + 'The headline balance above still uses today\'s market prices, which is what you would negotiate at; this table is what the picks are likely to become.'))));
+          + 'The headline balance above uses today\'s market prices for what is actually traded, and leaves this repricing out.'))));
     if (repriceCard) wrap.appendChild(repriceCard);
   }
 
