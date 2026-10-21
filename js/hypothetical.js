@@ -241,7 +241,8 @@ function hypImpact() {
       hypKpi('Lineup pts/wk', b.now, a.now, { dec: 1 }),
       hypKpi('Power rank', b.powerRank, a.powerRank, { rank: true, f: v => '#' + v }),
       isDynasty() ? hypKpi('Future rank', b.futureRank, a.futureRank, { rank: true, f: v => '#' + v }) : null,
-      hypKpi(capitalLabel(), b.totalValue, a.totalValue, { dec: 0, f: v => kfmt(Math.round(v)) })));
+      hypKpi(capitalLabel(), b.totalValue, a.totalValue, { dec: 0, f: v => kfmt(Math.round(v)),
+        tip: isDynasty() ? 'Players plus draft picks. Picks are priced from where their original team now projects to finish, so this can move even when no pick changes hands' : null })));
 
   // who else the changes moved: the biggest swings in playoff odds anywhere in the league
   let ripple = null;
@@ -340,6 +341,7 @@ function hypTradePanel() {
     if (warn.length) out.appendChild(h('div.tiny', { style: { color: 'var(--bad-text)', fontWeight: 560 } },
       warn.map(x => `${x.T.name} would carry ${x.n} active players for ${spots} spots. They would need to cut ${x.n - spots}. `).join('')));
   }
+  if (R.aOut.length || R.bOut.length) out.appendChild(lineupsCard(A, B, tradeLineups(A, B, R.aOut, R.bOut), R.aOut, R.bOut));
   const bw = R.tab === 'b' ? 'b' : 'a', BT = T_OF[bw];
   out.appendChild(assetBrowser({
     id: 'hbrowse', color: bw, st: R.st, cols: 4,

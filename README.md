@@ -33,7 +33,10 @@ itself, and weekly projections are re-scored through that league's own
 Responses are cached in the visitor's own browser: the player database for 12
 hours (IndexedDB), weekly projections for 6 hours (IndexedDB), trade values for 4
 hours (localStorage). Stock mode also records one value snapshot per visit, so the
-value charts accumulate real observed history over time.
+value charts accumulate real observed history over time. The charts draw only what is
+known: those snapshots, today's price, and (dynasty only) FantasyCalc's published price
+30 days ago, shown dashed because only its two ends are known. Nothing is filled in
+between, and longer windows appear once this browser holds history that old.
 
 **Your league data is never uploaded and there are no secrets in this repo.** Sleeper's
 API is public and read-only; the app only ever reads. The one thing that leaves the page is an
@@ -200,6 +203,20 @@ Three modes behind one picker (Season odds, Single week, Play a season). Every t
 Sleeper avatar (a coloured initial when it has none). On a phone the season table becomes ranked cards
 with playoff and title meters, each "game that matters" shows both teams in both worlds side by side,
 and the replay bracket reads top to bottom instead of scrolling sideways. Wide screens keep the tables.
+
+## Age curves
+
+**Stock Mode → Age curves** (`js/outlook.js`) groups every player FantasyCalc prices today by age, or by
+years in the league, per position, and charts what the market pays for each group: the average of the
+top eight, or the median. Groups of fewer than three are left out and the curve is lightly smoothed.
+From the curve it reads where each position peaks and how fast it falls, and carries every roster
+three years forward. The player page shows the same thing for one player: today's dynasty value moved
+along his position's curve (the top-player curve for the top 24 at a position, 12 for TE and 1QB QBs;
+the median curve otherwise), stopping where no older players at his position are priced.
+
+It is a cross-section of today's prices, not a record of careers: players who washed out are no
+longer priced, so the old end of each curve is the survivors and real declines are usually steeper.
+The page says so.
 
 ## Injury return dates
 

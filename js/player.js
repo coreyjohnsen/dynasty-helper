@@ -330,20 +330,16 @@ function viewPlayer() {
     wt.body, wt.btn));
 
   // ---- value history ----
+  PlayerUI.range = valueRange(PlayerUI.range);
   const series = playerSeries(p.id, PlayerUI.range);
   if (series.length > 1) {
-    const first = series[0].v, last = series[series.length - 1].v;
-    wrap.appendChild(card('Value over time', `${series.filter(s => s.real).length} observed snapshot${series.filter(s => s.real).length === 1 ? '' : 's'} · earlier points modelled from the published 30-day trend`,
-      h('div', lineChart([{
-        name: p.name, color: last >= first ? 'var(--s1)' : 'var(--s8)', area: true,
-        points: series.map((s, i) => ({ x: i, y: s.v, label: new Date(s.d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }))
-      }], {
-        h: 220, dots: false, yFmt: v => kfmt(Math.round(v)),
-        xFmt: i => { const s = series[clamp(Math.round(i), 0, series.length - 1)]; return s ? new Date(s.d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''; },
-        aria: 'value over time'
-      })),
-      segmented([{ k: 30, label: '30d' }, { k: 90, label: '90d' }, { k: 180, label: '6m' }], PlayerUI.range, r => { PlayerUI.range = r; render(); })));
+    wrap.appendChild(card('Value over time', valueNote(series), h('div', valueChart(series, p.name, { h: 220 })),
+      valueRanges().length > 1 ? segmented(valueRanges(), PlayerUI.range, r => { PlayerUI.range = r; render(); }) : null));
   }
+
+  // ---- where his value is heading ----
+  const outlook = isDynasty() ? playerOutlookCard(p) : null;
+  if (outlook) wrap.appendChild(outlook);
 
   // ---- comparables ----
   const lo = Math.max(0, myIdx - 4), peers = posPeers.slice(lo, lo + 9);

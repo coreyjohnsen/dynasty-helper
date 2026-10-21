@@ -100,11 +100,11 @@ function viewDraft() {
 }
 
 
-/** Every player on a franchise as its own line, on the same dates as the
+/** Every player on a franchise as its own line, over the same window as the
  *  franchise chart. The biggest movers get a colour and an end label; the rest
  *  stay thin and grey so the shape of the roster is still readable. */
 const STOCK_LINE_COLORS = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)', 'var(--s5)', 'var(--s7)'];
-function stockTeamLines(t, teamSer) {
+function stockTeamLines(t) {
   const rows = t.players.map(p => {
     // a player the market does not price (most kickers and defences) has a flat
     // line at nothing, which only distorts the axis
@@ -116,7 +116,6 @@ function stockTeamLines(t, teamSer) {
   }).filter(Boolean);
   if (!rows.length) return card('Players behind the ticker', null, h('div.empty', 'No player history for this roster.'));
 
-  const dates = teamSer.map(s => s.d);
   const byMove = rows.slice().sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg));
   const featured = byMove.slice(0, 5);
   const colorOf = {};
@@ -126,9 +125,10 @@ function stockTeamLines(t, teamSer) {
   // honest but unreadable; indexing every line to 100 at the start of the window
   // is what actually answers "whose stock moved"
   const indexed = StockUI.lines === 'index';
-  const toPoints = (r) => r.ser.map((s, i) => ({
-    x: i, y: indexed ? (r.first ? s.v / r.first * 100 : 100) : s.v,
-    label: new Date(s.d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  // placed by date, since each player's known points fall on the days they were recorded
+  const toPoints = (r) => r.ser.map(s => ({
+    x: dayNum(s.d), y: indexed ? (r.first ? s.v / r.first * 100 : 100) : s.v,
+    label: new Date(s.d + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }));
   // background lines first so the featured five draw on top of them
   const bg = rows.filter(r => !colorOf[r.p.id]).map(r => ({
@@ -138,11 +138,9 @@ function stockTeamLines(t, teamSer) {
     name: r.p.name, color: colorOf[r.p.id], width: 2, points: toPoints(r)
   }));
   const chart = lineChart(bg.concat(fg), {
-    h: 300, dots: false, maxTip: 10, floorAtZero: true,
+    h: 300, dots: false, maxTip: 10, floorAtZero: true, xTicks: isNarrow() ? 3 : 5,
     yFmt: v => indexed ? fmt(v, 0) : kfmt(Math.round(v)),
-    xFmt: i => dates[clamp(Math.round(i), 0, dates.length - 1)]
-      ? new Date(dates[clamp(Math.round(i), 0, dates.length - 1)]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      : '',
+    xFmt: x => new Date(Math.round(x) * 864e5 + 432e5).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     aria: 'every player on this roster, value over time'
   });
   const modeRow = h('div.row', { style: { justifyContent: 'flex-end', marginBottom: '6px' } },
@@ -163,7 +161,7 @@ function stockTeamLines(t, teamSer) {
   const wt = withTable(h('div', modeRow, chart, legend), tbl);
   const up = rows.filter(r => r.chg > 0).length;
   return card('Players behind the ticker',
-    `${rows.length} priced players over the same ${StockUI.range} days · ${up} up, ${rows.length - up} down · `
+    `${rows.length} priced players over the last ${StockUI.range} days · ${up} up, ${rows.length - up} down · `
     + (indexed ? 'every line starts at 100, so the shape is the percentage move' : 'absolute trade value') + ' · picks are not shown here',
     wt.body, wt.btn);
 }
