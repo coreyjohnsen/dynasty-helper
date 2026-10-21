@@ -337,6 +337,10 @@ function viewPlayer() {
       valueRanges().length > 1 ? segmented(valueRanges(), PlayerUI.range, r => { PlayerUI.range = r; render(); }) : null));
   }
 
+  // ---- where his value is heading ----
+  const outlook = isDynasty() ? playerOutlookCard(p) : null;
+  if (outlook) wrap.appendChild(outlook);
+
   // ---- comparables ----
   const lo = Math.max(0, myIdx - 4), peers = posPeers.slice(lo, lo + 9);
   wrap.appendChild(card('Around him at ' + p.pos, 'nearest players by ' + valueWord() + ' value. Click any name',

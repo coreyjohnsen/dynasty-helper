@@ -2,6 +2,13 @@
 /* ================= 8. STOCK MODE ================= */
 const StockUI = { kind: 'player', id: null, q: '', range: 90, lines: 'index', pickOpen: false, pst: { q: '', pos: 'all', limit: 24 } };
 
+function stockKind(k) {
+  StockUI.kind = k; StockUI.pickOpen = false;
+  if (k === 'team') StockUI.id = S.teams[0].rosterId;
+  else if (k === 'player') StockUI.id = (Object.values(S.index).filter(p => p.dv > 200).sort((a, b) => b.dv - a.dv)[0] || {}).id;
+  render();
+}
+
 /* ---------- value history, as it is actually known ---------- */
 const VALUE_SRC = { observed: 'observed on a visit', trend: 'FantasyCalc 30-day trend', now: 'today' };
 /** The windows worth offering: 30 days always, longer ones once this browser has history that old. */
@@ -33,8 +40,14 @@ function valueNote(series) {
     + (trend ? ' · dashed: FantasyCalc\'s published 30-day move, with only its two ends known' : '')
     + ' · history builds up in this browser, one point a day you visit';
 }
+const STOCK_KINDS = [{ k: 'player', label: 'Players' }, { k: 'team', label: 'Teams' }, { k: 'outlook', label: 'Age curves' }];
 function viewStock() {
   const wrap = h('div.grid');
+  if (StockUI.kind === 'outlook') {
+    wrap.appendChild(card('Pick a ticker', null, h('label.fld', 'Type', segmented(STOCK_KINDS, StockUI.kind, stockKind))));
+    wrap.appendChild(viewOutlook());
+    return wrap;
+  }
   StockUI.range = valueRange(StockUI.range);
   const isTeam = StockUI.kind === 'team';
   const universe = Object.values(S.index).filter(p => p.dv > 200).sort((a, b) => b.dv - a.dv);
@@ -50,8 +63,7 @@ function viewStock() {
     }) : null);
   wrap.appendChild(card('Pick a ticker', null, h('div', { style: { display: 'grid', gap: '14px', gridTemplateColumns: 'minmax(0,1fr)' } },
     h('div.row', { style: { gap: '14px', alignItems: 'flex-end' } },
-      h('label.fld', 'Type', segmented([{ k: 'player', label: 'Players' }, { k: 'team', label: 'Teams' }], StockUI.kind,
-        k => { StockUI.kind = k; StockUI.pickOpen = false; StockUI.id = k === 'team' ? S.teams[0].rosterId : universe[0].id; render(); })),
+      h('label.fld', 'Type', segmented(STOCK_KINDS, StockUI.kind, stockKind)),
       isTeam
         ? h('label.fld', { style: { minWidth: '260px' } }, 'Team', h('select', { onchange: e => { StockUI.id = +e.target.value; render(); } },
           S.teams.map(t => h('option', { value: t.rosterId, selected: t.rosterId === StockUI.id }, t.name))))
