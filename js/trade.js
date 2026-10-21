@@ -310,15 +310,21 @@ function lineupAfter(T, which, before, after, incoming, outgoing) {
   const tb = tot(before), ta = tot(after);
   // a starter sliding from RB1 to RB2 has not changed anything; only a new face in the lineup has
   const rows = after.map(s => {
-    const p = s.player, fresh = p && !startedBefore.has(p.id);
-    return h('div.lurow' + (fresh ? '.chg' : ''),
-      h('span.tag.luslot', SLOT_LABEL[s.slot] || s.slot),
-      h('div.lumain',
-        h('div.row', { style: { gap: '6px', flexWrap: 'nowrap', minWidth: 0 } },
-          p && (SLOT_ELIG[s.slot] || [s.slot]).length > 1 ? posPill(p.pos) : null,
-          p ? pname(p, { face: false }) : h('span.muted.tiny', 'empty'),
-          fresh ? (inIds.has(p.id) ? h('span.tag.lunew', 'NEW') : h('span.tag', { style: { flex: 'none' } }, 'from bench')) : null)),
-      h('span.mono.luv', p ? fmt(p.ppg || 0, 1) : '—'));
+    const p = s.player, fresh = p && !startedBefore.has(p.id), arrived = fresh && inIds.has(p.id);
+    // the same row the roster page draws its lineup with: tier tint, headshot, injury, NFL team
+    return h('div.lnrow.lurow' + (fresh ? '.chg' : ''), { class: p ? rowMedal(p) : null },
+      h('span.tag', { style: { textAlign: 'center' } }, SLOT_LABEL[s.slot] || s.slot),
+      p ? h('div.row', { style: { gap: '7px', minWidth: 0, flexWrap: 'nowrap' } },
+        isSimple() ? playerFace(p) : posPill(p.pos),
+        h('div.lumain',
+          h('div.row', { style: { gap: '6px', flexWrap: 'nowrap', minWidth: 0 } },
+            pname(p, { face: false, style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '540' } }),
+            injuryTag(p.injury, p),
+            p.team ? (isSimple() ? teamLogo(p.team) : h('span.tiny.muted', p.team)) : null),
+          isSimple() && (SLOT_ELIG[s.slot] || [s.slot]).length > 1 ? h('div.tiny.muted', p.pos + (p.age ? ' · ' + fmt(p.age, 0) + ' yrs' : '')) : null),
+        fresh ? h('span.tag.lunew' + (arrived ? '' : '.bench'), arrived ? 'NEW' : isNarrow() ? 'from BN' : 'from bench') : null)
+        : h('span.muted.tiny', 'empty'),
+      h('span.mono.tiny.sec', p ? fmt(p.ppg || 0, 1) : '—'));
   });
   // starters who lose their place: traded away, or pushed to the bench by someone new
   const benched = before.filter(s => s.player && !startedAfter.has(s.player.id)).map(s => s.player);
@@ -326,7 +332,12 @@ function lineupAfter(T, which, before, after, incoming, outgoing) {
     h('div.lucmp-hd', teamCell(T), h('span', { style: { flex: 1 } }),
       h('span.tiny.muted.mono', fmt(tb, 1) + ' → '), h('b.mono', fmt(ta, 1)), deltaTag(ta - tb, 1)),
     h('div.lurows', rows),
-    benched.length ? h('div.tiny.muted.luout', 'Out of the lineup: ' + benched.map(p => p.name + (outIds.has(p.id) ? ' (traded)' : ' (to the bench)')).join(', ')) : null);
+    benched.length ? h('div.luout',
+      h('span.tiny.muted', 'Out of the lineup'),
+      benched.map(p => h('span.luoutp', { class: rowMedal(p) },
+        isSimple() ? playerFace(p, { xs: true }) : posPill(p.pos),
+        pname(p, { face: false }),
+        h('span.tiny.muted', outIds.has(p.id) ? 'traded' : 'to the bench')))) : null);
 }
 /** The two lineups side by side. */
 function lineupsCard(A, B, lu, aOut, bOut) {
