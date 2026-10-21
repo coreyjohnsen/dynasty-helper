@@ -279,8 +279,9 @@ so a whole trade is undone in one click, and undoing a change also removes later
 the same players. Nothing is sent to Sleeper, and *Reset everything* restores the league exactly.
 
 While any change is in effect a slim banner at the top of the other pages lists what it is, with
-*Manage* and *Reset*; pages that are pure results (This Week, Active Rankings, Draft Board, Trade
-History) say so instead. At the top of the Hypothetical page the headline numbers for any affected
+*Manage* and *Reset*; pages that are pure results (This Week, Active Rankings, Draft Board) say so
+instead. Trade History lists every processed hypothetical trade at the top, graded like a real one and
+marked **Hypothetical**, with its own *Undo*; they are kept out of every figure on that page. At the top of the Hypothetical page the headline numbers for any affected
 team (playoff and title odds, projected wins, lineup points, power rank, capital) show before and
 after, from the same simulated seasons run on the same random draws, plus who else in the league
 moved the most. The simulations run in the background, so the page never waits on them.

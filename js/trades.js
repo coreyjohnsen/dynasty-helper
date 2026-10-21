@@ -3,31 +3,12 @@
 function viewTrades() {
   const wrap = h('div.grid');
   const { list, trades } = traderStats();
-  if (!trades.length) {
-    wrap.appendChild(card('Trade history', null, h('div.empty',
-      h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'No completed trades yet'),
-      h('div.tiny', { style: { marginTop: '6px', maxWidth: '520px', margin: '6px auto 0' } },
-        'If the league has run before, earlier trades live under the previous season\'s league and are not loaded here.'))));
-    return wrap;
-  }
-  const graded = list.filter(x => x.n > 0);
-  const best = graded.slice().sort((a, b) => b.avgScore - a.avgScore)[0];
-  const busiest = graded.slice().sort((a, b) => b.n - a.n)[0];
-  const richest = graded.slice().sort((a, b) => b.net - a.net)[0];
-
-  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
-    kpi('Completed trades', String(trades.length), graded.length + ' of ' + S.teams.length + ' managers involved'),
-    kpi('Most active', busiest ? busiest.team.name : '—', busiest ? busiest.n + ' trade' + (busiest.n === 1 ? '' : 's') : ''),
-    kpi('Best trader', best ? best.team.name : '—', best ? 'average grade ' + best.grade : '',
-      '<div class="k">How this is scored</div>Average of their per-trade grades, which combine the value swing at today\'s prices with how well the pieces fit the roster.'),
-    kpi('Biggest value gain', richest ? richest.team.name : '—', richest ? sgn(Math.round(richest.net), 0) + ' at today\'s prices' : ''),
-    kpi('Assets moved', String(sum(trades.map(t => sum(t.sides.map(s => s.got.length))))), 'players, picks and FAAB')
-  ));
-
-  wrap.appendChild(card('A note on grades', null, h('div.tiny.sec',
-    'Every asset is priced at ', h('b', 'today\'s'), ' market, so these grades are hindsight. They say how a trade looks now, not whether it was a good decision when it was made. '
-    + 'A manager who sold a player before he got hurt will grade badly here and was still right. Need fit is judged against each roster as it stands now, for the same reason.')));
-
+  const hyp = hypTrades();
+  const empty = () => card('Trade history', null, h('div.empty',
+    h('div', { style: { fontWeight: 600, color: 'var(--text-secondary)' } }, 'No completed trades yet'),
+    h('div.tiny', { style: { marginTop: '6px', maxWidth: '520px', margin: '6px auto 0' } },
+      'If the league has run before, earlier trades live under the previous season\'s league and are not loaded here.')));
+  if (!trades.length && !hyp.length) return wrap.appendChild(empty()), wrap;
   // ---- every trade ----
   const assetChip = (a, dim) => h('div.asset', { style: { cursor: 'default', opacity: dim ? .75 : 1 } },
     a.kind === 'faab' ? h('span.pill.pos-NA', 'FAAB') : posPill(a.pos),
@@ -69,16 +50,44 @@ function viewTrades() {
         h('span.tiny.sec', 'Need fit ', h('b', { class: s.needFit > 0.1 ? 'up' : s.needFit < -0.1 ? 'down' : 'flat' },
           s.needFit > 0.35 ? 'strong' : s.needFit > 0.1 ? 'good' : s.needFit < -0.35 ? 'poor' : s.needFit < -0.1 ? 'weak' : 'neutral'))));
   };
-  const cards = trades.map(tr => h('div.tcard',
+  const tradeCard = tr => h('div.tcard' + (tr.hyp ? '.hyp' : ''),
     h('div.tc-hd',
       h('div.row', { style: { gap: '8px' } },
-        h('b', tr.when ? tr.when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'date unknown'),
+        tr.hyp ? h('span.hyp-badge', 'HYPOTHETICAL') : null,
+        h('b', tr.hyp ? (tr.when ? 'processed ' + tr.when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : 'processed')
+          : tr.when ? tr.when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'date unknown'),
         tr.week ? h('span.tag', 'week ' + tr.week) : null),
-      tr.winner
-        ? h('span.tiny', h('b', tr.winner.team ? tr.winner.team.name : '?'), ' comes out ahead')
-        : h('span.tiny.muted', 'too close to call')),
-    h('div.thist', tr.sides.map((s, ix) => sideTray(tr, s, ix)))));
-  wrap.appendChild(card('Every completed trade', trades.length + ' in this league, newest first', h('div', { style: { display: 'grid', gap: '10px' } }, cards)));
+      h('div.row', { style: { gap: '10px' } },
+        tr.winner
+          ? h('span.tiny', h('b', tr.winner.team ? tr.winner.team.name : '?'), ' comes out ahead')
+          : h('span.tiny.muted', 'too close to call'),
+        tr.hyp ? h('button.btn.sm', { onclick: () => { hypUndo(tr.hypId); render(); } }, 'Undo') : null)),
+    h('div.thist', tr.sides.map((s, ix) => sideTray(tr, s, ix))));
+
+  // what you have tried on the Hypothetical page, kept apart from the record and out of every figure below
+  if (hyp.length) wrap.appendChild(card('Hypothetical trades', hyp.length + ' processed on the Hypothetical page, newest first · not real, and not counted in any figure on this page',
+    h('div', { style: { display: 'grid', gap: '10px' } }, hyp.map(tradeCard)),
+    h('button.btn.sm', { onclick: () => { S.view = 'hypo'; render(); window.scrollTo(0, 0); } }, 'Manage')));
+  if (!trades.length) return wrap.appendChild(empty()), wrap;
+  const graded = list.filter(x => x.n > 0);
+  const best = graded.slice().sort((a, b) => b.avgScore - a.avgScore)[0];
+  const busiest = graded.slice().sort((a, b) => b.n - a.n)[0];
+  const richest = graded.slice().sort((a, b) => b.net - a.net)[0];
+
+  wrap.appendChild(h('div.grid', { style: { gridTemplateColumns: 'repeat(auto-fit,minmax(min(160px,100%),1fr))' } },
+    kpi('Completed trades', String(trades.length), graded.length + ' of ' + S.teams.length + ' managers involved'),
+    kpi('Most active', busiest ? busiest.team.name : '—', busiest ? busiest.n + ' trade' + (busiest.n === 1 ? '' : 's') : ''),
+    kpi('Best trader', best ? best.team.name : '—', best ? 'average grade ' + best.grade : '',
+      '<div class="k">How this is scored</div>Average of their per-trade grades, which combine the value swing at today\'s prices with how well the pieces fit the roster.'),
+    kpi('Biggest value gain', richest ? richest.team.name : '—', richest ? sgn(Math.round(richest.net), 0) + ' at today\'s prices' : ''),
+    kpi('Assets moved', String(sum(trades.map(t => sum(t.sides.map(s => s.got.length))))), 'players, picks and FAAB')
+  ));
+
+  wrap.appendChild(card('A note on grades', null, h('div.tiny.sec',
+    'Every asset is priced at ', h('b', 'today\'s'), ' market, so these grades are hindsight. They say how a trade looks now, not whether it was a good decision when it was made. '
+    + 'A manager who sold a player before he got hurt will grade badly here and was still right. Need fit is judged against each roster as it stands now, for the same reason.')));
+
+  wrap.appendChild(card('Every completed trade', trades.length + ' in this league, newest first', h('div', { style: { display: 'grid', gap: '10px' } }, trades.map(tradeCard))));
 
   // ---- manager table ----
   wrap.appendChild(card('Managers', 'value figures are at today\'s prices', table([

@@ -289,6 +289,31 @@ function parseTrades() {
   return out;
 }
 
+/** The trades processed on the Hypothetical page, in the same shape as real ones, newest first.
+ *  Built fresh every time: the log changes with every undo, and nothing here is cached. */
+function hypTrades() {
+  if (typeof HYP === 'undefined' || !HYP.on) return [];
+  const price = isDynasty() ? pickPricer(null) : null;
+  return HYP.log.filter(e => e.kind === 'trade').map(e => {
+    const sides = {};
+    const side = (r) => sides[r] = sides[r] || { rosterId: r, team: S.teamById[r] || null, got: [], sent: [] };
+    e.steps.forEach(s => {
+      let a;
+      if (s.isPick) {
+        const [season, round, orig] = s.id.split('|').map(Number);
+        const q = price ? price({ season, round, origRosterId: orig }) : null;
+        a = { kind: 'pick', id: 'PK|' + s.id, name: s.name, pos: 'PICK', value: q ? q.value : 0, slotLabel: q ? round + '.' + String(q.slot).padStart(2, '0') : null, season, round };
+      } else {
+        const p = S.index[s.id] || ensurePlayer(s.id);
+        a = { kind: 'player', id: s.id, name: p.name, pos: p.pos, ref: p, value: p.dv || 0 };
+      }
+      if (s.to !== null && s.to !== undefined) side(s.to).got.push(a);
+      if (s.from !== null && s.from !== undefined) side(s.from).sent.push(a);
+    });
+    return gradeTrade({ id: 'hyp' + e.id, hypId: e.id, hyp: true, when: e.at ? new Date(e.at) : null, week: null, sides: Object.values(sides) });
+  }).reverse();
+}
+
 const GRADES = [
   [0.55, 'A+'], [0.38, 'A'], [0.24, 'A−'], [0.14, 'B+'], [0.05, 'B'], [-0.05, 'B−'],
   [-0.14, 'C+'], [-0.24, 'C'], [-0.38, 'C−'], [-0.55, 'D'], [-Infinity, 'F']

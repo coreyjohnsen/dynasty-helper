@@ -99,7 +99,7 @@ function hypCommit(kind, short, label, steps) {
     hypRunSim('base');
   }
   HYP.flash = null;
-  HYP.log.push({ id: HYP.nextId++, kind, short, label, steps });
+  HYP.log.push({ id: HYP.nextId++, kind, short, label, steps, at: Date.now() });
   track('hypothetical-' + kind, 'Hypothetical ' + kind, true);
   hypRebuild();
 }
@@ -145,8 +145,7 @@ function hypExit() {
 const HYP_UNAFFECTED = {
   week: 'This Week is scored from games that are already happening. A hypothetical roster does not change points that have been banked, so the live totals and matchups here stay real.',
   standings: 'Active Rankings is pure results: wins, losses and points scored. A hypothetical roster cannot change games that have already been played.',
-  draft: 'The draft board is a historical record of picks that were made, so a hypothetical roster does not change it.',
-  trades: 'Trade History is a record of deals that happened, so a hypothetical roster does not change it. The grades already use live market values.'
+  draft: 'The draft board is a historical record of picks that were made, so a hypothetical roster does not change it.'
 };
 
 /* ================= the banner on every other page ================= */

@@ -469,6 +469,7 @@ table.tbl th.sortable:hover{color:var(--text-primary)}
 .dealitem.compact .dealval{font-size:14px}
 @media(max-width:620px){.dealitem.compact .dealmeta{white-space:normal}.dealitem.compact .btn.sm{padding:5px 8px}}
 .tcard{padding:14px 16px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2)}
+.tcard.hyp{border:1px dashed color-mix(in srgb,var(--s7) 60%,transparent);background:color-mix(in srgb,var(--s7) 4%,var(--surface-2))}
 .tc-hd{display:flex;justify-content:space-between;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:12px}
 .tc-who{display:flex;align-items:center;gap:9px;flex-wrap:wrap;min-width:0}
 .tav-s{width:30px;height:30px;border-radius:9px;object-fit:cover;background:var(--surface-3);flex:none}
