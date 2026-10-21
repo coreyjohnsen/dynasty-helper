@@ -265,48 +265,41 @@ function recordSnapshot() {
   }
   S.snapshots = snaps;
 }
-/* Seeds a 30-day path from FantasyCalc's published 30-day trend so charts have
-   context on day one; observed snapshots override the seeded points. */
+/* Value history holds only what is actually known: the snapshots this browser has
+   recorded on its visits, today's price, and — in a dynasty league, where FantasyCalc
+   publishes a 30-day move — the price 30 days ago. Nothing is filled in between them;
+   a chart draws a straight line from one known point to the next. Each point says
+   where it came from (`kind`: 'observed', 'trend' or 'now'). */
+function isoDay(t) { return new Date(t).toISOString().slice(0, 10); }
+function dayNum(d) { return Math.round(Date.parse(d + 'T00:00:00Z') / 864e5); }
+function valueSeries(obs, now, then30, days) {
+  const today = isoDay(Date.now()), from = isoDay(Date.now() - days * 864e5);
+  const byD = {};
+  if (then30 !== null && days >= 30) { const d = isoDay(Date.now() - 30 * 864e5); byD[d] = { d, v: Math.max(0, Math.round(then30)), kind: 'trend', real: false }; }
+  obs.forEach(o => { if (o.d >= from && o.d < today) byD[o.d] = { d: o.d, v: o.v, kind: 'observed', real: true }; });
+  byD[today] = { d: today, v: Math.round(now), kind: 'now', real: true };
+  const out = Object.values(byD).sort((a, b) => a.d < b.d ? -1 : 1);
+  // once this browser has its own history from before the 30-day mark, that is the better record
+  return out.length > 1 && out[0].kind !== 'trend' ? out.filter(o => o.kind !== 'trend') : out;
+}
 function playerSeries(id, days) {
-  days = days || 90;
   const p = S.index[id]; if (!p) return [];
-  const obs = S.snapshots.filter(s => s.p[id] !== undefined).map(s => ({ d: s.d, v: s.p[id], real: true }));
-  const out = [];
-  const today = new Date();
-  const trend = p.trend30 || 0;
-  const vol = Math.max(0.004, Math.abs(p.sd_pct || 0) / 100 || 0.012);
-  seedRng(hashStr(id) >>> 0);
-  const start = p.dv - trend;
-  for (let i = days; i >= 0; i--) {
-    const d = new Date(today.getTime() - i * 864e5).toISOString().slice(0, 10);
-    const k = clamp((days - i) / days, 0, 1);
-    const ramp = i <= 30 ? (30 - i) / 30 : 0;
-    const base = i <= 30 ? start + trend * ramp : start - trend * 0.55 * ((i - 30) / Math.max(1, days - 30));
-    const jitter = base * vol * (Math.sin(i * 1.7 + hashStr(id) % 7) * 0.5 + gauss() * 0.35);
-    out.push({ d, v: Math.max(1, Math.round(base + jitter)), real: false });
-  }
-  const byD = {}; out.forEach(o => byD[o.d] = o);
-  obs.forEach(o => { byD[o.d] = o; });
-  const merged = Object.values(byD).sort((a, b) => a.d < b.d ? -1 : 1);
-  if (merged.length) merged[merged.length - 1] = { d: merged[merged.length - 1].d, v: p.dv, real: true };
-  return merged;
+  const obs = S.snapshots.filter(s => s.p[id] !== undefined).map(s => ({ d: s.d, v: s.p[id] }));
+  // the published move is in dynasty prices, so it says nothing about a redraft price
+  const then30 = isDynasty() && p.trend30 !== undefined ? p.dv - (p.trend30 || 0) : null;
+  return valueSeries(obs, p.dv, then30, days || 90);
 }
 function teamSeries(rosterId, days) {
   const t = S.teamById[rosterId]; if (!t) return [];
-  const ids = t.players.map(p => p.id).filter(id => S.index[id] && S.index[id].dv > 250);
-  const per = ids.map(id => playerSeries(id, days));
-  if (!per.length) return [];
-  const len = per[0].length;
-  const obs = {}; S.snapshots.forEach(s => { if (s.tm && s.tm[rosterId] !== undefined) obs[s.d] = s.tm[rosterId]; });
-  const out = [];
-  for (let i = 0; i < len; i++) {
-    const d = per[0][i].d;
-    let v = 0; per.forEach(s => { if (s[i]) v += s[i].v; });
-    v += t.pickCapital;
-    out.push({ d, v: obs[d] !== undefined ? obs[d] : Math.round(v), real: obs[d] !== undefined });
-  }
-  if (out.length) out[out.length - 1] = { d: out[out.length - 1].d, v: Math.round(t.totalValue), real: true };
-  return out;
+  const obs = S.snapshots.filter(s => s.tm && s.tm[rosterId] !== undefined).map(s => ({ d: s.d, v: s.tm[rosterId] }));
+  // today's roster at its players' prices 30 days ago, with today's pick values
+  const then30 = isDynasty() ? sum(t.players.map(p => (p.dv || 0) - (p.trend30 || 0))) + t.pickCapital : null;
+  return valueSeries(obs, t.totalValue, then30, days || 90);
+}
+/** The longest window worth offering: the oldest snapshot this browser holds, or the 30-day trend. */
+function historyDays() {
+  const first = S.snapshots.length ? S.snapshots[0].d : null;
+  return first ? Math.max(30, dayNum(isoDay(Date.now())) - dayNum(first)) : 30;
 }
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return Math.abs(h); }
 

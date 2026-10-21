@@ -414,7 +414,7 @@ function lineChart(series, opts) {
     const d = pts.map((p, i) => (i ? 'L' : 'M') + X(p.x) + ',' + Y(p.y)).join('');
     g.appendChild(svg('path', {
       d, fill: 'none', stroke: s.color, 'stroke-width': s.width || 2,
-      opacity: s.opacity === undefined ? 1 : s.opacity,
+      opacity: s.opacity === undefined ? 1 : s.opacity, 'stroke-dasharray': s.dash || null,
       'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke'
     }));
     if (opts.dots !== false && pts.length <= 30) pts.forEach(p => g.appendChild(svg('circle', { cx: X(p.x), cy: Y(p.y), r: 3.2, fill: s.color, stroke: 'var(--surface-1)', 'stroke-width': 2 })));
@@ -437,7 +437,9 @@ function lineChart(series, opts) {
     if (!near) return;
     cross.setAttribute('x1', X(near.x)); cross.setAttribute('x2', X(near.x)); cross.setAttribute('opacity', .55);
     const cap = opts.maxTip || 12;
-    const hits = series.map(s => ({ s, p: s.points.find(p => p.x === near.x) })).filter(x => x.p);
+    let hits = series.map(s => ({ s, p: s.points.find(p => p.x === near.x) })).filter(x => x.p);
+    // a series marked `tip: false` speaks only where no other series has a point
+    if (hits.some(x => x.s.tip !== false)) hits = hits.filter(x => x.s.tip !== false);
     hits.sort((a, b) => b.p.y - a.p.y);
     const rows = hits.slice(0, cap).map(({ s, p }) =>
       `<div><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${s.color};margin-right:6px"></i>${s.name}: <b>${opts.yFmt ? opts.yFmt(p.y) : fmt(p.y, 1)}</b></div>`

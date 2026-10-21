@@ -33,7 +33,10 @@ itself, and weekly projections are re-scored through that league's own
 Responses are cached in the visitor's own browser: the player database for 12
 hours (IndexedDB), weekly projections for 6 hours (IndexedDB), trade values for 4
 hours (localStorage). Stock mode also records one value snapshot per visit, so the
-value charts accumulate real observed history over time.
+value charts accumulate real observed history over time. The charts draw only what is
+known: those snapshots, today's price, and (dynasty only) FantasyCalc's published price
+30 days ago, shown dashed because only its two ends are known. Nothing is filled in
+between, and longer windows appear once this browser holds history that old.
 
 **Your league data is never uploaded and there are no secrets in this repo.** Sleeper's
 API is public and read-only; the app only ever reads. The one thing that leaves the page is an
