@@ -420,7 +420,7 @@ function h2hWeek(wrap, A, B, CA, CB, wk) {
   const slotRows = la.map((sa, i) => {
     const sb = lb[i] || {};
     const va = sa.player ? pwShown(sa.player, wk) : 0, vb = sb.player ? pwShown(sb.player, wk) : 0;
-    return { slot: sa.slot, a: sa.player, b: sb.player, va, vb, d: va - vb };
+    return { slot: sa.slot, a: sa.player, b: sb.player, va, vb, d: va - vb, xa: sa, xb: sb };
   });
   const aWon = slotRows.filter(x => x.d > 0).length;
   wrap.appendChild(card('Slot by slot, week ' + wk,
@@ -568,6 +568,7 @@ function slotLadder(rows, A, B, CA, CB, opts) {
   // where the slot accepts more than one — flex and superflex
   const flexy = (slot, pl) => pl && (SLOT_ELIG[slot] || [slot]).length > 1 ? posPill(pl.pos) : null;
   const badge = (pl) => live && pl && !opts.cell ? liveBadge(pl, wk) : null;
+  const fa = (x) => wk ? pickupTag(x, wk) : null;
 
   if (isNarrow()) {
     /* Two lines per slot can't say whose is whose by position alone, so each team
@@ -579,6 +580,7 @@ function slotLadder(rows, A, B, CA, CB, opts) {
       const line = (pl, v, won, col) => h('div.row.lline', { style: { gap: '6px', minWidth: 0, flexWrap: 'nowrap', borderLeftColor: col } },
         pl ? flexy(r2.slot, pl) : null,
         pl ? pname(pl, { style: { fontWeight: won ? 640 : 500 } }) : h('span.muted.tiny', 'empty'),
+        fa(pl === r2.a ? r2.xa : r2.xb),
         badge(pl),
         h('span', { style: { flex: 1 } }),
         h('div', { style: { textAlign: 'right' } }, num(pl, v, won, col)));
@@ -603,12 +605,12 @@ function slotLadder(rows, A, B, CA, CB, opts) {
     h('b.tiny', { style: { color: CB } }, B.short));
   return h('div', { style: { display: 'grid' } }, [head].concat(rows.map(r2 => h('div.ladderrow', { style: { gridTemplateColumns: cw } },
     h('div.pl.l', r2.a
-      ? [badge(r2.a), flexy(r2.slot, r2.a), pname(r2.a, { mirror: true, style: { fontWeight: r2.d > 0 ? 640 : 500 } })]
+      ? [badge(r2.a), fa(r2.xa), flexy(r2.slot, r2.a), pname(r2.a, { mirror: true, style: { fontWeight: r2.d > 0 ? 640 : 500 } })]
       : h('span.muted.tiny', 'empty')),
     h('div', { style: { textAlign: 'right' } }, num(r2.a, r2.va, r2.d > 0, CA)),
     h('div', { style: { textAlign: 'center' } }, h('span.tag', { style: { minWidth: '46px', textAlign: 'center' } }, SLOT_LABEL[r2.slot] || r2.slot)),
     h('div', num(r2.b, r2.vb, r2.d < 0, CB)),
     h('div.pl.r', r2.b
-      ? [pname(r2.b, { style: { fontWeight: r2.d < 0 ? 640 : 500 } }), flexy(r2.slot, r2.b), badge(r2.b)]
+      ? [pname(r2.b, { style: { fontWeight: r2.d < 0 ? 640 : 500 } }), flexy(r2.slot, r2.b), fa(r2.xb), badge(r2.b)]
       : h('span.muted.tiny', 'empty'))))));
 }

@@ -55,8 +55,9 @@
 .content{padding:24px 28px 56px;width:100%;max-width:1760px;margin-inline:auto}
 @media (min-width:1700px){ .content{padding:28px 36px 64px} }
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-/* only on a change of page — a re-render from a click inside one must not replay it */
-.content.enter>*{animation:rise .42s var(--ease) both}
+/* only on a change of page — a re-render from a click inside one must not replay it. Backwards, not both:
+   a transform left on the page wrapper would pin the phone deal bar to the page instead of the screen */
+.content.enter>*{animation:rise .42s var(--ease) backwards}
 .content.enter>*:nth-child(2){animation-delay:.04s}
 .content.enter>*:nth-child(3){animation-delay:.08s}
 .content.enter>*:nth-child(4){animation-delay:.12s}

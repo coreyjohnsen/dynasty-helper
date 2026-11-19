@@ -237,7 +237,7 @@ function applyOwnership(moves, pickMoves) {
       .map(pk => Object.assign({}, pk, { rosterId: t.rosterId }));
   });
   computeStrength();
-  S._fa = null; S._depth = null; S._sig = null;
+  S._fa = null; S._depth = null; S._sig = null; S._live = null; S._wpPath = null;
   S.sim = null; SimUI.res = null; SimUI.replay = null; FinderUI.results = null; TradeUI.result = null;
 }
 function draftRounds() {

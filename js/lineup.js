@@ -271,7 +271,7 @@ function startSitPlan(T, wk) {
   const live = wk === S.liveWeek;
   const val = p => consensusPts(p, wk);
   // in the week being played the lineup is whatever was set, and a game that has started can no longer be changed
-  const lineup = live ? liveLineupSlots(T, wk) : optimalLineup(act, val);
+  const lineup = live ? liveLineupSlots(T, wk, true) : optimalLineup(act, val);
   const names = slotNames(lineup);
   const chosen = new Set(lineup.filter(s => s.player).map(s => s.player.id));
   const open = p => !live || livePlayerState(p, wk) === 'upcoming';
@@ -423,7 +423,7 @@ function viewLineup() {
   /* In the week being played the lineup is not a suggestion — it is whatever the
      manager actually set, with some of it already locked in. Re-optimising it
      would be advice about a decision that is no longer available. */
-  const lineup = isLive ? liveLineupSlots(T, wk) : optimalLineup(act, upcoming ? val : (p => pw(p, wk)));
+  const lineup = isLive ? liveLineupSlots(T, wk, true) : optimalLineup(act, upcoming ? val : (p => pw(p, wk)));
   const startIds = new Set(lineup.filter(s => s.player).map(s => s.player.id));
   const bench = act.filter(p => !startIds.has(p.id)).sort((a, b) => val(b) - val(a));
   const total = sum(lineup.map(s => s.player ? val(s.player) : 0));

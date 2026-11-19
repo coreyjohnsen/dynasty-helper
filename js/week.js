@@ -26,7 +26,9 @@ function matchupSide(l, T, colour) {
       l.projected > 0.05 ? h('div', '+ ' + fmt(l.projected, 1) + ' proj') : null),
     h('div.dt.cnt', l.doneN + ' done'
       + (l.liveN ? ' · ' + l.liveN + ' live' : '')
-      + (l.leftN ? ' · ' + l.leftN + ' left' : '')));
+      + (l.leftN ? ' · ' + l.leftN + ' left' : '')),
+    l.pickups && l.pickups.length ? h('div.dt', h('span.tag.fatag', { title: 'Counted with ' + l.pickups.map(x => x.player.name).join(', ') + ' picked up from free agency to fill an empty slot' },
+      l.pickups.length === 1 ? '+1 FA pickup' : '+' + l.pickups.length + ' FA pickups')) : null);
 }
 
 function viewWeek() {
@@ -336,7 +338,7 @@ function matchupLadder(g, wk) {
   const counted = (p) => p ? liveValue(p, wk).used : 0;
   const rows = la.map((sa, i) => {
     const sb = lb[i] || {};
-    return { slot: sa.slot, a: sa.player, b: sb.player || null, va: counted(sa.player), vb: counted(sb.player) };
+    return { slot: sa.slot, a: sa.player, b: sb.player || null, va: counted(sa.player), vb: counted(sb.player), xa: sa, xb: sb };
   });
   const cell = (p, v, won, col) => {
     if (!p) return h('span.muted.tiny', '—');
@@ -358,6 +360,7 @@ function matchupLadder(g, wk) {
   };
   const aWon = rows.filter(r => r.va > r.vb).length;
   return h('div', { style: { display: 'grid', gap: '10px' } },
+    pickupBanner([g.A, g.B], wk),
     slotLadder(rows, g.A, g.B, CA, CB, { wk, live: true, cell, head: 'Pts' }),
     h('div.tiny.muted', `${g.A.short} is ahead in ${aWon} of ${rows.length} slots.`));
 }
