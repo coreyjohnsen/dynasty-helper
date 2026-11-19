@@ -295,7 +295,7 @@ function hypTradePanel() {
   const canRun = R.aOut.length > 0 && R.bOut.length > 0;
   const nameOf = (T) => T.rosterId === S.myRosterId ? 'You' : T.name;
 
-  const out = h('div.grid');
+  const out = h('div.grid.hyptrade');
   out.appendChild(matchupBar({
     key: 'hyp', aId: A.rosterId, bId: B.rosterId,
     onPick: (w, id) => { R[w] = id; R[w + 'Out'] = []; R.st.q = ''; render(); },
@@ -353,6 +353,9 @@ function hypTradePanel() {
     onToggle: (a, inDeal) => setOut(bw, inDeal ? outOf(bw).filter(x => x.id !== a.id) : outOf(bw).concat([a])),
     onChange: () => render()
   }));
+  // on a phone the middle column is hidden, so the balance and the button ride above the tab bar, as in the calculator
+  if (R.aOut.length || R.bOut.length) out.appendChild(dealBar(
+    h('b.mono', pct(f, 0)), h('span.bal-v', h('i', { style: { background: verdict[1] } }), verdict[0]), processBtn()));
   return out;
 }
 
