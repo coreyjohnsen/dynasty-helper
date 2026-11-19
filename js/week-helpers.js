@@ -139,16 +139,72 @@ function liveValue(p, wk) {
 /** The number to show for a player in a given week — live where the week is live. */
 function pwShown(p, wk) { return wk === S.liveWeek ? liveValue(p, wk).used : pw(p, wk); }
 
-/* Which starters a team fields in a given week. Sleeper reports the lineup the
-   manager actually set for the current and past weeks; for weeks that have not
-   arrived the stored lineup is stale, so the optimiser stands in. */
-function startersFor(t, wk) {
+/* Which starters a team fields in a given week, slot by slot. Sleeper reports the
+   lineup the manager actually set for the current and past weeks; for weeks that
+   have not arrived the stored lineup is stale, so the optimiser stands in. */
+function weekLineup(t, wk) {
+  const key = 'wl|' + t.rosterId + '|' + wk;
+  S._live = S._live || {};
+  if (S._live[key]) return S._live[key];
+  const slots = (S.cfg.rosterPositions || []).filter(x => !['BN', 'IR', 'TAXI'].includes(x));
   const m = (S.matchups[wk] || []).find(x => x.roster_id === t.rosterId);
+  let lineup = null;
   if (m && Array.isArray(m.starters) && wk <= Math.max(S.lastWeek, S.liveWeek || 0)) {
-    const ids = m.starters.filter(id => id && id !== '0');
-    if (ids.length) return ids.map(id => S.index[id] || ensurePlayer(id));
+    // an empty slot is '0' in Sleeper's list; it stays an empty slot rather than shifting everyone after it
+    const players = m.starters.map(id => id && id !== '0' ? (S.index[id] || ensurePlayer(id)) : null);
+    if (players.some(Boolean)) {
+      const fits = players.length === slots.length && slots.every((sl, i) => !players[i] || (SLOT_ELIG[sl] || [sl]).indexOf(players[i].pos) >= 0);
+      // if a league's data does not line up, showing a kicker in the QB slot helps nobody: reseat them by eligibility
+      lineup = fits ? slots.map((slot, i) => ({ slot, player: players[i] }))
+        : optimalLineup(players.filter(Boolean), p => pwShown(p, wk)).map(x => ({ slot: x.slot, player: x.player }));
+    }
   }
-  return optimalLineup(activePlayers(t), p => pw(p, wk)).map(s => s.player).filter(Boolean);
+  if (!lineup) lineup = optimalLineup(activePlayers(t), p => pw(p, wk)).map(x => ({ slot: x.slot, player: x.player }));
+  S._live[key] = weekPickups(t, wk, lineup);
+  return S._live[key];
+}
+/* A starter projected for nothing, with nobody on the bench who can take the slot,
+   is a hole a manager fills from the wire before kickoff. Where a free agent would
+   score more, assume they do: the pickup takes the slot and is marked `fa`, with
+   the player it replaces kept as `replaced`. Only before the slot locks: a game
+   already under way, or a week already played, stays exactly as it was. Free
+   agents carry no Sleeper weekly line (those are loaded for rostered players only),
+   so they count at the season-average estimate, and not at all on bye or ruled out. */
+function weekPickups(t, wk, lineup) {
+  if (wk <= S.lastWeek) return lineup;
+  const live = wk === S.liveWeek;
+  const unplayed = p => !live || livePlayerState(p, wk) === 'upcoming';
+  const movable = p => !live || ['upcoming', 'bye'].includes(livePlayerState(p, wk));
+  const proj = p => onBye(p, wk) ? 0 : pw(p, wk);
+  const starting = new Set(lineup.filter(x => x.player).map(x => x.player.id));
+  const bench = activePlayers(t).filter(p => !starting.has(p.id) && unplayed(p) && proj(p) > 0.05);
+  const used = new Set();
+  return lineup.map(x => {
+    const p = x.player;
+    if (p && (proj(p) > 0.05 || !movable(p))) return x;
+    const elig = SLOT_ELIG[x.slot] || [x.slot];
+    // someone on the bench can take it: that is the manager's call, not a pickup
+    const sub = bench.find(b => elig.includes(b.pos) && !used.has(b.id));
+    if (sub) { used.add(sub.id); return x; }
+    let best = null, bestV = (p ? proj(p) : 0) + 0.5;
+    freeAgents().forEach(f => {
+      if (!f.team || used.has(f.id) || !elig.includes(f.pos) || !unplayed(f)) return;
+      const v = proj(f);
+      if (v > bestV) { best = f; bestV = v; }
+    });
+    if (!best) return x;
+    used.add(best.id);
+    return { slot: x.slot, player: best, fa: true, replaced: p || null, faProj: bestV };
+  });
+}
+/** Why a starter left a hole: the words for a pickup's banner. */
+function pickupReason(p, wk) {
+  if (!p) return 'an empty slot';
+  if (onBye(p, wk)) return p.name + ' (bye)';
+  return p.name + ' (' + (p.injury ? String(p.injury).toLowerCase() : 'projected 0') + ')';
+}
+function startersFor(t, wk) {
+  return weekLineup(t, wk).map(x => x.player).filter(Boolean);
 }
 
 /* The heart of it: banked points for finished games, projections for everyone
@@ -185,7 +241,8 @@ function liveRoster(t, wk) {
     leftN: rows.filter(r => r.state === 'upcoming').length,
     byeN: rows.filter(r => r.state === 'bye').length,
     open: openRows.map(r => ({ p: r.p, used: r.open })),
-    reported: m ? (m.points || 0) : 0
+    reported: m ? (m.points || 0) : 0,
+    pickups: weekLineup(t, wk).filter(x => x.fa)
   };
   S._live[key] = out;
   return out;
@@ -207,15 +264,33 @@ async function refreshLiveWeek() {
   if (S.liveWeek && weekFinished(S.liveWeek)) { S.lastWeek = S.liveWeek; S.liveWeek = null; S._sched = null; }
 }
 
-/** The lineup a manager actually has set, paired with the league's starting slots. */
-function liveLineupSlots(t, wk) {
-  const slots = (S.cfg.rosterPositions || []).filter(x => !['BN', 'IR', 'TAXI'].includes(x));
-  const players = startersFor(t, wk);
-  const fits = slots.every((sl, i) => !players[i] || (SLOT_ELIG[sl] || [sl]).indexOf(players[i].pos) >= 0);
-  // Sleeper's starters array is positional, but if a league's data does not line
-  // up, showing a kicker in the QB slot helps nobody — reseat them by eligibility
-  if (fits) return slots.map((slot, i) => ({ slot: slot, player: players[i] || null }));
-  return optimalLineup(players, p => pwShown(p, wk));
+/** The lineup a manager actually has set, paired with the league's starting slots.
+ *  `rosterOnly` puts back the player an assumed free-agent pickup replaced. */
+function liveLineupSlots(t, wk, rosterOnly) {
+  const lineup = weekLineup(t, wk);
+  return rosterOnly ? lineup.map(x => x.fa ? { slot: x.slot, player: x.replaced } : x) : lineup;
+}
+/** The flag on a player the projection assumes is picked up off the wire. */
+function pickupTag(x, wk) {
+  if (!x || !x.fa) return null;
+  return bindTT(h('span.tag.fatag', { tabindex: 0 }, 'FA pickup'),
+    `<div class="k">Assumed pickup</div>${esc(pickupReason(x.replaced, wk))} leaves this slot empty and nobody on the bench can fill it, so the projection assumes `
+    + `<b>${esc(x.player.name)}</b> is picked up from free agency, worth about <b>${fmt(x.faProj, 1)}</b>. Free agents are counted at a season-average estimate.`);
+}
+/** One line per assumed pickup, for the top of a matchup. */
+function pickupBanner(teams, wk) {
+  const items = [];
+  teams.forEach(T => weekLineup(T, wk).filter(x => x.fa).forEach(x => items.push({ T, x })));
+  if (!items.length) return null;
+  return h('div.fabanner',
+    h('span.fabanner-ic', ico('plus')),
+    h('div', { style: { minWidth: 0 } },
+      h('b', items.length === 1 ? 'Assumes a free-agent pickup' : 'Assumes ' + items.length + ' free-agent pickups'),
+      items.map(({ T, x }) => h('div.tiny.sec',
+        h('b', T.rosterId === S.myRosterId ? 'You' : T.short), ' pick' + (T.rosterId === S.myRosterId ? '' : 's') + ' up ',
+        pname(x.player, { face: false }), ' (' + x.player.pos + ', about ' + fmt(x.faProj, 1) + ') for ' + pickupReason(x.replaced, wk)
+        + ', with nobody on the bench to fill the slot.')),
+      h('div.tiny.muted', 'Counted in the score and the win probability. Free agents have no weekly line here, so they count at a season-average estimate.')));
 }
 /** A short badge saying where a player's game is up to. */
 function liveBadge(p, wk) {
